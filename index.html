@@ -12,14 +12,13 @@
 
   /* ── Drawer ── */
   #sidebar {
-    position:fixed; left:-260px; top:0; z-index:30;
-    width:260px; height:100vh; overflow-y:auto;
-    background:#FDFBF7; border-right:1px solid #F2EBE0;
-    padding:16px 12px; user-select:none;
-    transition:left 0.25s ease;
-    box-shadow:4px 0 16px rgba(0,0,0,0.08);
+    width:0; height:100vh; overflow-y:auto; overflow-x:hidden;
+    background:#FDFBF7; border-right:1px solid transparent;
+    user-select:none; transition:width 0.25s ease;
+    flex-shrink:0;
   }
-  #sidebar.open { left:0; }
+  #sidebar.open { width:260px; border-right-color:#F2EBE0; }
+  #sidebar-inner { width:260px; padding:16px 12px; }
   #sidebar h3 { font-size:13px; font-weight:700; margin-bottom:4px; }
   #sidebar .sub { font-size:10px; color:#8A8075; margin-bottom:16px; }
   .tier-group { margin-bottom:12px; }
@@ -32,14 +31,13 @@
   .side-link:hover { background:#F5EFE6; }
   .side-link.active { background:#FFEAE5; color:#C45353; font-weight:600; }
   .burger-btn {
-    position:fixed; left:16px; top:14px; z-index:25;
     width:32px; height:32px; border-radius:8px; border:1px solid #EBE5DA;
     background:#FDFBF7; cursor:pointer; font-size:16px;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    flex-shrink:0;
   }
   .burger-btn span { display:block; width:16px; height:2px; background:#8A8075; border-radius:1px; transition:all 0.2s; }
-  #overlay { position:fixed; inset:0; background:rgba(0,0,0,0.2); z-index:29; display:none; }
-  #overlay.show { display:block; }
+  #overlay { display:none; }
 
   /* ── Main Content ── */
   #main-content { flex:1; display:flex; flex-direction:column; align-items:center; height:100vh; overflow:auto; user-select:none; }
@@ -53,6 +51,11 @@
   .nav-btn { background:#F5EFE6; border:none; color:#2B2B2B; width:36px; height:36px; border-radius:10px; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.15s; }
   .nav-btn:hover { background:#EBE5DA; }
   .nav-btn:disabled { opacity:0.3; cursor:default; }
+  .avatar { width:32px; height:32px; border-radius:50%; background:#F5EFE6; display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; margin-left:2px; position:relative; }
+  .avatar-menu { display:none; position:absolute; top:40px; right:0; background:#FDFBF7; border:1px solid #F2EBE0; border-radius:12px; padding:4px; min-width:140px; box-shadow:0 4px 16px rgba(0,0,0,0.1); z-index:50; }
+  .avatar-menu.show { display:block; }
+  .avatar-menu button { display:block; width:100%; padding:8px 12px; border:none; background:none; font-family:'Nunito',system-ui,sans-serif; font-size:12px; cursor:pointer; border-radius:8px; text-align:left; color:#2B2B2B; }
+  .avatar-menu button:hover { background:#F5EFE6; }
   .capture-btn { background:#C45353; color:#fff; border:none; font-family:'Nunito',system-ui,sans-serif; font-size:11px; font-weight:700; padding:6px 14px; border-radius:10px; cursor:pointer; transition:background 0.15s; display:flex; align-items:center; gap:4px; }
   .capture-btn:hover { background:#A84444; }
   .capture-btn:disabled { background:#D4A0A0; }
@@ -89,20 +92,30 @@
   .footer-nav .nav-btn:last-child { border-radius:0 10px 10px 0; }
   .shortcut-hint { font-size:9px; color:#C2B8A8; text-align:center; padding-bottom:8px; }
   .dock {
-    position:fixed; bottom:0; left:0; right:0; z-index:15;
-    background:#FDFBF7; border-top:1px solid #F2EBE0;
-    padding:6px 16px; display:flex; align-items:center; justify-content:center; gap:8px;
-    box-shadow:0 -4px 16px rgba(120,88,72,0.06);
-    flex-wrap:wrap;
+    position:fixed; bottom:12px; left:50%; transform:translateX(-50%); z-index:15;
+    background:#FDFBF7; border:1px solid #F2EBE0;
+    padding:4px; display:flex; align-items:center; justify-content:center; gap:2px;
+    border-radius:20px; box-shadow:0 4px 16px rgba(120,88,72,0.10);
   }
-  .dock .meta-section { margin-bottom:0; }
-  .dock .meta-label { display:none; }
-  .dock .state-tabs { margin-bottom:0; }
-  .dock .state-goal { max-width:300px; margin:4px 0 0 12px; padding:4px 8px; }
-  .dock .state-goal p { font-size:10px; }
-  .dock .state-goal .meta-label { font-size:8px; }
-  .dock .capture-btn { font-size:11px; padding:6px 14px; flex-shrink:0; }
-  #main-content { padding-bottom:56px; }
+  .dock-tool {
+    font-family:'Nunito',system-ui,sans-serif;
+    font-size:16px; padding:6px 10px; border-radius:16px;
+    border:none; background:transparent; color:#8A8075;
+    cursor:pointer; transition:all 0.2s;
+    white-space:nowrap; display:flex; align-items:center; gap:6px;
+    line-height:1;
+  }
+  .dock-tool:hover { background:#F5EFE6; color:#2B2B2B; }
+  .dock-tool.active { background:#FFEAE5; color:#C45353; font-weight:600; font-size:12px; padding:6px 14px; }
+  #main-content { padding-bottom:60px; }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:50; display:none; align-items:center; justify-content:center; }
+  .modal-overlay.show { display:flex; }
+  .modal-box { background:#FDFBF7; border-radius:16px; padding:24px; max-width:340px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.15); }
+  .modal-box h3 { font-size:16px; margin-bottom:16px; }
+  .modal-box kbd { background:#F5EFE6; padding:2px 8px; border-radius:6px; font-size:11px; font-family:monospace; font-weight:600; }
+  .modal-box .row { display:flex; justify-content:space-between; padding:6px 0; font-size:13px; }
+  .modal-close { float:right; border:none; background:none; cursor:pointer; font-size:18px; color:#8A8075; }
 
   .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#2B2B2B; color:#fff; font-size:12px; font-weight:600; padding:8px 20px; border-radius:10px; opacity:0; transition:opacity 0.25s; pointer-events:none; z-index:100; }
   .toast.show { opacity:1; }
@@ -113,14 +126,23 @@
 <body>
 
 <!-- DRAWER -->
-<nav id="sidebar"></nav>
-<div id="overlay" onclick="closeDrawer()"></div>
-<button class="burger-btn" onclick="toggleDrawer()" title="Screens" aria-label="Menu">
-  <span></span><span></span><span></span>
-</button>
+<nav id="sidebar"><div id="sidebar-inner"></div></nav>
 
 <!-- MAIN -->
 <div id="main-content"></div>
+
+<!-- HELP MODAL -->
+<div class="modal-overlay" id="help-modal" onclick="closeHelpModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="document.getElementById('help-modal').classList.remove('show')">✕</button>
+    <h3>Keyboard Shortcuts</h3>
+    <div class="row"><span><kbd>←</kbd> <kbd>→</kbd></span><span>Prev / Next screen</span></div>
+    <div class="row"><span><kbd>\</kbd></span><span>Toggle drawer</span></div>
+    <div class="row"><span><kbd>Esc</kbd></span><span>Back to start</span></div>
+    <div class="row"><span>☰</span><span>Burger menu (top-left)</span></div>
+    <div class="row"><span>Next at end</span><span>→ Summary page</span></div>
+  </div>
+</div>
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
@@ -151,12 +173,10 @@ function screenName(f) {
 
 // ── Drawer ──
 function toggleDrawer() {
-  const open = document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('overlay').classList.toggle('show', open);
+  document.getElementById('sidebar').classList.toggle('open');
 }
 function closeDrawer() {
   document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('overlay').classList.remove('show');
 }
 window.toggleDrawer = toggleDrawer;
 window.closeDrawer = closeDrawer;
@@ -182,7 +202,7 @@ function renderSidebar(activeScreen) {
     }
     html += '</div>';
   }
-  document.getElementById('sidebar').innerHTML = html;
+  document.getElementById('sidebar-inner').innerHTML = html;
 }
 
 function highlightSidebar(screen) {
@@ -374,7 +394,9 @@ function showViewer(idx) {
 
   document.getElementById('main-content').innerHTML = `
   <div class="toolbar">
-    <div></div>
+    <button class="burger-btn" onclick="toggleDrawer()" title="Screens" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
     <div style="text-align:center">
       <div class="name">${name}<span class="tier-chip">${meta?.tier ?? ''}</span></div>
     </div>
@@ -390,10 +412,55 @@ function showViewer(idx) {
     </div>
     ${metaPanelHtml}
   </div>
-  <div class="dock"><button class="capture-btn" onclick="window.captureScreen()">📷 Capture</button></div>
-  <p class="shortcut-hint">Arrow keys ← → to navigate &nbsp;|&nbsp; Esc to reset &nbsp;|&nbsp; \ or ☰ to open drawer &nbsp;|&nbsp; Next at end → Summary</p>
+  <div class="dock" id="dock">
+    <button class="dock-tool" data-icon="📷" data-label="Capture" onclick="toggleDockTool(this, () => window.captureScreen())">📷</button>
+    <button class="dock-tool" data-icon="🏷" data-label="States" onclick="toggleDockTool(this, null)">🏷</button>
+    <button class="dock-tool" data-icon="📋" data-label="Summary" onclick="toggleDockTool(this, () => goNext())">📋</button>
+    <button class="dock-tool" data-icon="📊" data-label="Export" onclick="toggleDockTool(this, null)">📊</button>
+    <div style="width:1px;height:20px;background:#EBE5DA;margin:0 4px"></div>
+    <button class="dock-tool" data-icon="❓" data-label="Help" onclick="toggleDockTool(this, () => showHelpModal())">❓</button>
+  </div>
   `;
 }
+
+// ── Dock Tools ──
+function toggleDockTool(btn, action) {
+  const wasActive = btn.classList.contains('active');
+  // Collapse all to icon-only
+  document.querySelectorAll('.dock-tool').forEach(b => {
+    b.classList.remove('active');
+    b.textContent = b.dataset.icon || '';
+  });
+  // If wasn't active, expand it
+  if (!wasActive) {
+    btn.classList.add('active');
+    btn.textContent = (btn.dataset.icon || '') + ' ' + (btn.dataset.label || '');
+    if (action) action();
+  }
+}
+// ── Help Modal ──
+function showHelpModal() {
+  document.getElementById('help-modal').classList.add('show');
+}
+function closeHelpModal(e) {
+  if (!e || e.target === document.getElementById('help-modal')) {
+    document.getElementById('help-modal').classList.remove('show');
+  }
+}
+window.showHelpModal = showHelpModal;
+window.closeHelpModal = closeHelpModal;
+
+// ── Avatar Menu ──
+function toggleAvatarMenu(e) {
+  e.stopPropagation();
+  document.getElementById('avatar-menu').classList.toggle('show');
+}
+document.addEventListener('click', () => {
+  document.getElementById('avatar-menu')?.classList.remove('show');
+});
+window.toggleAvatarMenu = toggleAvatarMenu;
+
+window.toggleDockTool = toggleDockTool;
 
 // ── Summary Page ──
 let summaryTable = ''; // cached for re-render
