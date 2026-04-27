@@ -10,12 +10,16 @@
   body { font-family:'Nunito',system-ui,sans-serif; background:#F5EDE0; color:#2B2B2B; display:flex; height:100vh; overflow:hidden; }
   .hidden { display:none !important; }
 
-  /* ── Sidebar ── */
+  /* ── Drawer ── */
   #sidebar {
-    width:240px; min-width:240px; height:100vh; overflow-y:auto;
+    position:fixed; left:-260px; top:0; z-index:30;
+    width:260px; height:100vh; overflow-y:auto;
     background:#FDFBF7; border-right:1px solid #F2EBE0;
     padding:16px 12px; user-select:none;
+    transition:left 0.25s ease;
+    box-shadow:4px 0 16px rgba(0,0,0,0.08);
   }
+  #sidebar.open { left:0; }
   #sidebar h3 { font-size:13px; font-weight:700; margin-bottom:4px; }
   #sidebar .sub { font-size:10px; color:#8A8075; margin-bottom:16px; }
   .tier-group { margin-bottom:12px; }
@@ -27,21 +31,22 @@
   }
   .side-link:hover { background:#F5EFE6; }
   .side-link.active { background:#FFEAE5; color:#C45353; font-weight:600; }
-  .sidebar-toggle {
-    position:fixed; left:244px; top:12px; z-index:20;
-    width:24px; height:24px; border-radius:6px; border:1px solid #EBE5DA;
-    background:#FDFBF7; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center;
-    transition:left 0.25s;
+  .burger-btn {
+    position:fixed; left:16px; top:14px; z-index:25;
+    width:32px; height:32px; border-radius:8px; border:1px solid #EBE5DA;
+    background:#FDFBF7; cursor:pointer; font-size:16px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
   }
-  #sidebar.collapsed + .sidebar-toggle { left:0; }
-  #sidebar.collapsed { margin-left:-240px; }
+  .burger-btn span { display:block; width:16px; height:2px; background:#8A8075; border-radius:1px; transition:all 0.2s; }
+  #overlay { position:fixed; inset:0; background:rgba(0,0,0,0.2); z-index:29; display:none; }
+  #overlay.show { display:block; }
 
   /* ── Main Content ── */
   #main-content { flex:1; display:flex; flex-direction:column; align-items:center; height:100vh; overflow:auto; user-select:none; }
 
   .toolbar { width:100%; display:flex; align-items:center; justify-content:space-between;
-    padding:10px 16px 10px 40px; background:#FDFBF7; border-bottom:1px solid #F2EBE0;
-    position:sticky; top:0; z-index:10; }
+    padding:10px 16px; background:#FDFBF7; border-bottom:1px solid #F2EBE0;
+    position:sticky; top:0; z-index:9; }
   .toolbar .name { font-size:14px; font-weight:600; }
   .toolbar .pos { font-size:11px; color:#8A8075; }
   .toolbar .tier-chip { font-size:10px; padding:2px 8px; border-radius:10px; background:#EAE1D4; color:#8A8075; font-weight:600; margin-left:6px; }
@@ -83,6 +88,22 @@
   .footer-nav .nav-btn:first-child { border-radius:10px 0 0 10px; border-right:1px solid #EBE5DA; }
   .footer-nav .nav-btn:last-child { border-radius:0 10px 10px 0; }
   .shortcut-hint { font-size:9px; color:#C2B8A8; text-align:center; padding-bottom:8px; }
+  .dock {
+    position:fixed; bottom:0; left:0; right:0; z-index:15;
+    background:#FDFBF7; border-top:1px solid #F2EBE0;
+    padding:6px 16px; display:flex; align-items:center; justify-content:center; gap:8px;
+    box-shadow:0 -4px 16px rgba(120,88,72,0.06);
+    flex-wrap:wrap;
+  }
+  .dock .meta-section { margin-bottom:0; }
+  .dock .meta-label { display:none; }
+  .dock .state-tabs { margin-bottom:0; }
+  .dock .state-goal { max-width:300px; margin:4px 0 0 12px; padding:4px 8px; }
+  .dock .state-goal p { font-size:10px; }
+  .dock .state-goal .meta-label { font-size:8px; }
+  .dock .capture-btn { font-size:11px; padding:6px 14px; flex-shrink:0; }
+  #main-content { padding-bottom:56px; }
+
   .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#2B2B2B; color:#fff; font-size:12px; font-weight:600; padding:8px 20px; border-radius:10px; opacity:0; transition:opacity 0.25s; pointer-events:none; z-index:100; }
   .toast.show { opacity:1; }
   .toast.ok { background:#2D6A4F; }
@@ -91,9 +112,12 @@
 </head>
 <body>
 
-<!-- SIDEBAR -->
+<!-- DRAWER -->
 <nav id="sidebar"></nav>
-<div class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">◀</div>
+<div id="overlay" onclick="closeDrawer()"></div>
+<button class="burger-btn" onclick="toggleDrawer()" title="Screens" aria-label="Menu">
+  <span></span><span></span><span></span>
+</button>
 
 <!-- MAIN -->
 <div id="main-content"></div>
@@ -125,11 +149,17 @@ function screenName(f) {
     .replace('Floating Bottom Nav','Floating Bottom Nav (shell)').replace('Pin Setup','PIN Setup/Change');
 }
 
-// ── Sidebar Toggle ──
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('collapsed');
+// ── Drawer ──
+function toggleDrawer() {
+  const open = document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show', open);
 }
-window.toggleSidebar = toggleSidebar;
+function closeDrawer() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+}
+window.toggleDrawer = toggleDrawer;
+window.closeDrawer = closeDrawer;
 
 // ── Toast ──
 function toast(msg, ok = true) {
@@ -163,6 +193,7 @@ function highlightSidebar(screen) {
 }
 
 function selectScreen(name) {
+  closeDrawer();
   const idx = orderedScreens.indexOf(name);
   if (idx >= 0) showViewer(idx);
 }
@@ -191,7 +222,12 @@ async function captureScreen(filename) {
     toast('Capture failed: ' + e.message, false);
   }
 }
-window.captureScreen = () => captureScreen(orderedScreens[currentIndex] + (currentState !== 'default' ? '_' + currentState : '') + '.png');
+window.captureScreen = () => {
+  const meta = metadata?.screens?.[currentScreen];
+  const firstState = (meta?.states || ['default'])[0];
+  const suffix = (currentState !== 'default' && currentState !== firstState) ? '_' + currentState : '';
+  captureScreen('phone_' + orderedScreens[currentIndex] + suffix + '.png');
+};
 
 // ── State Tabs ──
 function sendStateToIframe(key) {
@@ -338,16 +374,14 @@ function showViewer(idx) {
 
   document.getElementById('main-content').innerHTML = `
   <div class="toolbar">
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:11px;color:#8A8075">${idx + 1}/${total}</span>
-    </div>
+    <div></div>
     <div style="text-align:center">
       <div class="name">${name}<span class="tier-chip">${meta?.tier ?? ''}</span></div>
     </div>
-    <div style="display:flex;align-items:center;gap:6px">
-      <button class="capture-btn" onclick="window.captureScreen()">📷 Capture</button>
+    <div style="display:flex;align-items:center;gap:4px">
       <button class="nav-btn" onclick="goPrev()"${prev ? '' : ' disabled'}>◀</button>
-      <button class="nav-btn" onclick="goNext()"${next ? '' : ' disabled'}>▶</button>
+      <span style="font-size:13px;font-weight:600;color:#2B2B2B;min-width:50px;text-align:center">${idx + 1}/${total}</span>
+      <button class="nav-btn" onclick="goNext()">▶</button>
     </div>
   </div>
   <div class="main-layout">
@@ -356,13 +390,236 @@ function showViewer(idx) {
     </div>
     ${metaPanelHtml}
   </div>
-  <div class="footer-nav">
-    <button class="nav-btn" onclick="goPrev()"${prev ? '' : ' disabled'}>◀ Prev</button>
-    <button class="nav-btn" onclick="goNext()"${next ? '' : ' disabled'}>Next ▶</button>
-  </div>
-  <p class="shortcut-hint">Arrow keys ← → to navigate &nbsp;|&nbsp; Esc to reset &nbsp;|&nbsp; \ to toggle sidebar</p>
+  <div class="dock"><button class="capture-btn" onclick="window.captureScreen()">📷 Capture</button></div>
+  <p class="shortcut-hint">Arrow keys ← → to navigate &nbsp;|&nbsp; Esc to reset &nbsp;|&nbsp; \ or ☰ to open drawer &nbsp;|&nbsp; Next at end → Summary</p>
   `;
 }
+
+// ── Summary Page ──
+let summaryTable = ''; // cached for re-render
+
+function showSummary() {
+  currentIndex = -2;
+  currentScreen = '';
+  highlightSidebar(null);
+  document.title = 'Summary — All Screens';
+  history.replaceState({}, '', '?file=summary');
+
+  const existing = Object.keys(metadata?.screens || {});
+  const device = 'phone';
+  const ext = 'png';
+  let totalStates = 0;
+
+  let tierSections = '';
+  for (const [tier, { label, screens }] of Object.entries(TIERS)) {
+    const ex = screens.filter(s => existing.includes(s));
+    if (!ex.length) continue;
+    let rows = '';
+    for (const s of ex) {
+      const meta = metadata.screens[s];
+      const states = meta?.states || ['default'];
+      totalStates += states.length;
+      const stateChips = states.map(st => `<span class="sum-chip">${st}</span>`).join(' ');
+      const firstState = states[0];
+            rows += `<tr>
+        <td><a href="?file=${s}" onclick="event.preventDefault();selectScreen('${s}')">${screenName(s)}</a></td>
+        <td>${states.length}</td>
+        <td>${stateChips}</td>
+        <td class="sum-files">${states.map(st => {
+          const isDef = st === 'default' || st === firstState;
+          const fname = device + '_' + s + (isDef ? '' : '_' + st) + '.' + ext;
+          return `<code>${fname}</code>`;
+        }).join('<br>')}</td>
+      </tr>`;
+    }
+    tierSections += `<tr class="tier-header"><td colspan="4">${tier} — ${label}</td></tr>${rows}`;
+  }
+
+  document.getElementById('main-content').innerHTML = `
+  <div class="toolbar">
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="nav-btn" onclick="goPrev()" title="Back to last screen">◀</button>
+    </div>
+    <div style="text-align:center">
+      <div class="name">Summary — All Screens</div>
+      <div class="pos">${orderedScreens.length} screens · ${totalStates} states</div>
+    </div>
+    <div>
+      <button class="capture-btn" onclick="captureAllStates()" style="font-size:13px;padding:10px 24px">📷 Create Baseline (${totalStates} images)</button>
+    </div>
+  </div>
+  <div style="padding:16px 20px;max-width:1100px;width:100%;margin:0 auto;overflow:auto">
+    <div style="display:flex;gap:24px;margin-bottom:20px;padding:16px;background:#FDFBF7;border-radius:14px;box-shadow:0 2px 8px rgba(120,88,72,0.06)">
+      <div style="text-align:center"><div style="font-size:28px;font-weight:700;color:#C45353">${orderedScreens.length}</div><div style="font-size:11px;color:#8A8075">Screens</div></div>
+      <div style="text-align:center"><div style="font-size:28px;font-weight:700;color:#C45353">${totalStates}</div><div style="font-size:11px;color:#8A8075">Total States</div></div>
+      <div style="text-align:center;flex:1"><code style="font-size:12px;background:#F5EFE6;padding:4px 8px;border-radius:6px">${device}_&lt;filename&gt;_&lt;state&gt;.${ext}</code><div style="font-size:11px;color:#8A8075;margin-top:4px">Naming convention</div></div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;background:#FDFBF7;border-radius:12px;overflow:hidden">
+      <thead><tr style="text-align:left;border-bottom:1px solid #F2EBE0">
+        <th style="padding:10px 14px;font-size:11px;color:#8A8075">Screen</th>
+        <th style="padding:10px 14px;font-size:11px;color:#8A8075">#</th>
+        <th style="padding:10px 14px;font-size:11px;color:#8A8075">States</th>
+        <th style="padding:10px 14px;font-size:11px;color:#8A8075">Output Files</th>
+      </tr></thead>
+      <tbody>${tierSections}</tbody>
+    </table>
+  </div>
+  <p class="shortcut-hint">◀ back to last screen &nbsp;|&nbsp; Click screen to review &nbsp;|&nbsp; 📷 to generate all baselines</p>
+  `;
+
+  // Add summary table styles
+  if (!document.getElementById('sum-styles')) {
+    const s = document.createElement('style');
+    s.id = 'sum-styles';
+    s.textContent = `
+      .sum-chip { font-size:10px; padding:2px 8px; border-radius:8px; background:#F5EFE6; color:#5A5A5A; font-weight:600; white-space:nowrap; }
+      .sum-files code { font-size:9px; background:#F9F6EE; padding:1px 6px; border-radius:4px; color:#8A8075; }
+      table td { padding:8px 14px; border-bottom:1px solid #F8F4EC; font-size:12px; }
+      table a { color:#C45353; text-decoration:none; }
+      table a:hover { text-decoration:underline; }
+    `;
+    document.head.appendChild(s);
+  }
+}
+
+// ── Capture All States ──
+async function captureAllStates() {
+  const device = 'phone';
+  const ext = 'png';
+  const queue = [];
+  for (const s of orderedScreens) {
+    const meta = metadata.screens[s];
+    const states = meta?.states || ['default'];
+    const firstState = states[0];
+    for (const st of states) {
+      const isDef = st === 'default' || st === firstState;
+      queue.push({ screen:s, state:st, filename:device + '_' + s + (isDef ? '' : '_' + st) + '.' + ext });
+    }
+  }
+
+  const total = queue.length;
+  const results = [];
+  window._captureStop = false;
+
+  // Show progress UI
+  document.getElementById('main-content').innerHTML = `
+  <div class="toolbar">
+    <div><button class="nav-btn" onclick="window._captureStop=true">✕ Cancel</button></div>
+    <div class="name">Creating Baseline...</div>
+    <div class="pos" id="cap-progress">0/${total}</div>
+  </div>
+  <div style="padding:28px 16px;text-align:center">
+    <p id="cap-current" style="color:#8A8075;margin-bottom:4px">Starting...</p>
+    <p id="cap-detail" style="font-size:10px;color:#C2B8A8;margin-bottom:12px"></p>
+    <div id="cap-results" style="max-height:280px;overflow-y:auto;text-align:left;max-width:520px;margin:0 auto"></div>
+  </div>`;
+
+  for (let i = 0; i < queue.length; i++) {
+    if (window._captureStop) {
+      results.push({ filename: queue[i].filename, ok: false, error: 'cancelled' });
+      continue;
+    }
+    const item = queue[i];
+    document.getElementById('cap-progress').textContent = `${i + 1}/${total}`;
+    document.getElementById('cap-current').textContent = item.filename;
+    document.getElementById('cap-detail').textContent = `${screenName(item.screen)} → ${item.state}`;
+
+    let wrapper = null;
+    try {
+      wrapper = await captureOneState(item);
+      results.push({ filename: item.filename, ok: true });
+      const resDiv = document.getElementById('cap-results');
+      resDiv.innerHTML += `<div style="font-size:10px;color:#2D6A4F;padding:1px 0">✓ ${item.filename}</div>`;
+      resDiv.scrollTop = resDiv.scrollHeight;
+    } catch(e) {
+      results.push({ filename: item.filename, ok: false, error: e.message });
+      const resDiv = document.getElementById('cap-results');
+      resDiv.innerHTML += `<div style="font-size:10px;color:#C45353;padding:1px 0">✗ ${item.filename} — ${e.message}</div>`;
+      resDiv.scrollTop = resDiv.scrollHeight;
+    } finally {
+      if (wrapper) wrapper.remove();
+    }
+  }
+
+  const done = results.filter(r => r.ok).length;
+  const failed = results.filter(r => !r.ok).length;
+  window._captureStop = false;
+
+  if (failed > 0) {
+    toast(`Baseline: ${done}/${total} OK, ${failed} failed`, false);
+    console.error('Capture failures:', results.filter(r => !r.ok).map(r => `${r.filename}: ${r.error}`).join(', '));
+  } else {
+    toast(`Baseline complete: ${done} files saved`, true);
+  }
+  showSummary();
+}
+
+async function captureOneState(item) {
+  const screenStates = metadata.screens[item.screen]?.states || ['default'];
+  const firstState = screenStates[0];
+  const isFirst = item.state === 'default' || item.state === firstState;
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:390px;height:844px;overflow:hidden;pointer-events:none';
+
+  const ifr = document.createElement('iframe');
+  ifr.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+  ifr.style.cssText = 'width:390px;height:844px;border:none;display:block';
+  wrapper.appendChild(ifr);
+  document.body.appendChild(wrapper);
+
+  // Load base HTML first
+  ifr.src = `/screens/${item.screen}.html`;
+  await waitForIframeLoad(ifr, 15000);
+
+  // Detect contract
+  let hasContract = false;
+  try { hasContract = typeof ifr.contentWindow?.__baseline?.setState === 'function'; } catch(_) {}
+
+  if (!isFirst) {
+    if (hasContract) {
+      // Contract-compliant: postMessage for in-HTML state switching
+      ifr.contentWindow.postMessage({ type:'setState', state: item.state }, '*');
+      await sleep(500);
+    } else {
+      // Non-contract fallback: load variant HTML file
+      ifr.src = `/screens/${item.screen}_${item.state}.html`;
+      await waitForIframeLoad(ifr, 15000);
+    }
+  }
+
+  await sleep(300);
+
+  if (!ifr?.contentDocument?.body) {
+    throw new Error('iframe body not accessible');
+  }
+
+  const canvas = await html2canvas(ifr.contentDocument.body, {
+    width: 390, height: 844, scale: 2,
+    backgroundColor: '#ffffff', useCORS: true, allowTaint: true,
+  });
+  const dataUrl = canvas.toDataURL('image/png');
+  const res = await fetch('/api/capture', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename: item.filename, data: dataUrl }),
+  });
+  const result = await res.json();
+  if (!result.ok) throw new Error(result.error || 'save failed');
+
+  return wrapper;
+}
+
+function waitForIframeLoad(ifr, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('timeout')), timeoutMs);
+    ifr.onload = () => { clearTimeout(timer); resolve(); };
+    ifr.onerror = () => { clearTimeout(timer); reject(new Error('load error')); };
+  });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+window.captureAllStates = captureAllStates;
 
 // ── Init ──
 async function init() {
@@ -402,7 +659,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
   if (e.key === 'ArrowRight') { e.preventDefault(); goNext(); }
   if (e.key === 'Escape') { history.pushState({}, '', '/'); location.reload(); }
-  if (e.key === '\\') { e.preventDefault(); toggleSidebar(); }
+  if (e.key === '\\') { e.preventDefault(); toggleDrawer(); }
 });
 
 // Init on load
