@@ -1,0 +1,22 @@
+{
+  "name": "golden",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "review": "vite",
+    "review:old": "npx tsx dev-server.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^25.6.0",
+    "playwright": "^1.59.1",
+    "tsx": "^4.21.0",
+    "vite": "^6.4.2",
+    "vitest": "^4.1.5"
+  }
+}
