@@ -40,7 +40,7 @@
   #main-content { flex:1; display:flex; flex-direction:column; align-items:center; height:100vh; overflow:auto; user-select:none; }
 
   .toolbar { width:100%; display:flex; align-items:center; justify-content:space-between;
-    padding:10px 16px; background:#FDFBF7; border-bottom:1px solid #F2EBE0;
+    padding:10px 16px 10px 40px; background:#FDFBF7; border-bottom:1px solid #F2EBE0;
     position:sticky; top:0; z-index:10; }
   .toolbar .name { font-size:14px; font-weight:600; }
   .toolbar .pos { font-size:11px; color:#8A8075; }
@@ -204,7 +204,13 @@ function sendStateToIframe(key) {
 
 function onIframeLoad() {
   if (currentState !== 'default') {
-    setTimeout(() => sendStateToIframe(currentState), 200);
+    const iframe = document.getElementById('phone-frame');
+    const hasContract = !!iframe?.contentWindow?.__baseline?.setState;
+    if (hasContract) {
+      // Contract-compliant baseline — re-apply state via postMessage
+      setTimeout(() => sendStateToIframe(currentState), 200);
+    }
+    // Non-compliant baselines: variant-file URL already shows correct state
   }
 }
 window.onIframeLoad = onIframeLoad;
@@ -231,23 +237,38 @@ function showState(key) {
     }
   }
   currentState = key;
-  // Switch iframe src to state variant file
+
   const iframe = document.getElementById('phone-frame');
-  if (iframe && currentScreen) {
-    const meta = metadata?.screens?.[currentScreen];
-    const states = meta?.states || [];
-    if (key === 'default' || key === states[0]) {
-      iframe.src = `/screens/${currentScreen}.html`;
-    } else {
-      iframe.src = `/screens/${currentScreen}_${key}.html`;
-    }
+  if (!iframe || !currentScreen) return;
+
+  // Approach 1: postMessage for contract-compliant baselines (no reload)
+  // Skip 'default' — baselines use 'data'/'add'/'setup' etc. as first state, not 'default'
+  const hasContract = !!iframe.contentWindow?.__baseline?.setState;
+  if (hasContract && key !== 'default') {
+    sendStateToIframe(key);
+    return;
+  }
+
+  // Approach 2: load state-variant file for non-compliant baselines
+  const meta = metadata?.screens?.[currentScreen];
+  const states = meta?.states || [];
+  if (key === 'default' || key === states[0]) {
+    iframe.src = `/screens/${currentScreen}.html`;
+  } else {
+    iframe.src = `/screens/${currentScreen}_${key}.html`;
   }
 }
 window.showState = showState;
 
 // ── Navigation ──
-function goPrev() { if (currentIndex > 0) showViewer(currentIndex - 1); }
-function goNext() { if (currentIndex < orderedScreens.length - 1) showViewer(currentIndex + 1); }
+function goPrev() {
+  if (currentIndex === -2) { showViewer(orderedScreens.length - 1); return; }
+  if (currentIndex > 0) showViewer(currentIndex - 1);
+}
+function goNext() {
+  if (currentIndex === orderedScreens.length - 1) { showSummary(); return; }
+  if (currentIndex >= 0 && currentIndex < orderedScreens.length - 1) showViewer(currentIndex + 1);
+}
 window.goPrev = goPrev;
 window.goNext = goNext;
 
@@ -339,7 +360,7 @@ function showViewer(idx) {
     <button class="nav-btn" onclick="goPrev()"${prev ? '' : ' disabled'}>◀ Prev</button>
     <button class="nav-btn" onclick="goNext()"${next ? '' : ' disabled'}>Next ▶</button>
   </div>
-  <p class="shortcut-hint">Arrow keys ← → to navigate &nbsp;|&nbsp; Esc for index &nbsp;|&nbsp; \ to toggle sidebar</p>
+  <p class="shortcut-hint">Arrow keys ← → to navigate &nbsp;|&nbsp; Esc to reset &nbsp;|&nbsp; \ to toggle sidebar</p>
   `;
 }
 
