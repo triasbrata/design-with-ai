@@ -473,11 +473,13 @@ export default function App() {
             onToggle={() => setLeftDrawerOpen((p) => !p)}
             pinned={leftPinned}
             onPinToggle={() => setLeftPinned((p) => !p)}
+            projects={projects}
+            activeIndex={activeIndex}
+            onSelectWorkspace={setActive}
             screens={orderedScreens}
             activeScreen={currentScreen}
+            onSelectScreen={navigate}
             metadata={metadata}
-            onSelect={navigate}
-            projectName={projectLabel}
           />
           <ChatDrawer
             open={chatDrawerOpen}

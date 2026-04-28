@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { PanelLeft, Pin, X, ChevronDown, ChevronRight, Folder } from "./base/icons";
 import { screenName, TIERS } from "../constants";
-import type { Metadata } from "../types";
+import type { Metadata, Project } from "../types";
 
 interface LeftDrawerProps {
   open: boolean;
   onToggle: () => void;
   pinned: boolean;
   onPinToggle: () => void;
+  projects: Project[];
+  activeIndex: number;
+  onSelectWorkspace: (idx: number, folderIdx?: number) => void;
   screens: string[];
   activeScreen: string;
+  onSelectScreen: (screen: string) => void;
   metadata: Metadata | null;
-  onSelect: (screen: string) => void;
-  projectName: string;
 }
 
 export function LeftDrawer({
@@ -20,16 +22,28 @@ export function LeftDrawer({
   onToggle,
   pinned,
   onPinToggle,
+  projects,
+  activeIndex,
+  onSelectWorkspace,
   screens,
   activeScreen,
+  onSelectScreen,
   metadata,
-  onSelect,
-  projectName,
 }: LeftDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
-  const [projectOpen, setProjectOpen] = useState(true);
-  const [screensOpen, setScreensOpen] = useState(true);
-  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  /** Track expanded/collapsed tree nodes: "w:{idx}" = workspace, "f:{wsIdx}-{fi}" = folder */
+  const [openNodes, setOpenNodes] = useState<Set<string>>(new Set());
+
+  const isOpen = (key: string) => openNodes.has(key);
+  const toggleNode = (key: string) => {
+    setOpenNodes((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!open || pinned) return;
@@ -42,12 +56,18 @@ export function LeftDrawer({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open, onToggle, pinned]);
 
+  // Reset tree on open: expand active workspace + active folder
   useEffect(() => {
     if (open) {
-      setProjectOpen(true);
-      setScreensOpen(true);
+      const next = new Set<string>();
+      next.add(`w:${activeIndex}`);
+      const project = projects[activeIndex];
+      if (project?.type === "workspace") {
+        next.add(`f:${activeIndex}-${project.activeFolder}`);
+      }
+      setOpenNodes(next);
     }
-  }, [open]);
+  }, [open, activeIndex, projects]);
 
   const existing = useMemo(() => new Set(screens), [screens]);
 
@@ -73,81 +93,106 @@ export function LeftDrawer({
             </button>
           </div>
 
-          {/* Project section */}
-          <div className="ld-section">
-            <button className="ld-section-header" onClick={() => setProjectOpen((p) => !p)}>
-              <span className="ld-chevron">{projectOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
-              <Folder size={14} />
-              <span className="ld-section-title">Project</span>
-            </button>
-            {projectOpen && (
-              <div className="ld-section-body">
-                <div className="ld-project-name">{projectName || "No project"}</div>
-              </div>
-            )}
-          </div>
+          {projects.map((project, idx) => {
+            if (project.type === "client") {
+              // Client projects: inline list item
+              const isActive = idx === activeIndex;
+              return (
+                <button
+                  key={idx}
+                  className={`ld-workspace-header${isActive ? " active" : ""}`}
+                  onClick={() => onSelectWorkspace(idx)}
+                >
+                  <Folder size={14} />
+                  <span className="ld-ws-name">{project.name}</span>
+                </button>
+              );
+            }
 
-          {/* Screens section */}
-          <div className="ld-section">
-            <button className="ld-section-header" onClick={() => setScreensOpen((p) => !p)}>
-              <span className="ld-chevron">{screensOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
-              <Folder size={14} />
-              <span className="ld-section-title">Screens</span>
-              <span className="ld-section-count">{screens.length}</span>
-            </button>
-            {screensOpen && (
-              <div className="ld-section-body">
-                {Object.entries(TIERS).map(([tier, info]) => {
-                  const tierScreens = info.screens.filter((s) => existing.has(s));
-                  if (!tierScreens.length) return null;
-                  return (
-                    <div className="ld-tier-group" key={tier}>
-                      <div className="ld-tier-label">{tier} &mdash; {info.label}</div>
-                      {tierScreens.map((s) => (
-                        <button
-                          key={s}
-                          className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
-                          onClick={() => { onSelect(s); onToggle(); }}
-                          title={screenName(s)}
-                        >
-                          {screenName(s)}
-                        </button>
-                      ))}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+            const wsKey = `w:${idx}`;
+            const wsExpanded = isOpen(wsKey);
 
-          {/* Details section */}
-          <div className="ld-section">
-            <button className="ld-section-header" onClick={() => setDetailsOpen((p) => !p)}>
-              <span className="ld-chevron">{detailsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
-              <Folder size={14} />
-              <span className="ld-section-title">Details</span>
-            </button>
-            {detailsOpen && metadata && (
-              <div className="ld-section-body">
-                <div className="ld-meta-row">
-                  <span className="ld-meta-label">Version</span>
-                  <span className="ld-meta-value">{metadata.meta.version}</span>
-                </div>
-                <div className="ld-meta-row">
-                  <span className="ld-meta-label">Last Updated</span>
-                  <span className="ld-meta-value">{metadata.meta.lastUpdated}</span>
-                </div>
-                <div className="ld-meta-row">
-                  <span className="ld-meta-label">Screens</span>
-                  <span className="ld-meta-value">{metadata.meta.totalScreens}</span>
-                </div>
-                <div className="ld-meta-row">
-                  <span className="ld-meta-label">Components</span>
-                  <span className="ld-meta-value">{Object.keys(metadata.components).length}</span>
-                </div>
+            return (
+              <div className="ld-workspace-group" key={idx}>
+                <button
+                  className="ld-workspace-header"
+                  onClick={() => toggleNode(wsKey)}
+                >
+                  <span className="ld-chevron">
+                    {wsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  </span>
+                  <Folder size={14} />
+                  <span className="ld-ws-name">{project.name}</span>
+                </button>
+
+                {wsExpanded && (
+                  <div className="ld-folder-list">
+                    {project.folders.map((folder, fi) => {
+                      const fKey = `f:${idx}-${fi}`;
+                      const fExpanded = isOpen(fKey);
+                      const isActiveFolder = idx === activeIndex && fi === project.activeFolder;
+
+                      return (
+                        <div className="ld-folder-group" key={fi}>
+                          <button
+                            className={`ld-folder-header${isActiveFolder ? " active" : ""}`}
+                            onClick={() => {
+                              onSelectWorkspace(idx, fi);
+                              toggleNode(fKey);
+                            }}
+                          >
+                            <span className="ld-chevron">
+                              {fExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                            </span>
+                            <Folder size={12} />
+                            <span className="ld-folder-name">{folder.name}</span>
+                          </button>
+
+                          {fExpanded && isActiveFolder && (
+                            <div className="ld-screen-list">
+                              {Object.entries(TIERS).map(([tier, info]) => {
+                                const tierScreens = info.screens.filter((s) => existing.has(s));
+                                if (!tierScreens.length) return null;
+                                return (
+                                  <div className="ld-tier-group" key={tier}>
+                                    <div className="ld-tier-header">{tier} &mdash; {info.label}</div>
+                                    {tierScreens.map((s) => (
+                                      <button
+                                        key={s}
+                                        className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
+                                        onClick={() => { onSelectScreen(s); onToggle(); }}
+                                        title={screenName(s)}
+                                      >
+                                        {screenName(s)}
+                                      </button>
+                                    ))}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })}
+
+          {/* Version info at bottom */}
+          {metadata && (
+            <div className="ld-footer">
+              <div className="ld-footer-version">
+                <span>Version</span>
+                <span>{metadata.meta.version}</span>
+              </div>
+              <div className="ld-footer-updated">
+                <span>Updated</span>
+                <span>{metadata.meta.lastUpdated}</span>
+              </div>
+            </div>
+          )}
         </div>
       </aside>
     </>

@@ -163,16 +163,6 @@ body {
   padding: 16px 12px;
 }
 
-/* ── Left Drawer Sections (collapsible) ── */
-.ld-section {
-  margin-bottom: 4px;
-}
-.left-drawer .sub {
-  font-size: 10px;
-  color: var(--brand-muted);
-  margin-bottom: 16px;
-}
-
 /* ── Drawer Pin Button ── */
 .ld-drawer-header {
   display: flex;
@@ -224,30 +214,7 @@ body {
   padding: 8px 12px 4px;
 }
 
-/* ── Left Drawer Sections (collapsible) ── */
-.ld-section {
-  margin-bottom: 4px;
-}
-.ld-section-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding: 8px 6px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--brand-text);
-  text-align: left;
-  transition: background 0.1s;
-}
-.ld-section-header:hover {
-  background: var(--brand-chip);
-}
+/* ── Left Drawer Tree ── */
 .ld-chevron {
   width: 14px;
   flex-shrink: 0;
@@ -255,27 +222,78 @@ body {
   align-items: center;
   color: var(--brand-muted);
 }
-.ld-section-title {
-  flex: 1;
+.ld-workspace-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand-text);
+  text-align: left;
+  transition: background 0.1s;
 }
-.ld-section-count {
-  font-size: 10px;
+.ld-workspace-header:hover {
+  background: var(--brand-chip);
+}
+.ld-workspace-header.active {
+  background: var(--brand-accent-light);
+  color: var(--brand-accent);
+}
+.ld-ws-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ld-workspace-group {
+  margin-bottom: 2px;
+}
+.ld-folder-list {
+  padding-left: 20px;
+}
+.ld-folder-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  padding: 5px 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12px;
   font-weight: 600;
   color: var(--brand-muted);
+  text-align: left;
+  transition: background 0.1s;
+}
+.ld-folder-header:hover {
   background: var(--brand-chip);
-  padding: 1px 7px;
-  border-radius: 10px;
 }
-.ld-section-body {
-  padding-left: 24px;
-  margin-bottom: 8px;
+.ld-folder-header.active {
+  color: var(--brand-text);
+  font-weight: 700;
+  background: var(--brand-accent-light);
 }
-.ld-project-name {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--brand-accent);
-  padding: 4px 6px;
-  margin-bottom: 4px;
+.ld-folder-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ld-folder-group {
+  margin-bottom: 2px;
+}
+.ld-screen-list {
+  padding-left: 16px;
 }
 .ld-meta-row {
   display: flex;
@@ -459,21 +477,21 @@ body {
   margin-bottom: 4px;
 }
 .ld-tier-group {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
-.ld-tier-label {
+.ld-tier-header {
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
   color: var(--brand-accent);
-  padding: 5px 6px 3px;
+  padding: 4px 6px 2px;
   letter-spacing: 0.5px;
 }
 .ld-screen-item {
   display: block;
   width: 100%;
   font-size: 11px;
-  padding: 4px 8px;
+  padding: 3px 8px;
   border-radius: 6px;
   color: #4A4A4A;
   text-decoration: none;
@@ -495,20 +513,15 @@ body {
   color: var(--brand-accent);
   font-weight: 600;
 }
-.ld-meta-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 3px 6px;
-  font-size: 11px;
+.ld-footer {
+  margin-top: 16px;
+  padding: 8px 6px;
+  border-top: 1px solid var(--brand-border-hairline);
 }
-.ld-meta-label {
+.ld-version {
+  font-size: 10px;
   color: var(--brand-muted);
   font-weight: 500;
-}
-.ld-meta-value {
-  color: var(--brand-text);
-  font-weight: 600;
 }
 
 /* ── Chat Drawer Trigger ── */
