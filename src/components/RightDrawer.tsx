@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { Menu } from "./base/icons";
+import { MessageCircle } from "./base/icons";
 
 interface RightDrawerProps {
   open: boolean;
@@ -24,8 +24,8 @@ export function RightDrawer({ open, onToggle, children }: RightDrawerProps) {
   return (
     <>
       <div className="drawer-trigger">
-        <button className="burger-btn" onClick={onToggle} aria-label="Toggle panel">
-          <Menu size={18} />
+        <button className="burger-btn" onClick={onToggle} aria-label="Toggle chat">
+          <MessageCircle size={18} />
         </button>
       </div>
       <aside ref={drawerRef} className={`right-drawer${open ? " open" : ""}`}>

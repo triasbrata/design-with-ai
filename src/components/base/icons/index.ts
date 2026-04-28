@@ -20,6 +20,7 @@ export {
   List,
   Loader2,
   Menu,
+  MessageCircle,
   PanelRightOpen,
   Plus,
   Save,
