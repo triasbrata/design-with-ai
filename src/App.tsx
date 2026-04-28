@@ -24,15 +24,17 @@ export default function App() {
     projects,
     activeIndex,
     activeProject,
+    activeFolder,
+    activeInputDir,
+    activeOutputDir,
     addProject,
+    addFolderToWorkspace,
     removeProject,
+    removeFolder,
     setActive,
   } = useProjects();
 
   const { toast, show } = useToast();
-
-  // Derive dir and helpers based on project type
-  const dir = activeProject?.type === "server" ? activeProject.dir : "";
 
   // Pre-built file URL map for client projects
   const projectFileMap = useMemo(() => {
@@ -45,14 +47,14 @@ export default function App() {
     return map;
   }, [activeProject]);
 
-  // Resolve screen URLs: server → Vite middleware, client → blob URL
+  // Resolve screen URLs: workspace (inputDir) → Vite middleware, client → blob URL
   const getScreenUrl = useCallback(
     (screen: string, state?: string): string => {
-      if (activeProject?.type === "server") {
+      if (activeProject?.type === "workspace") {
         if (state) {
-          return `/screens/${screen}_${state}.html?dir=${encodeURIComponent(activeProject.dir)}`;
+          return `/screens/${screen}_${state}.html?dir=${encodeURIComponent(activeInputDir)}`;
         }
-        return `/screens/${screen}.html?dir=${encodeURIComponent(activeProject.dir)}`;
+        return `/screens/${screen}.html?dir=${encodeURIComponent(activeInputDir)}`;
       }
       // Client project
       if (!projectFileMap) return "";
@@ -61,17 +63,17 @@ export default function App() {
       }
       return projectFileMap[screen] ?? "";
     },
-    [activeProject, projectFileMap],
+    [activeProject, activeInputDir, projectFileMap],
   );
 
-  // Save capture: server → POST, client → no-op (download already triggered)
+  // Save capture: workspace → POST to outputDir, client → no-op
   const saveCapture = useCallback(
     async (filename: string, dataUrl: string): Promise<CaptureResult> => {
       if (activeProject?.type === "client") {
         return { filename, ok: true };
       }
       try {
-        const res = await fetch(`/api/capture?dir=${encodeURIComponent(dir)}`, {
+        const res = await fetch(`/api/capture?dir=${encodeURIComponent(activeOutputDir)}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ filename, data: dataUrl }),
@@ -85,7 +87,7 @@ export default function App() {
         return { filename, ok: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    [activeProject, dir],
+    [activeProject, activeOutputDir],
   );
 
   // Pre-loaded metadata for client projects (skip fetch)
@@ -104,7 +106,7 @@ export default function App() {
     goNext,
     goPrev,
     goHome,
-  } = useScreens(dir, preloadedMetadata);
+  } = useScreens(activeInputDir, preloadedMetadata);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
@@ -115,6 +117,12 @@ export default function App() {
 
   const screenMeta = metadata?.screens?.[currentScreen];
   const screenStates = screenMeta?.states || ["default"];
+
+  // Build project label for BottomBar
+  const projectLabel =
+    activeProject?.type === "workspace" && activeFolder
+      ? `${activeProject.name} / ${activeFolder.name}`
+      : activeProject?.name ?? "";
 
   // Reset activeState when currentScreen changes
   useEffect(() => {
@@ -187,10 +195,10 @@ export default function App() {
       link.click();
       document.body.removeChild(link);
 
-      // For server projects: POST to save on server
+      // For workspace projects: POST to save on server
       if (activeProject?.type !== "client") {
         try {
-          const res = await fetch(`/api/capture?dir=${encodeURIComponent(dir)}`, {
+          const res = await fetch(`/api/capture?dir=${encodeURIComponent(activeOutputDir)}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ filename, data: dataUrl }),
@@ -210,7 +218,7 @@ export default function App() {
     } catch {
       show("Capture failed", false);
     }
-  }, [currentScreen, activeState, metadata, show, dir, activeProject]);
+  }, [currentScreen, activeState, metadata, show, activeOutputDir, activeProject]);
 
   // Start batch capture of all screens
   const handleCaptureAll = useCallback(() => {
@@ -272,8 +280,10 @@ export default function App() {
           projects={projects}
           activeIndex={activeIndex}
           onSelect={setActive}
-          onAdd={addProject}
-          onRemove={removeProject}
+          onAddProject={addProject}
+          onAddFolder={addFolderToWorkspace}
+          onRemoveProject={removeProject}
+          onRemoveFolder={removeFolder}
         />
         <p style={{ color: "var(--brand-muted)", marginTop: 24 }}>
           No screens found. Check the project directory.
@@ -300,8 +310,10 @@ export default function App() {
               projects={projects}
               activeIndex={activeIndex}
               onSelect={setActive}
-              onAdd={addProject}
-              onRemove={removeProject}
+              onAddProject={addProject}
+              onAddFolder={addFolderToWorkspace}
+              onRemoveProject={removeProject}
+              onRemoveFolder={removeFolder}
             />
           </div>
           <div className="content-area">
@@ -343,7 +355,7 @@ export default function App() {
               index={currentIndex}
               total={total}
               activeTool={dockTool}
-              projectName={activeProject?.name}
+              projectName={projectLabel}
               onToolChange={handleDockTool}
               onPrev={goPrev}
               onNext={goNext}

@@ -38,10 +38,17 @@ export interface CaptureResult {
   error?: string;
 }
 
-export interface ServerProject {
-  type: "server";
+export interface CaptureFolder {
   name: string;
-  dir: string;
+  inputDir: string;
+  outputDir: string;
+}
+
+export interface Workspace {
+  type: "workspace";
+  name: string;
+  folders: CaptureFolder[];
+  activeFolder: number;
 }
 
 export interface ClientFileEntry {
@@ -56,4 +63,4 @@ export interface ClientProject {
   metadata: Metadata;
 }
 
-export type Project = ServerProject | ClientProject;
+export type Project = Workspace | ClientProject;

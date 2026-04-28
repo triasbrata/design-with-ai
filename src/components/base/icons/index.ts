@@ -13,6 +13,7 @@ export {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  FileInput,
   Folder,
   FolderOpen,
   HelpCircle,
@@ -21,6 +22,7 @@ export {
   Menu,
   PanelRightOpen,
   Plus,
+  Save,
   Trash2,
   X,
 } from "lucide-react";
