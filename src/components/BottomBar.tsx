@@ -23,6 +23,13 @@ interface ToolDef {
   action?: () => void;
 }
 
+function NameDisplay({ projectName, name }: { projectName?: string; name: string }) {
+  const fullName = projectName ? `${projectName} / ${name}` : name;
+  const displayName = fullName.length > 50 ? `... / ${name}` : fullName;
+
+  return <span className="bar-name" title={fullName}>{displayName}</span>;
+}
+
 export function BottomBar({
   name,
   index,
@@ -57,7 +64,7 @@ export function BottomBar({
     <>
       {/* Info + nav pill — bottom-left */}
       <div className="pill pill-info">
-        <span className="bar-name">{projectName ? `${projectName} / ` : ""}{name}</span>
+        <NameDisplay projectName={projectName} name={name} />
         <span className="bar-spacer" />
         <button className="bar-nav-btn" onClick={onPrev} disabled={index === 0}>
           <ChevronLeft size={16} />
