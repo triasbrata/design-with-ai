@@ -37,3 +37,30 @@ export interface CaptureResult {
   ok: boolean;
   error?: string;
 }
+
+export interface CaptureFolder {
+  name: string;
+  inputDir: string;
+  outputDir: string;
+}
+
+export interface Workspace {
+  type: "workspace";
+  name: string;
+  folders: CaptureFolder[];
+  activeFolder: number;
+}
+
+export interface ClientFileEntry {
+  name: string;
+  blobUrl: string;
+}
+
+export interface ClientProject {
+  type: "client";
+  name: string;
+  files: ClientFileEntry[];
+  metadata: Metadata;
+}
+
+export type Project = Workspace | ClientProject;

@@ -1,17 +1,20 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useScreens } from './hooks/useScreens';
-import { useToast } from './hooks/useToast';
-import { useAcpBridge } from './acp/useAcpBridge';
-import { DrawerTabs } from './acp/DrawerTabs';
-import { Viewer } from './components/Viewer';
-import { Summary } from './components/Summary';
-import { CaptureProgress } from './components/CaptureProgress';
-import { BottomBar } from './components/BottomBar';
-import { RightDrawer } from './components/RightDrawer';
-import { HelpModal } from './components/HelpModal';
-import { Toast } from './components/Toast';
-import { screenName } from './constants';
-import type { CaptureResult } from './types';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useScreens } from "./hooks/useScreens";
+import { useProjects } from "./hooks/useProjects";
+import { useToast } from "./hooks/useToast";
+import { useAcpBridge } from "./acp/useAcpBridge";
+import { DrawerTabs } from "./acp/DrawerTabs";
+import { Viewer } from "./components/Viewer";
+import { Summary } from "./components/Summary";
+import { CaptureProgress } from "./components/CaptureProgress";
+import { BottomBar } from "./components/BottomBar";
+import { LeftDrawer } from "./components/LeftDrawer";
+import { RightDrawer } from "./components/RightDrawer";
+import { HelpModal } from "./components/HelpModal";
+import { ProjectSelector } from "./components/ProjectSelector";
+import { Toast } from "./components/Toast";
+import { screenName } from "./constants";
+import type { CaptureResult, ClientProject } from "./types";
 
 declare global {
   interface Window {
@@ -20,6 +23,81 @@ declare global {
 }
 
 export default function App() {
+  const {
+    projects,
+    activeIndex,
+    activeProject,
+    activeFolder,
+    activeInputDir,
+    activeOutputDir,
+    addProject,
+    addFolderToWorkspace,
+    removeProject,
+    removeFolder,
+    setActive,
+  } = useProjects();
+
+  const { toast, show } = useToast();
+
+  // Pre-built file URL map for client projects
+  const projectFileMap = useMemo(() => {
+    if (activeProject?.type !== "client") return null;
+    const map: Record<string, string> = {};
+    for (const f of activeProject.files) {
+      const key = f.name.replace(/\.html$/, "");
+      map[key] = f.blobUrl;
+    }
+    return map;
+  }, [activeProject]);
+
+  // Resolve screen URLs: workspace (inputDir) → Vite middleware, client → blob URL
+  const getScreenUrl = useCallback(
+    (screen: string, state?: string): string => {
+      if (activeProject?.type === "workspace") {
+        if (state) {
+          return `/screens/${screen}_${state}.html?dir=${encodeURIComponent(activeInputDir)}`;
+        }
+        return `/screens/${screen}.html?dir=${encodeURIComponent(activeInputDir)}`;
+      }
+      // Client project
+      if (!projectFileMap) return "";
+      if (state && projectFileMap[`${screen}_${state}`]) {
+        return projectFileMap[`${screen}_${state}`];
+      }
+      return projectFileMap[screen] ?? "";
+    },
+    [activeProject, activeInputDir, projectFileMap],
+  );
+
+  // Save capture: workspace → POST to outputDir, client → no-op
+  const saveCapture = useCallback(
+    async (filename: string, dataUrl: string): Promise<CaptureResult> => {
+      if (activeProject?.type === "client") {
+        return { filename, ok: true };
+      }
+      try {
+        const res = await fetch(`/api/capture?dir=${encodeURIComponent(activeOutputDir)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename, data: dataUrl }),
+        });
+        const result = await res.json();
+        if (!result.ok) {
+          return { filename, ok: false, error: result.error || "save failed" };
+        }
+        return { filename, ok: true };
+      } catch (err) {
+        return { filename, ok: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    [activeProject, activeOutputDir],
+  );
+
+  // Pre-loaded metadata for client projects (skip fetch)
+  const preloadedMetadata = activeProject?.type === "client"
+    ? (activeProject as ClientProject).metadata
+    : undefined;
+
   const {
     metadata,
     orderedScreens,
@@ -31,15 +109,13 @@ export default function App() {
     goNext,
     goPrev,
     goHome,
-  } = useScreens();
+  } = useScreens(activeInputDir, preloadedMetadata);
 
-  const { toast, show } = useToast();
-
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [leftDrawerOpen, setLeftDrawerOpen] = useState(false);
   const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
-  const [activeState, setActiveState] = useState('default');
+  const [activeState, setActiveState] = useState("default");
   const [helpOpen, setHelpOpen] = useState(false);
-  const [dockTool, setDockTool] = useState('');
+  const [dockTool, setDockTool] = useState("");
   const [capturing, setCapturing] = useState(false);
 
   const acpState = useAcpBridge({
@@ -49,11 +125,17 @@ export default function App() {
   });
 
   const screenMeta = metadata?.screens?.[currentScreen];
-  const screenStates = screenMeta?.states || ['default'];
+  const screenStates = screenMeta?.states || ["default"];
+
+  // Build project label for BottomBar
+  const projectLabel =
+    activeProject?.type === "workspace" && activeFolder
+      ? `${activeProject.name} / ${activeFolder.name}`
+      : activeProject?.name ?? "";
 
   // Reset activeState when currentScreen changes
   useEffect(() => {
-    setActiveState('default');
+    setActiveState("default");
   }, [currentScreen]);
 
   // Keyboard shortcuts
@@ -62,45 +144,45 @@ export default function App() {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
       switch (e.key) {
-        case 'ArrowLeft':
+        case "ArrowLeft":
           e.preventDefault();
           goPrev();
           break;
-        case 'ArrowRight':
+        case "ArrowRight":
           e.preventDefault();
           goNext();
           break;
-        case 'Escape':
+        case "Escape":
           e.preventDefault();
           goHome();
           break;
-        case '\\':
+        case "\\":
           e.preventDefault();
-          setMenuOpen((prev) => !prev);
+          setLeftDrawerOpen((prev) => !prev);
           break;
       }
     };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
   }, [goPrev, goNext, goHome]);
 
   // Capture the current screen with its active state
   const handleCapture = useCallback(async () => {
-    const iframe = document.getElementById('phone-frame') as HTMLIFrameElement | null;
+    const iframe = document.getElementById("phone-frame") as HTMLIFrameElement | null;
     if (!iframe?.contentDocument?.body) {
-      show('No iframe content to capture', false);
+      show("No iframe content to capture", false);
       return;
     }
 
-    const states = metadata?.screens?.[currentScreen]?.states || ['default'];
+    const states = metadata?.screens?.[currentScreen]?.states || ["default"];
     const isDefaultState = activeState === states[0] || states.length <= 1;
     const filename = isDefaultState
       ? `phone_${currentScreen}.png`
       : `phone_${currentScreen}_${activeState}.png`;
 
     try {
-      if (typeof window.html2canvas !== 'function') {
-        show('html2canvas not loaded', false);
+      if (typeof window.html2canvas !== "function") {
+        show("html2canvas not loaded", false);
         return;
       }
 
@@ -108,40 +190,44 @@ export default function App() {
         width: 390,
         height: 844,
         scale: 2,
-        backgroundColor: '#ffffff',
+        backgroundColor: "#ffffff",
         useCORS: true,
         allowTaint: true,
       });
-      const dataUrl = canvas.toDataURL('image/png');
+      const dataUrl = canvas.toDataURL("image/png");
 
-      // Trigger download via anchor click
-      const link = document.createElement('a');
+      // Trigger download via anchor click (works for both project types)
+      const link = document.createElement("a");
       link.download = filename;
       link.href = dataUrl;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
-      // POST to /api/capture
-      try {
-        const res = await fetch('/api/capture', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filename, data: dataUrl }),
-        });
-        const result = await res.json();
-        if (result.ok) {
-          show(`Saved: ${result.path}`, true);
-        } else {
-          show(`Save failed: ${result.error}`, false);
+      // For workspace projects: POST to save on server
+      if (activeProject?.type !== "client") {
+        try {
+          const res = await fetch(`/api/capture?dir=${encodeURIComponent(activeOutputDir)}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filename, data: dataUrl }),
+          });
+          const result = await res.json();
+          if (result.ok) {
+            show(`Saved: ${result.path}`, true);
+          } else {
+            show(`Save failed: ${result.error}`, false);
+          }
+        } catch {
+          show("Captured locally but upload failed", false);
         }
-      } catch {
-        show('Captured locally but upload failed', false);
+      } else {
+        show(`Downloaded: ${filename}`, true);
       }
     } catch {
-      show('Capture failed', false);
+      show("Capture failed", false);
     }
-  }, [currentScreen, activeState, metadata, show]);
+  }, [currentScreen, activeState, metadata, show, activeOutputDir, activeProject]);
 
   // Start batch capture of all screens
   const handleCaptureAll = useCallback(() => {
@@ -159,36 +245,35 @@ export default function App() {
           ? `${okCount} succeeded, ${failCount} failed`
           : `All ${okCount} captured`;
       show(msg, failCount === 0);
-      navigate('summary');
+      navigate("summary");
     },
-    [show, navigate]
+    [show, navigate],
   );
 
   // Handle dock tool button clicks
   const handleDockTool = useCallback(
     (tool: string) => {
       if (tool === dockTool) {
-        setDockTool('');
+        setDockTool("");
         return;
       }
       setDockTool(tool);
       switch (tool) {
-        case 'capture':
+        case "capture":
           handleCapture();
           break;
-        case 'summary':
-          navigate('summary');
-          setDockTool('');
+        case "summary":
+          navigate("summary");
+          setDockTool("");
           break;
-        case 'help':
+        case "help":
           setHelpOpen(true);
           break;
-        // 'states' and 'export' are placeholder toggles
         default:
           break;
       }
     },
-    [dockTool, handleCapture, navigate]
+    [dockTool, handleCapture, navigate],
   );
 
   // Update active state when Viewer requests a state change
@@ -199,30 +284,47 @@ export default function App() {
   // Empty state
   if (orderedScreens.length === 0) {
     return (
-      <div className="main-content">
-        <div
-          style={{
-            padding: '40px',
-            textAlign: 'center',
-            color: 'var(--brand-muted)',
-          }}
-        >
-          No screens found. Check screen-metadata.json.
-        </div>
+      <div className="main-content" style={{ padding: "40px", textAlign: "center" }}>
+        <ProjectSelector
+          projects={projects}
+          activeIndex={activeIndex}
+          onSelect={setActive}
+          onAddProject={addProject}
+          onAddFolder={addFolderToWorkspace}
+          onRemoveProject={removeProject}
+          onRemoveFolder={removeFolder}
+        />
+        <p style={{ color: "var(--brand-muted)", marginTop: 24 }}>
+          No screens found. Check the project directory.
+        </p>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', width: '100%', height: '100vh' }}>
+    <div style={{ display: "flex", width: "100%", height: "100vh" }}>
       {capturing ? (
         <CaptureProgress
           screens={orderedScreens}
           metadata={metadata!}
+          getScreenUrl={getScreenUrl}
+          saveCapture={saveCapture}
           onDone={handleCaptureAllDone}
         />
       ) : (
         <>
+          {/* Project selector — fixed top-center */}
+          <div className="project-selector-bar">
+            <ProjectSelector
+              projects={projects}
+              activeIndex={activeIndex}
+              onSelect={setActive}
+              onAddProject={addProject}
+              onAddFolder={addFolderToWorkspace}
+              onRemoveProject={removeProject}
+              onRemoveFolder={removeFolder}
+            />
+          </div>
           <div className="content-area">
             <div className="main-content">
               {isSummary ? (
@@ -239,9 +341,8 @@ export default function App() {
                   index={currentIndex}
                   total={total}
                   metadata={metadata}
+                  getScreenUrl={getScreenUrl}
                   activeState={activeState}
-                  menuOpen={menuOpen}
-                  onToggleMenu={() => setMenuOpen((p) => !p)}
                   onSelectScreen={navigate}
                   onPrev={goPrev}
                   onNext={goNext}
@@ -249,21 +350,37 @@ export default function App() {
                 />
               )}
             </div>
-            <RightDrawer open={rightDrawerOpen} onToggle={() => setRightDrawerOpen((p) => !p)}>
-              <DrawerTabs connected={acpState.connected} currentScreen={currentScreen} />
-            </RightDrawer>
           </div>
+          <LeftDrawer
+            open={leftDrawerOpen}
+            onToggle={() => setLeftDrawerOpen((p) => !p)}
+            metadata={metadata}
+            screens={orderedScreens}
+            activeScreen={currentScreen}
+            onSelect={navigate}
+            projectName={projectLabel}
+          />
+          <RightDrawer
+            open={rightDrawerOpen}
+            onToggle={() => setRightDrawerOpen((p) => !p)}
+          >
+            <DrawerTabs connected={acpState.connected} currentScreen={currentScreen} />
+          </RightDrawer>
           {!isSummary && (
             <BottomBar
               name={screenName(currentScreen)}
               index={currentIndex}
               total={total}
               activeTool={dockTool}
+              projectName={projectLabel}
               onToolChange={handleDockTool}
               onPrev={goPrev}
               onNext={goNext}
               onCapture={handleCapture}
-              onSummary={() => { goNext(); setDockTool(''); }}
+              onSummary={() => {
+                goNext();
+                setDockTool("");
+              }}
               onHelp={() => setHelpOpen(true)}
             />
           )}

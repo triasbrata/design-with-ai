@@ -1,6 +1,7 @@
-import type { Metadata } from '../types';
-import { screenName, TIERS } from '../constants';
-import { Button } from './base';
+import type { Metadata } from "../types";
+import { screenName, TIERS } from "../constants";
+import { Button } from "./base";
+import { Camera, ArrowLeft } from "./base/icons";
 
 interface SummaryProps {
   screens: string[];
@@ -11,7 +12,7 @@ interface SummaryProps {
 }
 
 function getFilename(screen: string, state: string, states: string[]): string {
-  const isDefault = state === 'default';
+  const isDefault = state === "default";
   const isFirst = states.length > 0 && state === states[0];
   if (isDefault || isFirst) {
     return `phone_${screen}.png`;
@@ -19,37 +20,31 @@ function getFilename(screen: string, state: string, states: string[]): string {
   return `phone_${screen}_${state}.png`;
 }
 
-export function Summary({
-  screens,
-  metadata,
-  onSelect,
-  onBack,
-  onCaptureAll,
-}: SummaryProps) {
+export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: SummaryProps) {
   const existing = new Set(screens);
 
   let totalStates = 0;
   const screenStateMap: Record<string, string[]> = {};
 
   for (const screen of screens) {
-    const metaStates = metadata?.screens[screen]?.states || ['default'];
+    const metaStates = metadata?.screens[screen]?.states || ["default"];
     screenStateMap[screen] = metaStates;
     totalStates += metaStates.length;
   }
 
   return (
-    <div style={{ width: '100%' }}>
+    <div style={{ width: "100%" }}>
       <div className="toolbar">
-        <Button color="secondary" size="sm" onClick={onBack}>
-          &#9664; Back
+        <Button color="secondary" size="sm" onClick={onBack} iconLeading={<ArrowLeft size={18} />}>
+          Back
         </Button>
         <span className="name">Summary &mdash; All Screens</span>
-        <Button color="primary" size="sm" onClick={onCaptureAll}>
-          &#128247; Create Baseline ({totalStates} images)
+        <Button color="primary" size="sm" onClick={onCaptureAll} iconLeading={<Camera size={18} />}>
+          Create Baseline ({totalStates} images)
         </Button>
       </div>
 
-      <div style={{ padding: '20px 16px' }}>
+      <div style={{ padding: "20px 16px" }}>
         <div className="summary-stats">
           <div className="summary-stat">
             <div className="num">{screens.length}</div>
@@ -60,8 +55,8 @@ export function Summary({
             <div className="lbl">States</div>
           </div>
           <div className="summary-stat">
-            <code className="num" style={{ fontSize: '16px' }}>
-              phone_&#123;screen&#125;.png
+            <code className="num" style={{ fontSize: "16px" }}>
+              phone_{"{screen}"}.png
             </code>
             <div className="lbl">Naming Convention</div>
           </div>
@@ -88,7 +83,7 @@ export function Summary({
                   </td>
                 </tr>,
                 ...tierScreens.map((screen) => {
-                  const states = screenStateMap[screen] || ['default'];
+                  const states = screenStateMap[screen] || ["default"];
 
                   return (
                     <tr key={screen}>
@@ -124,7 +119,7 @@ export function Summary({
           </tbody>
         </table>
 
-        <p className="shortcut-hint" style={{ marginTop: '16px' }}>
+        <p className="shortcut-hint" style={{ marginTop: "16px" }}>
           Use arrow keys or Tab to navigate screens. Press \ to toggle the sidebar.
         </p>
       </div>
