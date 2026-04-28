@@ -34,8 +34,9 @@ export function RightDrawer({ open, onToggle, children }: RightDrawerProps) {
       {/* Drawer panel — slides from right */}
       <aside ref={drawerRef} className={`right-drawer${open ? ' open' : ''}`}>
         <div className="right-drawer-inner">
-          <h3>ACP Agent</h3>
-          <p className="sub">Agent Client Protocol</p>
+          <div style={{ marginBottom: 8 }}>
+            <span className="name" style={{ fontSize: 12 }}>Design Review</span>
+          </div>
           {children}
         </div>
       </aside>

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useScreens } from './hooks/useScreens';
 import { useToast } from './hooks/useToast';
 import { useAcpBridge } from './acp/useAcpBridge';
-import { AgentPanel } from './acp/AgentPanel';
+import { DrawerTabs } from './acp/DrawerTabs';
 import { Viewer } from './components/Viewer';
 import { Summary } from './components/Summary';
 import { CaptureProgress } from './components/CaptureProgress';
@@ -250,7 +250,7 @@ export default function App() {
               )}
             </div>
             <RightDrawer open={rightDrawerOpen} onToggle={() => setRightDrawerOpen((p) => !p)}>
-              <AgentPanel connected={acpState.connected} />
+              <DrawerTabs connected={acpState.connected} currentScreen={currentScreen} />
             </RightDrawer>
           </div>
           {!isSummary && (

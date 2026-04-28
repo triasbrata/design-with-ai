@@ -719,3 +719,87 @@ iframe {
 
 /* ── Hidden ── */
 .hidden { display: none !important; }
+
+/* ── Chat Panel ── */
+.chat-bubble {
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 8px 10px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-width: 100%;
+}
+.chat-bubble.user {
+  background: var(--brand-accent);
+  color: #fff;
+}
+.chat-bubble.assistant {
+  background: var(--brand-chip);
+  color: var(--brand-text);
+}
+.chat-bubble.assistant.error {
+  background: var(--brand-accent-light);
+  color: var(--brand-accent);
+}
+.chat-bubble.loading {
+  opacity: 0.6;
+  font-style: italic;
+}
+.chat-form {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.chat-input {
+  flex: 1;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 11px;
+  padding: 6px 10px;
+  border: 1px solid var(--brand-border-hairline);
+  border-radius: 8px;
+  background: var(--brand-surface);
+  color: var(--brand-text);
+  outline: none;
+}
+.chat-input:focus {
+  border-color: var(--brand-accent-muted);
+}
+.chat-input::placeholder {
+  color: var(--brand-muted-light);
+}
+.chat-send-btn {
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--brand-accent);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.chat-send-btn:hover { background: var(--brand-accent-hover); }
+.chat-send-btn:disabled { background: var(--brand-accent-muted); cursor: default; }
+.chat-quick-btn {
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border: 1px solid var(--brand-border-hairline);
+  border-radius: 12px;
+  background: var(--brand-surface);
+  color: var(--brand-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.chat-quick-btn:hover {
+  background: var(--brand-accent-light);
+  color: var(--brand-accent);
+  border-color: var(--brand-accent-muted);
+}
+.chat-quick-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
