@@ -11,6 +11,7 @@ import { CaptureProgress } from "./components/CaptureProgress";
 import { BottomBar } from "./components/BottomBar";
 import { LeftDrawer } from "./components/LeftDrawer";
 import { RightDrawer } from "./components/RightDrawer";
+import type { RightDrawerTab } from "./components/RightDrawer";
 import { HelpModal } from "./components/HelpModal";
 import { Toast } from "./components/Toast";
 import { screenName, DEVICE_PRESETS, DEVICE_CYCLE } from "./constants";
@@ -119,6 +120,7 @@ export default function App() {
   const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
   const [leftPinned, setLeftPinned] = useState(false);
   const [rightPinned, setRightPinned] = useState(false);
+  const [rightDrawerTab, setRightDrawerTab] = useState<RightDrawerTab>("workspace");
   const [activeState, setActiveState] = useState(queryState || "default");
   const isFirstRender = useRef(true);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -472,6 +474,13 @@ export default function App() {
             onToggle={() => setRightDrawerOpen((p) => !p)}
             pinned={rightPinned}
             onPinToggle={() => setRightPinned((p) => !p)}
+            screens={orderedScreens}
+            activeScreen={currentScreen}
+            metadata={metadata}
+            onSelect={navigate}
+            projectName={projectLabel}
+            activeTab={rightDrawerTab}
+            onTabChange={setRightDrawerTab}
           >
             <DrawerTabs
               connected={acpState.connected}
