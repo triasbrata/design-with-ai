@@ -803,3 +803,10 @@ iframe {
   opacity: 0.5;
   cursor: default;
 }
+.chat-cursor {
+  animation: blink 0.8s step-end infinite;
+  color: var(--brand-accent);
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}

@@ -32,7 +32,7 @@ export function DrawerTabs({ connected, currentScreen }: DrawerTabsProps) {
       </div>
 
       {tab === 'chat' ? (
-        <ChatPanel connected={connected} currentScreen={currentScreen} />
+        <ChatPanel currentScreen={currentScreen} />
       ) : (
         <AgentPanel connected={connected} />
       )}

@@ -1,74 +1,147 @@
 /**
- * Vite plugin for ACP integration in the design review viewer.
+ * Vite plugin — ACP chat + tools.
  *
- * HTTP endpoints:
- *  - POST /api/acp/chat      — Chat via local Claude Code (claude -p)
- *  - POST /api/acp/tools     — Execute design review tools server-side
- *  - GET  /api/acp/tools-list — List available tools
+ * Endpoints:
+ *  POST /api/acp/chat       — Chat: local tools (instant) + Claude Code (AI, streaming)
+ *  POST /api/acp/tools      — Execute tool by name
+ *  GET  /api/acp/tools-list  — List tools
+ *
+ * AI queries stream via ndjson (newline-delimited JSON):
+ *   {"type":"chunk","text":"..."}   — partial text delta
+ *   {"type":"done","text":"..."}    — full accumulated response
+ *   {"type":"error","text":"..."}   — error message
  */
 import type { Plugin } from 'vite';
-import { spawn } from 'node:child_process';
-import { executeTool, toolDefinitions } from './tools.js';
+import { spawn, execSync } from 'node:child_process';
+import { executeTool, listScreens, getScreenMeta, toolDefinitions } from './tools.js';
 
-/** Find claude binary on PATH */
-function findClaude(): string {
-  const candidates = ['claude', '~/.local/bin/claude'];
-  const envPath = process.env.PATH || '';
-  for (const c of candidates) {
-    const resolved = c.startsWith('~') ? c.replace(/^~/, process.env.HOME || '') : c;
-    if (resolved.includes('/')) {
-      try { require('node:fs').accessSync(resolved); return resolved; } catch { continue; }
-    }
-    for (const dir of envPath.split(':')) {
-      const p = `${dir}/${resolved}`;
-      try { require('node:fs').accessSync(p); return resolved; } catch { continue; }
-    }
+function findClaudeBinary(): string {
+  if (process.env.CLAUDE_BIN_PATH) return process.env.CLAUDE_BIN_PATH;
+  try {
+    return execSync('which claude', { encoding: 'utf-8' }).trim();
+  } catch {
+    return 'claude';
   }
-  return 'claude'; // fallback
 }
 
-const CLAUDE_BIN = findClaude();
+function formatScreens(json: Record<string, unknown>): string {
+  const screens = json.screens as string[] | undefined;
+  if (!screens || screens.length === 0) return 'Tidak ada screen ditemukan.';
+  return screens.map((s, i) => `${i + 1}. ${s.replace(/_/g, ' ')}`).join('\n');
+}
 
-async function chatWithClaude(
-  message: string,
-  onChunk: (chunk: string) => void,
-  signal: AbortSignal
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const claude = spawn(CLAUDE_BIN, ['-p', message, '--permission-mode', 'auto', '--no-session-persistence'], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      timeout: 30000,
-    });
+function formatMeta(json: Record<string, unknown>): string {
+  const meta = json.metadata as Record<string, unknown> | undefined;
+  if (!meta) return 'Screen tidak ditemukan.';
+  const desc = meta.description || '-';
+  const purpose = meta.purpose || '-';
+  const states = (meta.states as string[]) || [];
+  const elements = (meta.keyElements as string[]) || [];
+  return `Deskripsi: ${desc}\nTujuan: ${purpose}\nState: ${states.join(', ') || '-'}\nKey Elements: ${elements.join(', ') || '-'}`;
+}
 
-    signal.addEventListener('abort', () => {
-      claude.kill();
-      reject(new Error('aborted'));
-    });
+function isToolQuery(q: string): { isTool: boolean; tool?: string; args?: Record<string, unknown> } {
+  const lq = q.toLowerCase().trim();
 
-    let output = '';
-    claude.stdout.on('data', (chunk: Buffer) => {
-      const text = chunk.toString();
-      output += text;
-      onChunk(text);
-    });
+  // "list screens" or "list" alone
+  if (/^list|^(show|tampilkan|lihat)\s/.test(lq) || lq === 'screens' || lq === 'screen') {
+    return { isTool: true, tool: 'designReview_listScreens', args: {} };
+  }
+  // "detail <name>" or "metadata <name>"
+  const detailMatch = lq.match(/^(detail|metadata|about)\s+(.+)/);
+  if (detailMatch) {
+    const name = detailMatch[2].trim().replace(/\s+/g, '_');
+    if (name) return { isTool: true, tool: 'designReview_getScreenMeta', args: { screen: name } };
+  }
+  return { isTool: false };
+}
 
-    let stderr = '';
-    claude.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
+/**
+ * Parse Claude's stream-json output and forward text_delta chunks.
+ * Calls onChunk for each text delta, onDone with full text at end.
+ */
+function streamClaudeResponse(
+  claudeBin: string,
+  prompt: string,
+  onChunk: (text: string) => void,
+  onDone: (fullText: string) => void,
+  onError: (msg: string) => void,
+): { kill: () => void } {
+  const claude = spawn(
+    claudeBin,
+    [
+      '-p', prompt,
+      '--output-format', 'stream-json',
+      '--include-partial-messages',
+      '--verbose',
+      '--bare',
+      '--tools', '',
+      '--permission-mode', 'auto',
+      '--no-session-persistence',
+    ],
+    { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env } },
+  );
 
-    claude.on('close', (code) => {
-      if (code === 0 || code === null) resolve(output);
-      else reject(new Error(stderr || `claude exited ${code}`));
-    });
+  let fullText = '';
+  let buffer = '';
+  let didRespond = false;
+  const timeoutId = setTimeout(() => { if (!claude.killed) claude.kill('SIGKILL'); }, 120000);
 
-    claude.on('error', (e) => reject(e));
+  function respond() {
+    if (didRespond) return;
+    didRespond = true;
+    clearTimeout(timeoutId);
+    onDone(fullText);
+  }
+
+  claude.stdout.on('data', (chunk: Buffer) => {
+    buffer += chunk.toString();
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      try {
+        const parsed = JSON.parse(line);
+        if (
+          parsed.type === 'stream_event' &&
+          parsed.event?.type === 'content_block_delta' &&
+          parsed.event.delta?.type === 'text_delta'
+        ) {
+          const text = parsed.event.delta.text as string;
+          fullText += text;
+          onChunk(text);
+        }
+      } catch {
+        // skip malformed JSON lines
+      }
+    }
   });
+
+  claude.stderr.on('data', () => {});
+
+  claude.on('close', (code, _signal) => {
+    clearTimeout(timeoutId);
+    if (code !== 0 && !fullText) {
+      onError(`Claude exited with code ${code}`);
+      return;
+    }
+    respond();
+  });
+
+  claude.on('error', (e) => {
+    clearTimeout(timeoutId);
+    onError(`Claude spawn error: ${e.message}`);
+  });
+
+  return { kill: () => { if (!claude.killed) claude.kill(); } };
 }
 
 export function acpPlugin(): Plugin {
   return {
     name: 'acp-plugin',
     configureServer(server) {
-      // ── Chat via local Claude Code ──
+      // ── Chat ──
       server.middlewares.use('/api/acp/chat', (req, res) => {
         if (req.method !== 'POST') {
           res.statusCode = 405;
@@ -81,43 +154,71 @@ export function acpPlugin(): Plugin {
         req.on('data', (chunk: string) => { body += chunk; });
         req.on('end', async () => {
           try {
-            const { message, context } = JSON.parse(body) as { message: string; context?: Record<string, unknown> };
+            const { message } = JSON.parse(body) as { message: string };
+            const q = message.toLowerCase();
 
-            const contextHint = context
-              ? `Current screen: ${context.currentScreen || 'none'}\n`
-              : '';
-            const prompt = `${contextHint}Design review viewer query: ${message}\n\nAnswer concisely.`;
-
-            const ac = new AbortController();
-            req.on('close', () => ac.abort());
-
-            const response = await chatWithClaude(prompt, () => {}, ac.signal);
-
-            res.statusCode = 200;
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({ response: response.trim() }));
-          } catch (e: any) {
-            if (e.message === 'aborted') return;
-            // Fallback: use local tools
-            try {
-              const { message } = JSON.parse(body);
-              const result = await executeTool(
-                message.toLowerCase().includes('screen') && !message.toLowerCase().includes('metadata')
-                  ? 'designReview_listScreens'
-                  : 'designReview_listScreens',
-                {}
-              );
-              res.statusCode = 200;
-              res.setHeader('Content-Type', 'application/json');
-              res.end(JSON.stringify({
-                response: `(local mode) ${result.content[0].text}`,
-                note: 'Claude not available, used local tool fallback',
-              }));
-            } catch {
-              res.statusCode = 503;
-              res.setHeader('Content-Type', 'application/json');
-              res.end(JSON.stringify({ error: 'Claude not available', detail: String(e) }));
+            // Tool queries — instant (no streaming)
+            const toolMatch = isToolQuery(q);
+            if (toolMatch.isTool && toolMatch.tool) {
+              if (toolMatch.tool === 'designReview_listScreens') {
+                const result = listScreens() as Record<string, unknown>;
+                const formatted = formatScreens(result);
+                const total = (result.screens as string[] || []).length;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ response: `Ada ${total} screen:\n${formatted}\n\nTanya "detail [nama]" buat info screen.` }));
+              } else {
+                const meta = getScreenMeta(String(toolMatch.args?.screen || '')) as Record<string, unknown>;
+                if (meta.error) {
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ response: `Screen tidak ditemukan.` }));
+                } else {
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify({ response: formatMeta(meta) }));
+                }
+              }
+              return;
             }
+
+            // AI queries — streaming via ndjson
+            const screens = listScreens();
+            const screenNames = ((screens as Record<string, unknown>).screens as string[] || []).join(', ');
+            const prompt = `Kamu asisten design review MoneyKitty. Screen yang tersedia: ${screenNames || '(none)'}\n\nPertanyaan: ${message}\n\nJawab singkat dan informatif.`;
+
+            res.writeHead(200, {
+              'Content-Type': 'application/x-ndjson',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+            });
+
+            const claudeBin = findClaudeBinary();
+            const controller = streamClaudeResponse(
+              claudeBin,
+              prompt,
+              // onChunk — stream partial text
+              (text) => {
+                if (!res.destroyed && !res.writableEnded) res.write(JSON.stringify({ type: 'chunk', text }) + '\n');
+              },
+              // onDone — send full text
+              (fullText) => {
+                if (!res.destroyed && !res.writableEnded) {
+                  res.write(JSON.stringify({ type: 'done', text: fullText }) + '\n');
+                  res.end();
+                }
+              },
+              // onError
+              (msg) => {
+                if (!res.destroyed && !res.writableEnded) {
+                  res.write(JSON.stringify({ type: 'error', text: msg }) + '\n');
+                  res.end();
+                }
+              },
+            );
+
+            req.on('close', () => {});
+          } catch (e) {
+            res.statusCode = 400;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ response: 'Gagal.', error: String(e) }));
           }
         });
       });
@@ -136,7 +237,6 @@ export function acpPlugin(): Plugin {
           res.end(JSON.stringify({ error: 'POST only' }));
           return;
         }
-
         let body = '';
         req.on('data', (chunk: string) => { body += chunk; });
         req.on('end', async () => {
@@ -153,11 +253,6 @@ export function acpPlugin(): Plugin {
           }
         });
       });
-
-      console.error(`[ACP] Claude binary: ${CLAUDE_BIN}`);
-      console.error('[ACP] Chat endpoint:  POST /api/acp/chat  {"message":"list screens"}');
-      console.error('[ACP] Tool endpoint:  POST /api/acp/tools  {"tool":"designReview_listScreens","args":{}}');
-      console.error('[ACP] Tools list:     GET  /api/acp/tools-list');
     },
   };
 }
