@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, type FormEvent } from 'react';
+import type { MarkerContext } from '../types';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -14,6 +15,8 @@ const QUICK_ACTIONS = [
 
 interface ChatPanelProps {
   currentScreen?: string;
+  markerContext?: MarkerContext | null;
+  onResetMarker?: () => void;
 }
 
 /**
@@ -62,7 +65,7 @@ function readNdjsonStream(
   });
 }
 
-export function ChatPanel({ currentScreen }: ChatPanelProps) {
+export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', text: 'Tanya tentang design review. Tool query langsung jawab, AI query streaming dari Claude.\n\nKetik "list screens" atau tanya apa aja!' },
   ]);
@@ -94,7 +97,6 @@ export function ChatPanel({ currentScreen }: ChatPanelProps) {
     setLoading(true);
 
     // Add placeholder assistant message (will be updated by streaming)
-    const msgIndex = messages.length + 1; // after user message
     setMessages((prev) => [...prev, { role: 'assistant', text: '', streaming: true }]);
 
     const abortController = new AbortController();
@@ -104,7 +106,13 @@ export function ChatPanel({ currentScreen }: ChatPanelProps) {
       const res = await fetch('/api/acp/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: query, context: { currentScreen } }),
+        body: JSON.stringify({
+          message: query,
+          context: {
+            currentScreen,
+            markerContext: markerContext || undefined,
+          },
+        }),
         signal: abortController.signal,
       });
 
@@ -142,6 +150,7 @@ export function ChatPanel({ currentScreen }: ChatPanelProps) {
               return next;
             });
             setLoading(false);
+            onResetMarker?.();
           },
           // onError
           (msg) => {
@@ -168,6 +177,7 @@ export function ChatPanel({ currentScreen }: ChatPanelProps) {
           return next;
         });
         setLoading(false);
+        onResetMarker?.();
       }
     } catch (err: unknown) {
       if ((err as Error)?.name === 'AbortError') return;
@@ -185,6 +195,44 @@ export function ChatPanel({ currentScreen }: ChatPanelProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)' }}>
+      {/* Marker context indicator */}
+      {markerContext && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 8px',
+            marginBottom: 8,
+            borderRadius: 6,
+            background: 'var(--brand-accent)',
+            color: '#fff',
+            fontSize: 11,
+          }}
+        >
+          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            Marked: &lt;{markerContext.element?.tag}&gt;{' '}
+            &ldquo;{(markerContext.element?.text ?? '').substring(0, 35)}&rdquo;
+          </span>
+          {onResetMarker && (
+            <button
+              onClick={onResetMarker}
+              style={{
+                background: 'rgba(255,255,255,0.25)',
+                border: 'none',
+                borderRadius: 4,
+                color: '#fff',
+                cursor: 'pointer',
+                fontSize: 11,
+                padding: '2px 6px',
+              }}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
         {QUICK_ACTIONS.map((a) => (
           <button key={a.label} className="chat-quick-btn" onClick={() => send(a.query)} disabled={loading}>

@@ -1,0 +1,105 @@
+import { useState, useCallback, useRef } from 'react';
+import type { MarkerRect } from '../types';
+
+export interface MarkPayload {
+  rect: MarkerRect;
+  screen: string;
+  state: string;
+}
+
+interface MarkerOverlayProps {
+  active: boolean;
+  rect: MarkerRect | null;
+  screen: string;
+  activeState: string;
+  onMark: (payload: MarkPayload) => void;
+}
+
+export function MarkerOverlay({ active, rect, screen, activeState, onMark }: MarkerOverlayProps) {
+  const [drawing, setDrawing] = useState(false);
+  const [drawStart, setDrawStart] = useState({ x: 0, y: 0 });
+  const [drawEnd, setDrawEnd] = useState({ x: 0, y: 0 });
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  const getPos = useCallback((clientX: number, clientY: number) => {
+    const bounds = overlayRef.current?.getBoundingClientRect();
+    if (!bounds) return { x: 0, y: 0 };
+    return {
+      x: clientX - bounds.left,
+      y: clientY - bounds.top,
+    };
+  }, []);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!active) return;
+    setDrawing(true);
+    setDrawStart(getPos(e.clientX, e.clientY));
+    setDrawEnd(getPos(e.clientX, e.clientY));
+  }, [active, getPos]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!drawing) return;
+    setDrawEnd(getPos(e.clientX, e.clientY));
+  }, [drawing, getPos]);
+
+  const finishDraw = useCallback(() => {
+    if (!drawing) return;
+    setDrawing(false);
+    const x = Math.min(drawStart.x, drawEnd.x);
+    const y = Math.min(drawStart.y, drawEnd.y);
+    const w = Math.abs(drawEnd.x - drawStart.x);
+    const h = Math.abs(drawEnd.y - drawStart.y);
+    if (w < 5 && h < 5) return; // ignore tiny clicks
+    onMark({ rect: { x, y, width: w, height: h }, screen, state: activeState });
+  }, [drawing, drawStart, drawEnd, onMark, screen, activeState]);
+
+  const showRect = rect && !drawing;
+  const drawingRect = drawing
+    ? {
+        left: Math.min(drawStart.x, drawEnd.x),
+        top: Math.min(drawStart.y, drawEnd.y),
+        width: Math.abs(drawEnd.x - drawStart.x),
+        height: Math.abs(drawEnd.y - drawStart.y),
+      }
+    : null;
+
+  if (!active && !rect) return null;
+
+  return (
+    <div
+      ref={overlayRef}
+      className={`marker-overlay${active ? ' active' : ''}`}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={finishDraw}
+      onMouseLeave={drawing ? finishDraw : undefined}
+    >
+      {showRect && (
+        <div
+          className="marker-rect"
+          style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height }}
+        />
+      )}
+
+      {drawingRect && (
+        <>
+          <div
+            className="marker-rect drawing"
+            style={{
+              left: drawingRect.left,
+              top: drawingRect.top,
+              width: drawingRect.width,
+              height: drawingRect.height,
+            }}
+          />
+          <div
+            className="marker-size-label"
+            style={{ left: drawingRect.left, top: drawingRect.top - 22 }}
+          >
+            {Math.round(drawingRect.width)} &times; {Math.round(drawingRect.height)}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

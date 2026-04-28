@@ -1,7 +1,9 @@
 import { useCallback, useRef } from 'react';
 import { PhoneFrame } from './PhoneFrame';
+import { MarkerOverlay } from './MarkerOverlay';
+import type { MarkPayload } from './MarkerOverlay';
 import { MetaPanel } from './MetaPanel';
-import type { Metadata } from '../types';
+import type { Metadata, MarkerRect } from '../types';
 
 interface ViewerProps {
   screen: string;
@@ -14,6 +16,9 @@ interface ViewerProps {
   onPrev: () => void;
   onNext: () => void;
   onStateChange: (screen: string, state: string) => void;
+  markerMode: boolean;
+  markerRect: MarkerRect | null;
+  onMark: (payload: MarkPayload) => void;
 }
 
 export function Viewer({
@@ -27,6 +32,9 @@ export function Viewer({
   onPrev,
   onNext,
   onStateChange,
+  markerMode,
+  markerRect,
+  onMark,
 }: ViewerProps) {
   const phoneRef = useRef<{ getIframe: () => HTMLIFrameElement | null }>(null);
 
@@ -61,12 +69,21 @@ export function Viewer({
   return (
     <>
       <div className="main-layout">
-        <PhoneFrame
-          ref={phoneRef}
-          key={`${screen}-${activeState}`}
-          src={getScreenUrl(screen)}
-          onLoad={handleLoad}
-        />
+        <div className="phone-container">
+          <PhoneFrame
+            ref={phoneRef}
+            key={`${screen}-${activeState}`}
+            src={getScreenUrl(screen)}
+            onLoad={handleLoad}
+          />
+          <MarkerOverlay
+            active={markerMode}
+            rect={markerRect}
+            screen={screen}
+            activeState={activeState}
+            onMark={onMark}
+          />
+        </div>
         <MetaPanel
           meta={meta}
           screen={screen}

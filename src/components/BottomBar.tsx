@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Camera, ChevronLeft, ChevronRight, ClipboardList, BarChart3, HelpCircle, List } from "./base/icons";
+import { Camera, ChevronLeft, ChevronRight, ClipboardList, BarChart3, HelpCircle, List, Square } from "./base/icons";
 
 interface BottomBarProps {
   name: string;
@@ -37,6 +37,7 @@ export function BottomBar({
   onHelp,
 }: BottomBarProps) {
   const tools: ToolDef[] = [
+    { id: "marker", icon: <Square size={20} />, label: "Marker", tooltip: "Draw rectangle marker on screen" },
     { id: "capture", icon: <Camera size={20} />, label: "Capture", tooltip: "Screenshot current screen", action: onCapture },
     { id: "states", icon: <List size={20} />, label: "States", tooltip: "Toggle state view" },
     { id: "summary", icon: <ClipboardList size={20} />, label: "Summary", tooltip: "View all screens summary", action: onSummary },

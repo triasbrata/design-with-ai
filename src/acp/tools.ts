@@ -77,6 +77,21 @@ export const toolDefinitions = [
     description: 'List all available HTML spec files in the golden directory',
     inputSchema: { type: 'object', properties: {} },
   },
+  {
+    name: 'designReview_getMarkedContext',
+    description: 'Get context about a marked area on a design screen. In browser mode, context is extracted from the iframe DOM. Server returns screen metadata for the given rect.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        screen: { type: 'string', description: 'Screen name (without _spec.html suffix)' },
+        rect: {
+          type: 'object',
+          description: 'Marker rectangle: { x, y, width, height } in screen coordinates (390×844)',
+        },
+      },
+      required: ['screen'],
+    },
+  },
 ];
 
 /** Execute a design review tool by name. */
@@ -100,6 +115,33 @@ export async function executeTool(
     case 'designReview_listSpecFiles': {
       const files = listSpecFiles();
       return { content: [{ type: 'text', text: JSON.stringify(files, null, 2) }] };
+    }
+    case 'designReview_getMarkedContext': {
+      const screen = String(args.screen || '');
+      const rect = (args.rect as Record<string, unknown>) || {};
+      if (!screen) {
+        return { content: [{ type: 'text', text: 'Error: "screen" parameter is required' }] };
+      }
+      const meta = getScreenMeta(screen);
+      const exists = screenExists(screen);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                screen,
+                rect: rect.x != null ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null,
+                specFile: exists ? getScreenPath(screen) : null,
+                screenMetadata: meta,
+                note: 'Full DOM context extraction requires browser. In browser, use the client overlay (marker on iframe) which calls extractMarkedContext() for element-level details.',
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
     }
     default:
       return { content: [{ type: 'text', text: `Unknown tool: ${name}` }] };

@@ -64,3 +64,26 @@ export interface ClientProject {
 }
 
 export type Project = Workspace | ClientProject;
+
+// ── Rectangle Marker ──
+
+export interface MarkerRect {
+  x: number;     // px, relative to iframe content (390×844)
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface MarkedElement {
+  tag: string;
+  text: string;
+  selector: string;
+  boundingBox: MarkerRect;
+}
+
+export interface MarkerContext {
+  screen: string;
+  state: string;
+  rect: MarkerRect;
+  element: MarkedElement | null;  // null until extracted from iframe
+}

@@ -23,6 +23,7 @@ export {
   PanelRightOpen,
   Plus,
   Save,
+  Square,
   Trash2,
   X,
 } from "lucide-react";

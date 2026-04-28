@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { AgentPanel } from './AgentPanel';
 import { ChatPanel } from './ChatPanel';
+import type { MarkerContext } from '../types';
 
 interface DrawerTabsProps {
   connected: boolean;
   currentScreen?: string;
+  markerContext?: MarkerContext | null;
+  onResetMarker?: () => void;
 }
 
 type Tab = 'agent' | 'chat';
 
-export function DrawerTabs({ connected, currentScreen }: DrawerTabsProps) {
+export function DrawerTabs({ connected, currentScreen, markerContext, onResetMarker }: DrawerTabsProps) {
   const [tab, setTab] = useState<Tab>('chat');
 
   return (
@@ -32,7 +35,7 @@ export function DrawerTabs({ connected, currentScreen }: DrawerTabsProps) {
       </div>
 
       {tab === 'chat' ? (
-        <ChatPanel currentScreen={currentScreen} />
+        <ChatPanel currentScreen={currentScreen} markerContext={markerContext} onResetMarker={onResetMarker} />
       ) : (
         <AgentPanel connected={connected} />
       )}

@@ -92,7 +92,26 @@ class DesignReviewAgent implements Agent {
     try {
       const screens = listScreens() as Record<string, unknown>;
       const screenNames = ((screens.screens as string[]) || []).join(', ');
-      const prompt = `Kamu asisten design review MoneyKitty. Screen yang tersedia: ${screenNames || '(none)'}\n\nPertanyaan: ${userText}\n\nJawab singkat dan informatif.`;
+
+      // Check for marker context in prompt content blocks
+      let markerPrompt = '';
+      const textBlock = params.prompt.find((b: { type: string; text?: string }) => b.type === 'text' && b.text?.startsWith('__marker_context__'));
+      if (textBlock) {
+        const raw = (textBlock as unknown as { text: string }).text;
+        try {
+          const markerData = JSON.parse(raw.replace(/^__marker_context__/, ''));
+          const el = markerData.element as Record<string, string> | undefined;
+          markerPrompt = `\n\n## Marked Area Context\nUser marked area on screen "${markerData.screen}" (state: ${markerData.state}).`;
+          if (el) {
+            markerPrompt += `\nThe marked element is <${el.tag}> with text: "${el.text || ''}".`;
+          }
+          markerPrompt += '\nFocus answer on the marked area specifically.';
+        } catch {
+          // skip malformed marker context
+        }
+      }
+
+      const prompt = `Kamu asisten design review MoneyKitty. Screen yang tersedia: ${screenNames || '(none)'}${markerPrompt}\n\nPertanyaan: ${userText}\n\nJawab singkat dan informatif.`;
 
       const claudeBin = process.env.CLAUDE_BIN_PATH || 'claude';
       const claude = spawn(

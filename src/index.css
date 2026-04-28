@@ -1376,3 +1376,44 @@ iframe {
 @keyframes blink {
   50% { opacity: 0; }
 }
+
+/* ── Phone Container (positions MarkerOverlay above iframe) ── */
+.phone-container {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ── Marker Overlay ── */
+.marker-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+}
+.marker-overlay.active {
+  cursor: crosshair;
+}
+.marker-overlay:not(.active) {
+  pointer-events: none;
+}
+.marker-rect {
+  position: absolute;
+  border: 2px dashed var(--brand-accent);
+  background: rgba(196, 83, 83, 0.08);
+  pointer-events: none;
+}
+.marker-rect.drawing {
+  background: rgba(196, 83, 83, 0.12);
+}
+.marker-size-label {
+  position: absolute;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--brand-accent);
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  line-height: 1.4;
+}

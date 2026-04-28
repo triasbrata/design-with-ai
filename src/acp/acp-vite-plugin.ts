@@ -154,7 +154,7 @@ export function acpPlugin(): Plugin {
         req.on('data', (chunk: string) => { body += chunk; });
         req.on('end', async () => {
           try {
-            const { message } = JSON.parse(body) as { message: string };
+            const { message, context } = JSON.parse(body) as { message: string; context?: Record<string, unknown> };
             const q = message.toLowerCase();
 
             // Tool queries — instant (no streaming)
@@ -182,7 +182,23 @@ export function acpPlugin(): Plugin {
             // AI queries — streaming via ndjson
             const screens = listScreens();
             const screenNames = ((screens as Record<string, unknown>).screens as string[] || []).join(', ');
-            const prompt = `Kamu asisten design review MoneyKitty. Screen yang tersedia: ${screenNames || '(none)'}\n\nPertanyaan: ${message}\n\nJawab singkat dan informatif.`;
+
+            // Build marker context section
+            const markerContext = context?.markerContext as Record<string, unknown> | undefined;
+            let markerPrompt = '';
+            if (markerContext) {
+              const rect = markerContext.rect as Record<string, number> | undefined;
+              const el = markerContext.element as Record<string, string> | undefined;
+              const screen = markerContext.screen as string;
+              const state = markerContext.state as string;
+              markerPrompt = `\n\n## Marked Area Context\nUser marked area at [x:${rect?.x ?? '?'}, y:${rect?.y ?? '?'}, w:${rect?.width ?? '?'}, h:${rect?.height ?? '?'}] on screen "${screen}" (state: ${state}).`;
+              if (el) {
+                markerPrompt += `\nThe marked element is <${el.tag}> with selector "${el.selector || ''}" and text: "${el.text || ''}".`;
+              }
+              markerPrompt += '\nFocus answer on the marked area specifically.';
+            }
+
+            const prompt = `Kamu asisten design review MoneyKitty. Screen yang tersedia: ${screenNames || '(none)'}${markerPrompt}\n\nPertanyaan: ${message}\n\nJawab singkat dan informatif.`;
 
             res.writeHead(200, {
               'Content-Type': 'application/x-ndjson',

@@ -14,7 +14,9 @@ import { HelpModal } from "./components/HelpModal";
 import { ProjectSelector } from "./components/ProjectSelector";
 import { Toast } from "./components/Toast";
 import { screenName } from "./constants";
-import type { CaptureResult, ClientProject } from "./types";
+import type { CaptureResult, ClientProject, MarkerRect, MarkerContext } from "./types";
+import { extractMarkedContext } from "./acp/extractMarkerContext";
+
 
 declare global {
   interface Window {
@@ -117,6 +119,8 @@ export default function App() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [dockTool, setDockTool] = useState("");
   const [capturing, setCapturing] = useState(false);
+  const [markerRect, setMarkerRect] = useState<MarkerRect | null>(null);
+  const [markerContext, setMarkerContext] = useState<MarkerContext | null>(null);
 
   const acpState = useAcpBridge({
     currentScreen,
@@ -127,7 +131,7 @@ export default function App() {
   const screenMeta = metadata?.screens?.[currentScreen];
   const screenStates = screenMeta?.states || ["default"];
 
-  // Build project label for BottomBar
+  const markerMode = dockTool === "marker";
   const projectLabel =
     activeProject?.type === "workspace" && activeFolder
       ? `${activeProject.name} / ${activeFolder.name}`
@@ -137,6 +141,13 @@ export default function App() {
   useEffect(() => {
     setActiveState("default");
   }, [currentScreen]);
+
+  // Reset marker on screen change
+  useEffect(() => {
+    setMarkerRect(null);
+    setMarkerContext(null);
+  }, [currentScreen]);
+
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -154,7 +165,12 @@ export default function App() {
           break;
         case "Escape":
           e.preventDefault();
-          goHome();
+          if (markerRect) {
+            setMarkerRect(null);
+            setMarkerContext(null);
+          } else {
+            goHome();
+          }
           break;
         case "\\":
           e.preventDefault();
@@ -164,7 +180,7 @@ export default function App() {
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [goPrev, goNext, goHome]);
+  }, [goPrev, goNext, goHome, markerRect]);
 
   // Capture the current screen with its active state
   const handleCapture = useCallback(async () => {
@@ -254,6 +270,11 @@ export default function App() {
   const handleDockTool = useCallback(
     (tool: string) => {
       if (tool === dockTool) {
+        // Toggle off — clear marker if marker tool
+        if (tool === "marker") {
+          setMarkerRect(null);
+          setMarkerContext(null);
+        }
         setDockTool("");
         return;
       }
@@ -279,6 +300,29 @@ export default function App() {
   // Update active state when Viewer requests a state change
   const handleStateChange = useCallback((_screen: string, state: string) => {
     setActiveState(state);
+  }, []);
+
+  // Handle marker placement from MarkerOverlay
+  const handleMark = useCallback(
+    (payload: { rect: MarkerRect; screen: string; state: string }) => {
+      setMarkerRect(payload.rect);
+      // Auto-extract context from iframe
+      const iframe = document.getElementById('phone-frame') as HTMLIFrameElement | null;
+      const ctx = extractMarkedContext(
+        payload.screen,
+        payload.state,
+        payload.rect,
+        iframe?.contentDocument ?? null,
+      );
+      if (ctx) setMarkerContext(ctx);
+    },
+    [],
+  );
+
+  // Reset marker state
+  const handleResetMarker = useCallback(() => {
+    setMarkerRect(null);
+    setMarkerContext(null);
   }, []);
 
   // Empty state
@@ -347,6 +391,9 @@ export default function App() {
                   onPrev={goPrev}
                   onNext={goNext}
                   onStateChange={handleStateChange}
+                  markerMode={markerMode}
+                  markerRect={markerRect}
+                  onMark={handleMark}
                 />
               )}
             </div>
@@ -364,7 +411,12 @@ export default function App() {
             open={rightDrawerOpen}
             onToggle={() => setRightDrawerOpen((p) => !p)}
           >
-            <DrawerTabs connected={acpState.connected} currentScreen={currentScreen} />
+            <DrawerTabs
+              connected={acpState.connected}
+              currentScreen={currentScreen}
+              markerContext={markerContext}
+              onResetMarker={handleResetMarker}
+            />
           </RightDrawer>
           {!isSummary && (
             <BottomBar
