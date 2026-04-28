@@ -1,3 +1,35 @@
+@import "tailwindcss";
+
+/* ── Untitled UI Brand Theme ── */
+@theme {
+  --color-brand-solid: #C45353;
+  --color-brand-solid_hover: #A84444;
+  --color-brand-primary: #FDFBF7;
+  --color-brand-secondary: #C45353;
+  --color-brand-secondary_hover: #A84444;
+  --color-primary: #FDFBF7;
+  --color-primary_hover: #F5EFE6;
+  --color-secondary: #4A4A4A;
+  --color-secondary_hover: #2B2B2B;
+  --color-tertiary: #8A8075;
+  --color-tertiary_hover: #2B2B2B;
+  --color-fg-quaternary: #8A8075;
+  --color-fg-quaternary_hover: #2B2B2B;
+  --color-fg-brand-secondary: #C45353;
+  --color-fg-brand-secondary_alt: #FFEAE5;
+  --color-fg-brand-secondary_hover: #A84444;
+  --color-error-solid: #C45353;
+  --color-error-solid_hover: #A84444;
+  --color-error-primary: #FFF9F5;
+  --color-error-primary_hover: #FFEAE5;
+  --color-error_subtle: #FFEAE5;
+  --color-fg-error-secondary: #C45353;
+  --color-fg-error-primary: #C45353;
+  --color-fg-error-primary_hover: #A84444;
+  --color-bg-surface: #FDFBF7;
+  --color-bg-page: #F5EDE0;
+}
+
 /* ── Brand Design Tokens ── */
 :root {
   --brand-bg: #FEF6E9;
