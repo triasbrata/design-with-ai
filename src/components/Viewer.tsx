@@ -1,7 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { PhoneFrame } from './PhoneFrame';
 import { MetaPanel } from './MetaPanel';
-import { ScreenMenu } from './ScreenMenu';
 import type { Metadata } from '../types';
 
 interface ViewerProps {
@@ -11,8 +10,6 @@ interface ViewerProps {
   metadata: Metadata | null;
   activeState: string;
   getScreenUrl: (screen: string, state?: string) => string;
-  menuOpen: boolean;
-  onToggleMenu: () => void;
   onSelectScreen: (screen: string) => void;
   onPrev: () => void;
   onNext: () => void;
@@ -26,8 +23,6 @@ export function Viewer({
   metadata,
   activeState,
   getScreenUrl,
-  menuOpen,
-  onToggleMenu,
   onSelectScreen,
   onPrev,
   onNext,
@@ -63,20 +58,8 @@ export function Viewer({
     iframe.src = getScreenUrl(screen, activeState);
   }, [activeState, screen, getScreenUrl]);
 
-  const screens = metadata ? Object.keys(metadata.screens) : [];
-
   return (
     <>
-      <div className="burger-float">
-        <ScreenMenu
-          screens={screens}
-          activeScreen={screen}
-          onSelect={onSelectScreen}
-          open={menuOpen}
-          onToggle={onToggleMenu}
-        />
-      </div>
-
       <div className="main-layout">
         <PhoneFrame
           ref={phoneRef}

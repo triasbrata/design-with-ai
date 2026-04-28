@@ -6,6 +6,7 @@ import { Viewer } from "./components/Viewer";
 import { Summary } from "./components/Summary";
 import { CaptureProgress } from "./components/CaptureProgress";
 import { BottomBar } from "./components/BottomBar";
+import { LeftDrawer } from "./components/LeftDrawer";
 import { RightDrawer } from "./components/RightDrawer";
 import { HelpModal } from "./components/HelpModal";
 import { ProjectSelector } from "./components/ProjectSelector";
@@ -108,7 +109,7 @@ export default function App() {
     goHome,
   } = useScreens(activeInputDir, preloadedMetadata);
 
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [leftDrawerOpen, setLeftDrawerOpen] = useState(false);
   const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
   const [activeState, setActiveState] = useState("default");
   const [helpOpen, setHelpOpen] = useState(false);
@@ -149,7 +150,7 @@ export default function App() {
           break;
         case "\\":
           e.preventDefault();
-          setMenuOpen((prev) => !prev);
+          setRightDrawerOpen((prev) => !prev);
           break;
       }
     };
@@ -334,8 +335,6 @@ export default function App() {
                   metadata={metadata}
                   getScreenUrl={getScreenUrl}
                   activeState={activeState}
-                  menuOpen={menuOpen}
-                  onToggleMenu={() => setMenuOpen((p) => !p)}
                   onSelectScreen={navigate}
                   onPrev={goPrev}
                   onNext={goNext}
@@ -344,10 +343,19 @@ export default function App() {
               )}
             </div>
           </div>
+          <LeftDrawer
+            open={leftDrawerOpen}
+            onToggle={() => setLeftDrawerOpen((p) => !p)}
+            metadata={metadata}
+          />
           <RightDrawer
             open={rightDrawerOpen}
             onToggle={() => setRightDrawerOpen((p) => !p)}
+            screens={orderedScreens}
+            activeScreen={currentScreen}
             metadata={metadata}
+            onSelect={navigate}
+            projectName={projectLabel}
           />
           {!isSummary && (
             <BottomBar

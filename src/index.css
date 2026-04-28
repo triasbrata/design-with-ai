@@ -196,6 +196,45 @@ body {
   z-index: 16;
 }
 
+/* ── Left Drawer ── */
+.left-drawer-trigger {
+  position: fixed;
+  top: 50px;
+  left: 12px;
+  z-index: 16;
+}
+.left-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  width: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--brand-surface);
+  border-right: 1px solid transparent;
+  transition: width 0.25s ease;
+}
+.left-drawer.open {
+  width: var(--sidebar-width);
+  border-right-color: var(--brand-border);
+}
+.left-drawer-inner {
+  width: var(--sidebar-width);
+  padding: 16px 12px;
+}
+.left-drawer h3 {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.left-drawer .sub {
+  font-size: 10px;
+  color: var(--brand-muted);
+  margin-bottom: 16px;
+}
+
 /* ── Right Drawer Trigger ── */
 .drawer-trigger {
   position: fixed;
@@ -235,6 +274,115 @@ body {
   font-size: 10px;
   color: var(--brand-muted);
   margin-bottom: 16px;
+}
+
+/* ── Right Drawer Sections (collapsible) ── */
+.rd-section {
+  margin-bottom: 4px;
+}
+.rd-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand-text);
+  text-align: left;
+  transition: background 0.1s;
+}
+.rd-section-header:hover {
+  background: var(--brand-chip);
+}
+.rd-chevron {
+  width: 14px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--brand-muted);
+}
+.rd-section-icon {
+  color: var(--brand-muted);
+}
+.rd-section-title {
+  flex: 1;
+}
+.rd-section-count {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--brand-muted);
+  background: var(--brand-chip);
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+.rd-section-body {
+  padding-left: 24px;
+  margin-bottom: 8px;
+}
+.rd-project-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--brand-accent);
+  padding: 4px 6px;
+  margin-bottom: 4px;
+}
+.rd-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 6px;
+  font-size: 11px;
+}
+.rd-meta-label {
+  color: var(--brand-muted);
+  font-weight: 500;
+}
+.rd-meta-value {
+  color: var(--brand-text);
+  font-weight: 600;
+}
+.rd-tier-group {
+  margin-bottom: 8px;
+}
+.rd-tier-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--brand-accent);
+  padding: 5px 6px 3px;
+  letter-spacing: 0.5px;
+}
+.rd-screen-item {
+  display: block;
+  width: 100%;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: #4A4A4A;
+  text-decoration: none;
+  cursor: pointer;
+  background: none;
+  border: none;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.1s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rd-screen-item:hover {
+  background: var(--brand-chip);
+}
+.rd-screen-item.active {
+  background: var(--brand-accent-light);
+  color: var(--brand-accent);
+  font-weight: 600;
 }
 
 /* ── Workspace Drawer ── */
