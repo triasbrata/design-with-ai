@@ -93,6 +93,20 @@ class DesignReviewAgent implements Agent {
       const screens = listScreens() as Record<string, unknown>;
       const screenNames = ((screens.screens as string[]) || []).join(', ');
 
+      // Check for file context in prompt content blocks
+      let filePrompt = '';
+      const fileBlock = params.prompt.find((b: { type: string; text?: string }) => b.type === 'text' && b.text?.startsWith('__file_context__'));
+      if (fileBlock) {
+        const raw = (fileBlock as unknown as { text: string }).text;
+        try {
+          const fileData = JSON.parse(raw.replace(/^__file_context__/, ''));
+          filePrompt = `\n\n## File Location\nSpec file: ${fileData.specFile || fileData.path || ''}`;
+          if (fileData.queryParam) filePrompt += `\nURL query: ${fileData.queryParam}`;
+        } catch {
+          // skip malformed
+        }
+      }
+
       // Check for marker context in prompt content blocks
       let markerPrompt = '';
       const textBlock = params.prompt.find((b: { type: string; text?: string }) => b.type === 'text' && b.text?.startsWith('__marker_context__'));
@@ -111,7 +125,7 @@ class DesignReviewAgent implements Agent {
         }
       }
 
-      const prompt = `Kamu asisten design review MoneyKitty. Screen yang tersedia: ${screenNames || '(none)'}${markerPrompt}\n\nPertanyaan: ${userText}\n\nJawab singkat dan informatif.`;
+      const prompt = `Kamu asisten design review MoneyKitty. Screen yang tersedia: ${screenNames || '(none)'}${filePrompt}${markerPrompt}\n\nPertanyaan: ${userText}\n\nJawab singkat dan informatif.`;
 
       const claudeBin = process.env.CLAUDE_BIN_PATH || 'claude';
       const claude = spawn(

@@ -110,6 +110,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
           message: query,
           context: {
             currentScreen,
+            queryParam: currentScreen ? `?file=${currentScreen}` : undefined,
             markerContext: markerContext || undefined,
           },
         }),

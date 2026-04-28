@@ -13,7 +13,7 @@
  */
 import type { Plugin } from 'vite';
 import { spawn, execSync } from 'node:child_process';
-import { executeTool, listScreens, getScreenMeta, toolDefinitions } from './tools.js';
+import { executeTool, listScreens, getScreenMeta, getScreenPath, toolDefinitions } from './tools.js';
 
 function findClaudeBinary(): string {
   if (process.env.CLAUDE_BIN_PATH) return process.env.CLAUDE_BIN_PATH;
@@ -183,6 +183,16 @@ export function acpPlugin(): Plugin {
             const screens = listScreens();
             const screenNames = ((screens as Record<string, unknown>).screens as string[] || []).join(', ');
 
+            // Build file path context
+            const currentScreen = context?.currentScreen as string | undefined;
+            const queryParam = context?.queryParam as string | undefined;
+            let filePrompt = '';
+            if (currentScreen) {
+              const specPath = getScreenPath(currentScreen);
+              filePrompt = `\n\n## File Location\nSpec file: ${specPath}`;
+              if (queryParam) filePrompt += `\nURL query: ${queryParam}`;
+            }
+
             // Build marker context section
             const markerContext = context?.markerContext as Record<string, unknown> | undefined;
             let markerPrompt = '';
@@ -198,7 +208,7 @@ export function acpPlugin(): Plugin {
               markerPrompt += '\nFocus answer on the marked area specifically.';
             }
 
-            const prompt = `Kamu asisten design review MoneyKitty. Screen yang tersedia: ${screenNames || '(none)'}${markerPrompt}\n\nPertanyaan: ${message}\n\nJawab singkat dan informatif.`;
+            const prompt = `Kamu asisten design review MoneyKitty. Screen yang tersedia: ${screenNames || '(none)'}${filePrompt}${markerPrompt}\n\nPertanyaan: ${message}\n\nJawab singkat dan informatif.`;
 
             res.writeHead(200, {
               'Content-Type': 'application/x-ndjson',
