@@ -1,11 +1,11 @@
 import { useState, useCallback } from "react";
-import type { ProjectConfig } from "../types";
+import type { Project, ServerProject, ClientProject } from "../types";
 
 const STORAGE_KEY = "golden-review.projects.v1";
 const ACTIVE_KEY = "golden-review.active-project.v1";
 
-const DEFAULT_PROJECTS: ProjectConfig[] = [
-  { name: "MoneyKitty", dir: "../../docs/moneykitty/design/golden/" },
+const DEFAULT_PROJECTS: Project[] = [
+  { type: "server", name: "MoneyKitty", dir: "../../docs/moneykitty/design/golden/" },
 ];
 
 function loadFromStorage<T>(key: string, fallback: T): T {
@@ -18,7 +18,7 @@ function loadFromStorage<T>(key: string, fallback: T): T {
 }
 
 export function useProjects() {
-  const [projects, setProjects] = useState<ProjectConfig[]>(() =>
+  const [projects, setProjects] = useState<Project[]>(() =>
     loadFromStorage(STORAGE_KEY, DEFAULT_PROJECTS),
   );
   const [activeIndex, setActiveIndex] = useState<number>(() =>
@@ -27,24 +27,40 @@ export function useProjects() {
 
   const activeProject = projects[activeIndex] ?? projects[0];
 
-  const persistProjects = useCallback((next: ProjectConfig[]) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    setProjects(next);
+  /** Persist only ServerProject entries to localStorage */
+  const persistServerProjects = useCallback((allProjects: Project[]) => {
+    const serverProjects = allProjects.filter(
+      (p): p is ServerProject => p.type === "server",
+    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(serverProjects));
+    setProjects(allProjects);
   }, []);
 
   const addProject = useCallback(
-    (name: string, dir: string) => {
-      const next = [...projects, { name, dir }];
-      persistProjects(next);
+    (project: Project) => {
+      const next = [...projects, project];
+      if (project.type === "server") {
+        persistServerProjects(next);
+      } else {
+        // Client projects: in-memory only (files can't be serialized)
+        setProjects(next);
+      }
     },
-    [projects, persistProjects],
+    [projects, persistServerProjects],
   );
 
   const removeProject = useCallback(
     (index: number) => {
       if (projects.length <= 1) return;
+
+      // Revoke blob URLs for client projects
+      const removed = projects[index];
+      if (removed?.type === "client") {
+        removed.files.forEach((f) => URL.revokeObjectURL(f.blobUrl));
+      }
+
       const next = projects.filter((_, i) => i !== index);
-      persistProjects(next);
+      persistServerProjects(next);
       setActiveIndex((prev) => {
         if (prev >= next.length) {
           const adjusted = Math.max(0, next.length - 1);
@@ -59,7 +75,7 @@ export function useProjects() {
         return prev;
       });
     },
-    [projects, persistProjects],
+    [projects, persistServerProjects],
   );
 
   const setActive = useCallback((index: number) => {

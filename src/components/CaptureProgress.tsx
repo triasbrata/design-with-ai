@@ -3,11 +3,11 @@ import type { CaptureResult, Metadata } from "../types";
 import { Button } from "./base";
 import { X, Check, Loader2 } from "./base/icons";
 
-
 interface CaptureProgressProps {
   screens: string[];
   metadata: Metadata;
-  dir: string;
+  getScreenUrl: (screen: string, state?: string) => string;
+  saveCapture: (filename: string, dataUrl: string) => Promise<CaptureResult>;
   onDone: (results: CaptureResult[]) => void;
 }
 
@@ -41,7 +41,7 @@ function waitForLoad(iframe: HTMLIFrameElement, timeoutMs: number): Promise<void
   });
 }
 
-export function CaptureProgress({ screens, metadata, dir, onDone }: CaptureProgressProps) {
+export function CaptureProgress({ screens, metadata, getScreenUrl, saveCapture, onDone }: CaptureProgressProps) {
   const [currentFile, setCurrentFile] = useState("");
   const [progress, setProgress] = useState("");
   const [resultsLog, setResultsLog] = useState<CaptureResult[]>([]);
@@ -88,11 +88,12 @@ export function CaptureProgress({ screens, metadata, dir, onDone }: CaptureProgr
           iframe.style.width = "390px";
           iframe.style.height = "844px";
           iframe.style.border = "none";
+          iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
           wrapper.appendChild(iframe);
           document.body.appendChild(wrapper);
 
           try {
-            iframe.src = `/screens/${screen}.html?dir=${encodeURIComponent(dir)}`;
+            iframe.src = getScreenUrl(screen);
             await waitForLoad(iframe, 15000);
 
             if (!isDefault && !isFirstState) {
@@ -103,7 +104,7 @@ export function CaptureProgress({ screens, metadata, dir, onDone }: CaptureProgr
               if (win?.__baseline?.setState) {
                 win.postMessage({ type: "setState", state }, "*");
               } else {
-                iframe.src = `/screens/${screen}_${state}.html?dir=${encodeURIComponent(dir)}`;
+                iframe.src = getScreenUrl(screen, state);
                 await waitForLoad(iframe, 15000);
               }
             }
@@ -125,13 +126,7 @@ export function CaptureProgress({ screens, metadata, dir, onDone }: CaptureProgr
 
             const dataUrl = canvas.toDataURL();
 
-            const resp = await fetch(`/api/capture?dir=${encodeURIComponent(dir)}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ filename, data: dataUrl }),
-            });
-
-            const capResult = await resp.json();
+            const capResult = await saveCapture(filename, dataUrl);
             if (!capResult.ok) {
               throw new Error(capResult.error || "save failed");
             }

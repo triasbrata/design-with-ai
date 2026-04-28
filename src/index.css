@@ -964,6 +964,24 @@ iframe {
   color: var(--brand-text);
   border-color: var(--brand-muted-light);
 }
+.ps-add-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ps-item-badge {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  border-radius: 4px;
+  background: var(--brand-chip);
+  color: var(--brand-muted);
+  vertical-align: middle;
+}
 
 /* ── Project Selector Modal ── */
 .ps-overlay {

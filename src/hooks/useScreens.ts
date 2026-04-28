@@ -2,13 +2,17 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import type { Metadata } from "../types";
 import { TIERS } from "../constants";
 
-export function useScreens(dir: string) {
+export function useScreens(dir: string, preloadedMetadata?: Metadata | null) {
   const [metadata, setMetadata] = useState<Metadata | null>(null);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [currentScreen, setCurrentScreen] = useState("");
 
-  // Fetch metadata — re-fetch when dir changes
+  // Fetch metadata — use preloaded (client project) or fetch from server
   useEffect(() => {
+    if (preloadedMetadata != null) {
+      setMetadata(preloadedMetadata);
+      return;
+    }
     setMetadata(null);
     fetch(`/api/metadata?dir=${encodeURIComponent(dir)}`)
       .then((r) => r.json())
@@ -20,7 +24,7 @@ export function useScreens(dir: string) {
           components: {},
         }),
       );
-  }, [dir]);
+  }, [dir, preloadedMetadata]);
 
   // Compute ordered screen list from metadata
   const orderedScreens = useMemo(() => {

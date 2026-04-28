@@ -10,7 +10,7 @@ interface ViewerProps {
   total: number;
   metadata: Metadata | null;
   activeState: string;
-  dir: string;
+  getScreenUrl: (screen: string, state?: string) => string;
   menuOpen: boolean;
   onToggleMenu: () => void;
   onSelectScreen: (screen: string) => void;
@@ -25,7 +25,7 @@ export function Viewer({
   total,
   metadata,
   activeState,
-  dir,
+  getScreenUrl,
   menuOpen,
   onToggleMenu,
   onSelectScreen,
@@ -60,8 +60,8 @@ export function Viewer({
     }
 
     // No contract - load variant file directly
-    iframe.src = `/screens/${screen}_${activeState}.html?dir=${encodeURIComponent(dir)}`;
-  }, [activeState, screen, dir]);
+    iframe.src = getScreenUrl(screen, activeState);
+  }, [activeState, screen, getScreenUrl]);
 
   const screens = metadata ? Object.keys(metadata.screens) : [];
 
@@ -81,7 +81,7 @@ export function Viewer({
         <PhoneFrame
           ref={phoneRef}
           key={`${screen}-${activeState}`}
-          src={`/screens/${screen}.html?dir=${encodeURIComponent(dir)}`}
+          src={getScreenUrl(screen)}
           onLoad={handleLoad}
         />
         <MetaPanel

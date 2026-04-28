@@ -38,7 +38,22 @@ export interface CaptureResult {
   error?: string;
 }
 
-export interface ProjectConfig {
+export interface ServerProject {
+  type: "server";
   name: string;
   dir: string;
 }
+
+export interface ClientFileEntry {
+  name: string;
+  blobUrl: string;
+}
+
+export interface ClientProject {
+  type: "client";
+  name: string;
+  files: ClientFileEntry[];
+  metadata: Metadata;
+}
+
+export type Project = ServerProject | ClientProject;

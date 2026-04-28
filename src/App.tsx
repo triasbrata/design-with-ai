@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useScreens } from "./hooks/useScreens";
 import { useProjects } from "./hooks/useProjects";
 import { useToast } from "./hooks/useToast";
@@ -11,7 +11,7 @@ import { HelpModal } from "./components/HelpModal";
 import { ProjectSelector } from "./components/ProjectSelector";
 import { Toast } from "./components/Toast";
 import { screenName } from "./constants";
-import type { CaptureResult } from "./types";
+import type { CaptureResult, ClientProject } from "./types";
 
 declare global {
   interface Window {
@@ -29,7 +29,70 @@ export default function App() {
     setActive,
   } = useProjects();
 
-  const dir = activeProject?.dir ?? "";
+  const { toast, show } = useToast();
+
+  // Derive dir and helpers based on project type
+  const dir = activeProject?.type === "server" ? activeProject.dir : "";
+
+  // Pre-built file URL map for client projects
+  const projectFileMap = useMemo(() => {
+    if (activeProject?.type !== "client") return null;
+    const map: Record<string, string> = {};
+    for (const f of activeProject.files) {
+      const key = f.name.replace(/\.html$/, "");
+      map[key] = f.blobUrl;
+    }
+    return map;
+  }, [activeProject]);
+
+  // Resolve screen URLs: server → Vite middleware, client → blob URL
+  const getScreenUrl = useCallback(
+    (screen: string, state?: string): string => {
+      if (activeProject?.type === "server") {
+        if (state) {
+          return `/screens/${screen}_${state}.html?dir=${encodeURIComponent(activeProject.dir)}`;
+        }
+        return `/screens/${screen}.html?dir=${encodeURIComponent(activeProject.dir)}`;
+      }
+      // Client project
+      if (!projectFileMap) return "";
+      if (state && projectFileMap[`${screen}_${state}`]) {
+        return projectFileMap[`${screen}_${state}`];
+      }
+      return projectFileMap[screen] ?? "";
+    },
+    [activeProject, projectFileMap],
+  );
+
+  // Save capture: server → POST, client → no-op (download already triggered)
+  const saveCapture = useCallback(
+    async (filename: string, dataUrl: string): Promise<CaptureResult> => {
+      if (activeProject?.type === "client") {
+        return { filename, ok: true };
+      }
+      try {
+        const res = await fetch(`/api/capture?dir=${encodeURIComponent(dir)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename, data: dataUrl }),
+        });
+        const result = await res.json();
+        if (!result.ok) {
+          return { filename, ok: false, error: result.error || "save failed" };
+        }
+        return { filename, ok: true };
+      } catch (err) {
+        return { filename, ok: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    [activeProject, dir],
+  );
+
+  // Pre-loaded metadata for client projects (skip fetch)
+  const preloadedMetadata = activeProject?.type === "client"
+    ? (activeProject as ClientProject).metadata
+    : undefined;
+
   const {
     metadata,
     orderedScreens,
@@ -41,9 +104,7 @@ export default function App() {
     goNext,
     goPrev,
     goHome,
-  } = useScreens(dir);
-
-  const { toast, show } = useToast();
+  } = useScreens(dir, preloadedMetadata);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
@@ -118,7 +179,7 @@ export default function App() {
       });
       const dataUrl = canvas.toDataURL("image/png");
 
-      // Trigger download via anchor click
+      // Trigger download via anchor click (works for both project types)
       const link = document.createElement("a");
       link.download = filename;
       link.href = dataUrl;
@@ -126,26 +187,30 @@ export default function App() {
       link.click();
       document.body.removeChild(link);
 
-      // POST to /api/capture with dir
-      try {
-        const res = await fetch(`/api/capture?dir=${encodeURIComponent(dir)}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename, data: dataUrl }),
-        });
-        const result = await res.json();
-        if (result.ok) {
-          show(`Saved: ${result.path}`, true);
-        } else {
-          show(`Save failed: ${result.error}`, false);
+      // For server projects: POST to save on server
+      if (activeProject?.type !== "client") {
+        try {
+          const res = await fetch(`/api/capture?dir=${encodeURIComponent(dir)}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filename, data: dataUrl }),
+          });
+          const result = await res.json();
+          if (result.ok) {
+            show(`Saved: ${result.path}`, true);
+          } else {
+            show(`Save failed: ${result.error}`, false);
+          }
+        } catch {
+          show("Captured locally but upload failed", false);
         }
-      } catch {
-        show("Captured locally but upload failed", false);
+      } else {
+        show(`Downloaded: ${filename}`, true);
       }
     } catch {
       show("Capture failed", false);
     }
-  }, [currentScreen, activeState, metadata, show, dir]);
+  }, [currentScreen, activeState, metadata, show, dir, activeProject]);
 
   // Start batch capture of all screens
   const handleCaptureAll = useCallback(() => {
@@ -223,7 +288,8 @@ export default function App() {
         <CaptureProgress
           screens={orderedScreens}
           metadata={metadata!}
-          dir={dir}
+          getScreenUrl={getScreenUrl}
+          saveCapture={saveCapture}
           onDone={handleCaptureAllDone}
         />
       ) : (
@@ -244,7 +310,6 @@ export default function App() {
                 <Summary
                   screens={orderedScreens}
                   metadata={metadata}
-                  dir={dir}
                   onSelect={navigate}
                   onBack={goPrev}
                   onCaptureAll={handleCaptureAll}
@@ -255,7 +320,7 @@ export default function App() {
                   index={currentIndex}
                   total={total}
                   metadata={metadata}
-                  dir={dir}
+                  getScreenUrl={getScreenUrl}
                   activeState={activeState}
                   menuOpen={menuOpen}
                   onToggleMenu={() => setMenuOpen((p) => !p)}

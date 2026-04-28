@@ -14,6 +14,7 @@ export {
   ChevronRight,
   ClipboardList,
   Folder,
+  FolderOpen,
   HelpCircle,
   List,
   Loader2,

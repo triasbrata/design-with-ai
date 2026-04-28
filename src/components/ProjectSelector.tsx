@@ -1,14 +1,15 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import type { ProjectConfig } from "../types";
+import type { Project, Metadata } from "../types";
+import type { ClientFileEntry } from "../types";
 import { Button } from "./base";
-import { Check, Folder, Plus, Trash2, ChevronDown } from "./base/icons";
+import { Check, Folder, FolderOpen, Plus, Trash2, ChevronDown } from "./base/icons";
 
 interface ProjectSelectorProps {
-  projects: ProjectConfig[];
+  projects: Project[];
   activeIndex: number;
   onSelect: (index: number) => void;
-  onAdd: (name: string, dir: string) => void;
+  onAdd: (project: Project) => void;
   onRemove: (index: number) => void;
 }
 
@@ -23,7 +24,9 @@ export function ProjectSelector({
   const [showAdd, setShowAdd] = useState(false);
   const [addName, setAddName] = useState("");
   const [addDir, setAddDir] = useState("");
+  const [browsing, setBrowsing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -41,16 +44,82 @@ export function ProjectSelector({
     const name = addName.trim();
     const dir = addDir.trim();
     if (!name || !dir) return;
-    onAdd(name, dir);
+    onAdd({ type: "server", name, dir });
     setAddName("");
     setAddDir("");
     setShowAdd(false);
   }
 
+  // Handle folder selection via webkitdirectory input
+  const handleBrowse = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+
+      setBrowsing(true);
+
+      try {
+        const fileArray = Array.from(files);
+
+        // Find screen-metadata.json
+        const metaFile = fileArray.find((f) => f.name === "screen-metadata.json");
+        if (!metaFile) {
+          console.warn("No screen-metadata.json found in selected folder");
+          setBrowsing(false);
+          return;
+        }
+
+        // Parse metadata
+        const metaText = await metaFile.text();
+        const metadata: Metadata = JSON.parse(metaText);
+
+        // Create blob URLs for HTML files
+        const entries: ClientFileEntry[] = [];
+        const htmlFiles = fileArray.filter((f) => f.name.endsWith(".html"));
+        for (const file of htmlFiles) {
+          const blobUrl = URL.createObjectURL(file);
+          entries.push({ name: file.name, blobUrl });
+        }
+
+        // Derive project name from folder name
+        const firstFile = fileArray[0];
+        const folderName = firstFile.webkitRelativePath.split("/")[0];
+        const projectName = folderName
+          .replace(/[_-]/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+
+        onAdd({
+          type: "client",
+          name: projectName,
+          files: entries,
+          metadata,
+        });
+      } catch (err) {
+        console.error("Failed to load folder:", err);
+      } finally {
+        setBrowsing(false);
+        // Reset input value so same folder can be re-selected
+        e.target.value = "";
+      }
+    },
+    [onAdd],
+  );
+
   const activeProject = projects[activeIndex];
 
   return (
     <div className="ps-wrapper" ref={dropdownRef}>
+      {/* Hidden file input for native folder picker */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        style={{ display: "none" }}
+        // @ts-ignore - webkitdirectory/directory not in TS lib types
+        webkitdirectory=""
+        directory=""
+        onChange={handleBrowse}
+      />
+
       {/* Trigger */}
       <button className="ps-trigger" onClick={() => setOpen((p) => !p)} title="Switch project">
         <Folder size={14} />
@@ -65,7 +134,7 @@ export function ProjectSelector({
 
           {projects.map((p, i) => (
             <button
-              key={`${p.dir}-${i}`}
+              key={`${p.name}-${i}`}
               className={`ps-item${i === activeIndex ? " active" : ""}`}
               onClick={() => {
                 onSelect(i);
@@ -73,7 +142,12 @@ export function ProjectSelector({
               }}
             >
               <Folder size={14} className="ps-item-icon" />
-              <span className="ps-item-name">{p.name}</span>
+              <span className="ps-item-name">
+                {p.name}
+                {p.type === "client" ? (
+                  <span className="ps-item-badge">local</span>
+                ) : null}
+              </span>
               {i === activeIndex && <Check size={14} className="ps-item-check" />}
               {projects.length > 1 && (
                 <button
@@ -102,6 +176,18 @@ export function ProjectSelector({
           >
             <Plus size={14} />
             Add Project
+          </button>
+
+          <button
+            className="ps-add-btn"
+            onClick={() => {
+              setOpen(false);
+              fileInputRef.current?.click();
+            }}
+            disabled={browsing}
+          >
+            <FolderOpen size={14} />
+            {browsing ? "Loading..." : "Browse Folder"}
           </button>
         </div>
       )}
