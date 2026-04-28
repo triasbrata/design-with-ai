@@ -1,11 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 
 interface RightDrawerProps {
   open: boolean;
   onToggle: () => void;
+  children?: ReactNode;
 }
 
-export function RightDrawer({ open, onToggle }: RightDrawerProps) {
+export function RightDrawer({ open, onToggle, children }: RightDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,8 +34,9 @@ export function RightDrawer({ open, onToggle }: RightDrawerProps) {
       {/* Drawer panel — slides from right */}
       <aside ref={drawerRef} className={`right-drawer${open ? ' open' : ''}`}>
         <div className="right-drawer-inner">
-          <h3>Panel</h3>
-          <p className="sub">Coming soon</p>
+          <h3>ACP Agent</h3>
+          <p className="sub">Agent Client Protocol</p>
+          {children}
         </div>
       </aside>
     </>

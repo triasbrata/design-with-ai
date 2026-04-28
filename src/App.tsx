@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useScreens } from './hooks/useScreens';
 import { useToast } from './hooks/useToast';
+import { useAcpBridge } from './acp/useAcpBridge';
+import { AgentPanel } from './acp/AgentPanel';
 import { Viewer } from './components/Viewer';
 import { Summary } from './components/Summary';
 import { CaptureProgress } from './components/CaptureProgress';
@@ -39,6 +41,12 @@ export default function App() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [dockTool, setDockTool] = useState('');
   const [capturing, setCapturing] = useState(false);
+
+  const acpState = useAcpBridge({
+    currentScreen,
+    activeState,
+    totalScreens: total,
+  });
 
   const screenMeta = metadata?.screens?.[currentScreen];
   const screenStates = screenMeta?.states || ['default'];
@@ -241,7 +249,9 @@ export default function App() {
                 />
               )}
             </div>
-            <RightDrawer open={rightDrawerOpen} onToggle={() => setRightDrawerOpen((p) => !p)} />
+            <RightDrawer open={rightDrawerOpen} onToggle={() => setRightDrawerOpen((p) => !p)}>
+              <AgentPanel connected={acpState.connected} />
+            </RightDrawer>
           </div>
           {!isSummary && (
             <BottomBar

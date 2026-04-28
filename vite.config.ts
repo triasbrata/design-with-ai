@@ -8,6 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import fs from 'node:fs';
 import type { Plugin } from 'vite';
+import { acpPlugin } from './src/acp/acp-vite-plugin.js';
 
 const GOLDEN_DIR = path.resolve(
   process.env.GOLDEN_DIR || path.join(__dirname, '../../docs/moneykitty/design/golden')
@@ -72,7 +73,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
     },
   },
-  plugins: [tailwindcss(), react(), capturePlugin()],
+  plugins: [tailwindcss(), react(), capturePlugin(), acpPlugin()],
   server: {
     port: 4200,
     open: false,
