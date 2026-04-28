@@ -2,3 +2,4 @@ node_modules/
 *.png
 *.html
 !index.html
+.omc/
