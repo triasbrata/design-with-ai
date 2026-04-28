@@ -797,6 +797,19 @@ iframe {
   flex: 1;
 }
 
+/* ── Project Selector Bar ── */
+.project-selector-bar {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 18;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .shortcut-hint {
   font-size: 9px;
   color: var(--brand-muted-light);

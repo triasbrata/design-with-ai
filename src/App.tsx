@@ -228,6 +228,16 @@ export default function App() {
         />
       ) : (
         <>
+          {/* Project selector — fixed top-center */}
+          <div className="project-selector-bar">
+            <ProjectSelector
+              projects={projects}
+              activeIndex={activeIndex}
+              onSelect={setActive}
+              onAdd={addProject}
+              onRemove={removeProject}
+            />
+          </div>
           <div className="content-area">
             <div className="main-content">
               {isSummary ? (
