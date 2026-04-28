@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { MessageCircle } from "./base/icons";
+import { MessageCircle, X } from "./base/icons";
 
 interface RightDrawerProps {
   open: boolean;
@@ -32,6 +32,11 @@ export function RightDrawer({ open, onToggle, pinned, onPinToggle, children }: R
       </div>
       <aside ref={drawerRef} className={open ? `right-drawer${pinned ? " push" : " floating"} open` : "right-drawer"}>
         <div className="right-drawer-inner">
+          <div className="rd-drawer-header">
+            <button className="ld-close-btn" onClick={onToggle} title="Close drawer">
+              <X size={14} />
+            </button>
+          </div>
           {children}
         </div>
       </aside>

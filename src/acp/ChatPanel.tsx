@@ -167,7 +167,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
   const [model, setModel] = useState('opus_47');
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>('max');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const [dropdownPos, setDropdownPos] = useState<{ bottom: number; left: number }>({ bottom: 0, left: 0 });
   const [chatName, setChatName] = useState('New Chat');
   const [editingName, setEditingName] = useState(false);
   const [modelSearch, setModelSearch] = useState('');
@@ -522,7 +522,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
       left = window.innerWidth - w - 8;
     }
 
-    setDropdownPos({ top: rect.bottom + 4, left });
+    setDropdownPos({ bottom: window.innerHeight - rect.top + 4, left });
     setActiveDropdown(type);
   }
 
@@ -701,7 +701,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
       {activeDropdown === 'approval' && (
         <div
           className="chat-dropdown chat-approval-dropdown"
-          style={{ top: dropdownPos.top, left: dropdownPos.left }}
+          style={{ bottom: dropdownPos.bottom, left: dropdownPos.left }}
           onClick={(e) => e.stopPropagation()}
         >
           {APPROVAL_OPTIONS.map((opt) => (
@@ -734,7 +734,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
       {activeDropdown === 'model' && (
         <div
           className="chat-dropdown chat-model-dropdown"
-          style={{ top: dropdownPos.top, left: dropdownPos.left }}
+          style={{ bottom: dropdownPos.bottom, left: dropdownPos.left }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Search Header */}
@@ -817,7 +817,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
       {activeDropdown === 'reasoning' && (
         <div
           className="chat-dropdown chat-reasoning-dropdown"
-          style={{ top: dropdownPos.top, left: dropdownPos.left }}
+          style={{ bottom: dropdownPos.bottom, left: dropdownPos.left }}
           onClick={(e) => e.stopPropagation()}
         >
           {REASONING_OPTIONS.map((opt) => (
