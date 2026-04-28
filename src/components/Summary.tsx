@@ -1,5 +1,6 @@
 import type { Metadata } from '../types';
 import { screenName, TIERS } from '../constants';
+import { Button } from './base';
 
 interface SummaryProps {
   screens: string[];
@@ -39,13 +40,13 @@ export function Summary({
   return (
     <div style={{ width: '100%' }}>
       <div className="toolbar">
-        <button className="nav-btn" onClick={onBack} title="Back">
-          &#9664;
-        </button>
+        <Button color="secondary" size="sm" onClick={onBack}>
+          &#9664; Back
+        </Button>
         <span className="name">Summary &mdash; All Screens</span>
-        <button className="capture-btn" onClick={onCaptureAll}>
+        <Button color="primary" size="sm" onClick={onCaptureAll}>
           &#128247; Create Baseline ({totalStates} images)
-        </button>
+        </Button>
       </div>
 
       <div style={{ padding: '20px 16px' }}>
