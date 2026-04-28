@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useScreens } from "./hooks/useScreens";
+import { useDeviceScale } from "./hooks/useDeviceScale";
 import { useProjects } from "./hooks/useProjects";
 import { useToast } from "./hooks/useToast";
 import { useAcpBridge } from "./acp/useAcpBridge";
@@ -127,12 +128,8 @@ export default function App() {
   const [markerContext, setMarkerContext] = useState<MarkerContext | null>(null);
   const [deviceMode, setDeviceMode] = useState<DeviceMode>("phone-v");
 
-  // Sync CSS custom properties when device mode changes
-  useEffect(() => {
-    const preset = DEVICE_PRESETS[deviceMode];
-    document.documentElement.style.setProperty("--phone-width", `${preset.width}px`);
-    document.documentElement.style.setProperty("--phone-height", `${preset.height}px`);
-  }, [deviceMode]);
+  const contentAreaRef = useRef<HTMLDivElement>(null);
+  const { scale, logicalW, logicalH } = useDeviceScale(contentAreaRef, deviceMode);
 
   const acpState = useAcpBridge({
     currentScreen,
@@ -438,7 +435,7 @@ export default function App() {
             onAddFolder={handleAddFolder}
             onRemoveProject={removeProject}
           />
-          <div className="content-area">
+          <div className="content-area" ref={contentAreaRef}>
             <div className="main-content">
               {isSummary ? (
                 <Summary
@@ -463,6 +460,9 @@ export default function App() {
                   markerMode={markerMode}
                   markerRect={markerRect}
                   onMark={handleMark}
+                  scale={scale}
+                  logicalW={logicalW}
+                  logicalH={logicalH}
                 />
               )}
             </div>

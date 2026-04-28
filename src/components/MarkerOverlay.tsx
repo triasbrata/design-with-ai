@@ -13,9 +13,10 @@ interface MarkerOverlayProps {
   screen: string;
   activeState: string;
   onMark: (payload: MarkPayload) => void;
+  scale: number;
 }
 
-export function MarkerOverlay({ active, rect, screen, activeState, onMark }: MarkerOverlayProps) {
+export function MarkerOverlay({ active, rect, screen, activeState, onMark, scale }: MarkerOverlayProps) {
   const [drawing, setDrawing] = useState(false);
   const [drawStart, setDrawStart] = useState({ x: 0, y: 0 });
   const [drawEnd, setDrawEnd] = useState({ x: 0, y: 0 });
@@ -24,11 +25,13 @@ export function MarkerOverlay({ active, rect, screen, activeState, onMark }: Mar
   const getPos = useCallback((clientX: number, clientY: number) => {
     const bounds = overlayRef.current?.getBoundingClientRect();
     if (!bounds) return { x: 0, y: 0 };
+    // getBoundingClientRect returns visual (scaled) coordinates inside the scaled container.
+    // Divide by scale to convert back to logical pixels used by the iframe content.
     return {
-      x: clientX - bounds.left,
-      y: clientY - bounds.top,
+      x: (clientX - bounds.left) / scale,
+      y: (clientY - bounds.top) / scale,
     };
-  }, []);
+  }, [scale]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!active) return;

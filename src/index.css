@@ -55,9 +55,6 @@
   --state-goal-bg: #FFF9F5;
 
   --sidebar-width: 468px;
-  --phone-width: 390px;
-  --phone-height: 844px;
-  --phone-scale: 1;
   --dock-height: 52px;
   --toolbar-height: 56px;
 
@@ -599,19 +596,7 @@ body {
   overflow: hidden;
   background: #fff;
 }
-iframe {
-  border: none;
-  display: block;
-  width: calc(var(--phone-width) * var(--phone-scale, 1));
-  height: calc(var(--phone-height) * var(--phone-scale, 1));
-}
 
-@media (max-height: 900px) {
-  :root { --phone-scale: 0.85; }
-}
-@media (max-height: 780px) {
-  :root { --phone-scale: 0.75; }
-}
 @media (max-width: 1100px) {
   .main-layout { flex-direction: column; align-items: center; }
 }
@@ -2249,10 +2234,10 @@ iframe {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Phone Container (positions MarkerOverlay above iframe) ── */
+/* ── Phone Container (hosts the scaled device frame) ── */
 .phone-container {
   position: relative;
-  display: inline-block;
+  overflow: hidden;
   flex-shrink: 0;
 }
 
