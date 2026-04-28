@@ -72,6 +72,10 @@
   box-sizing: border-box;
 }
 
+html {
+  overflow: hidden;
+}
+
 body {
   display: flex;
   height: 100vh;
@@ -175,6 +179,7 @@ body {
 /* ── Main Content ── */
 .main-content {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -185,6 +190,7 @@ body {
 .content-area {
   display: flex;
   flex: 1;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -199,15 +205,13 @@ body {
 /* ── Left Drawer ── */
 .left-drawer-trigger {
   position: fixed;
-  top: 50px;
+  top: 12px;
   left: 12px;
   z-index: 16;
 }
 .left-drawer {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 40;
+  position: relative;
+  flex-shrink: 0;
   width: 0;
   height: 100vh;
   overflow-y: auto;
@@ -370,10 +374,8 @@ body {
 
 /* ── Right Drawer ── */
 .right-drawer {
-  position: fixed;
-  top: 0;
-  right: 0;
-  z-index: 40;
+  position: relative;
+  flex-shrink: 0;
   width: 0;
   height: 100vh;
   overflow-y: auto;
@@ -962,17 +964,26 @@ iframe {
   flex: 1;
 }
 
-/* ── Project Selector Bar ── */
-.project-selector-bar {
-  position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 18;
-  padding: 12px 16px;
+/* ── Left Drawer Add Workspace ── */
+.ld-add-workspace {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border: 1px dashed var(--brand-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--brand-muted);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ld-add-workspace:hover {
+  background: var(--brand-chip);
+  color: var(--brand-text);
 }
 
 .shortcut-hint {

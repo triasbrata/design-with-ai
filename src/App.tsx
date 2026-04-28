@@ -11,7 +11,6 @@ import { BottomBar } from "./components/BottomBar";
 import { LeftDrawer } from "./components/LeftDrawer";
 import { RightDrawer } from "./components/RightDrawer";
 import { HelpModal } from "./components/HelpModal";
-import { ProjectSelector } from "./components/ProjectSelector";
 import { Toast } from "./components/Toast";
 import { screenName } from "./constants";
 import type { CaptureResult, ClientProject, MarkerRect, MarkerContext } from "./types";
@@ -325,28 +324,31 @@ export default function App() {
     setMarkerContext(null);
   }, []);
 
+  // Quick-add workspace from left drawer
+  const handleAddWorkspace = useCallback(() => {
+    const name = window.prompt("Workspace name:");
+    if (!name?.trim()) return;
+    addProject({
+      type: "workspace",
+      name: name.trim(),
+      folders: [{ name: "Main", inputDir: "", outputDir: "" }],
+      activeFolder: 0,
+    });
+  }, [addProject]);
+
   // Empty state
   if (orderedScreens.length === 0) {
     return (
       <div className="main-content" style={{ padding: "40px", textAlign: "center" }}>
-        <ProjectSelector
-          projects={projects}
-          activeIndex={activeIndex}
-          onSelect={setActive}
-          onAddProject={addProject}
-          onAddFolder={addFolderToWorkspace}
-          onRemoveProject={removeProject}
-          onRemoveFolder={removeFolder}
-        />
         <p style={{ color: "var(--brand-muted)", marginTop: 24 }}>
-          No screens found. Check the project directory.
+          No screens found. Press \ to open workspace drawer and add a project.
         </p>
       </div>
     );
   }
 
   return (
-    <div style={{ display: "flex", width: "100%", height: "100vh" }}>
+    <div style={{ display: "flex", width: "100%", height: "100vh", overflow: "hidden" }}>
       {capturing ? (
         <CaptureProgress
           screens={orderedScreens}
@@ -357,18 +359,20 @@ export default function App() {
         />
       ) : (
         <>
-          {/* Project selector — fixed top-center */}
-          <div className="project-selector-bar">
-            <ProjectSelector
-              projects={projects}
-              activeIndex={activeIndex}
-              onSelect={setActive}
-              onAddProject={addProject}
-              onAddFolder={addFolderToWorkspace}
-              onRemoveProject={removeProject}
-              onRemoveFolder={removeFolder}
-            />
-          </div>
+          <LeftDrawer
+            open={leftDrawerOpen}
+            onToggle={() => setLeftDrawerOpen((p) => !p)}
+            projects={projects}
+            activeIndex={activeIndex}
+            activeFolderIdx={
+              activeProject?.type === "workspace" ? activeProject.activeFolder : 0
+            }
+            screens={orderedScreens}
+            activeScreen={currentScreen}
+            onSelect={navigate}
+            onSetActive={setActive}
+            onAddWorkspace={handleAddWorkspace}
+          />
           <div className="content-area">
             <div className="main-content">
               {isSummary ? (
@@ -398,15 +402,6 @@ export default function App() {
               )}
             </div>
           </div>
-          <LeftDrawer
-            open={leftDrawerOpen}
-            onToggle={() => setLeftDrawerOpen((p) => !p)}
-            metadata={metadata}
-            screens={orderedScreens}
-            activeScreen={currentScreen}
-            onSelect={navigate}
-            projectName={projectLabel}
-          />
           <RightDrawer
             open={rightDrawerOpen}
             onToggle={() => setRightDrawerOpen((p) => !p)}
