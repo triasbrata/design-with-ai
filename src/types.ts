@@ -64,3 +64,27 @@ export interface ClientProject {
 }
 
 export type Project = Workspace | ClientProject;
+
+// ── Marker types ──
+
+export interface MarkerRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface MarkerContext {
+  id: string;
+  rect: MarkerRect;
+  screen: string;
+  elementPath: string[];
+  text: string;
+  html?: string;
+  parentText?: string;
+  timestamp: number;
+}
+
+export interface Marker extends MarkerContext {
+  color: string;
+}

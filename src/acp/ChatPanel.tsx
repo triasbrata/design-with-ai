@@ -14,6 +14,7 @@ const QUICK_ACTIONS = [
 
 interface ChatPanelProps {
   currentScreen?: string;
+  markers?: { text: string; elementPath: string[]; rect: { x: number; y: number; width: number; height: number } }[];
 }
 
 /**
@@ -62,7 +63,7 @@ function readNdjsonStream(
   });
 }
 
-export function ChatPanel({ currentScreen }: ChatPanelProps) {
+export function ChatPanel({ currentScreen, markers }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', text: 'Tanya tentang design review. Tool query langsung jawab, AI query streaming dari Claude.\n\nKetik "list screens" atau tanya apa aja!' },
   ]);
@@ -104,7 +105,7 @@ export function ChatPanel({ currentScreen }: ChatPanelProps) {
       const res = await fetch('/api/acp/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: query, context: { currentScreen } }),
+        body: JSON.stringify({ message: query, context: { currentScreen, markers } }),
         signal: abortController.signal,
       });
 

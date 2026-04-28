@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { PhoneFrame } from './PhoneFrame';
 import { MetaPanel } from './MetaPanel';
-import type { Metadata } from '../types';
+import type { Metadata, Marker, MarkerContext } from '../types';
 
 interface ViewerProps {
   screen: string;
@@ -14,6 +14,11 @@ interface ViewerProps {
   onPrev: () => void;
   onNext: () => void;
   onStateChange: (screen: string, state: string) => void;
+  markingEnabled: boolean;
+  markers: Marker[];
+  onMarkerCreate: (ctx: MarkerContext) => void;
+  onRemoveMarker: (id: string) => void;
+  onToggleMarking: () => void;
 }
 
 export function Viewer({
@@ -27,6 +32,11 @@ export function Viewer({
   onPrev,
   onNext,
   onStateChange,
+  markingEnabled,
+  markers,
+  onMarkerCreate,
+  onRemoveMarker,
+  onToggleMarking,
 }: ViewerProps) {
   const phoneRef = useRef<{ getIframe: () => HTMLIFrameElement | null }>(null);
 
@@ -66,6 +76,12 @@ export function Viewer({
           key={`${screen}-${activeState}`}
           src={getScreenUrl(screen)}
           onLoad={handleLoad}
+          screen={screen}
+          markingEnabled={markingEnabled}
+          markers={markers}
+          onMarkerCreate={onMarkerCreate}
+          onRemoveMarker={onRemoveMarker}
+          onToggleMarking={onToggleMarking}
         />
         <MetaPanel
           meta={meta}

@@ -5,11 +5,12 @@ import { ChatPanel } from './ChatPanel';
 interface DrawerTabsProps {
   connected: boolean;
   currentScreen?: string;
+  markers?: { text: string; elementPath: string[]; rect: { x: number; y: number; width: number; height: number } }[];
 }
 
 type Tab = 'agent' | 'chat';
 
-export function DrawerTabs({ connected, currentScreen }: DrawerTabsProps) {
+export function DrawerTabs({ connected, currentScreen, markers }: DrawerTabsProps) {
   const [tab, setTab] = useState<Tab>('chat');
 
   return (
@@ -32,7 +33,7 @@ export function DrawerTabs({ connected, currentScreen }: DrawerTabsProps) {
       </div>
 
       {tab === 'chat' ? (
-        <ChatPanel currentScreen={currentScreen} />
+        <ChatPanel currentScreen={currentScreen} markers={markers} />
       ) : (
         <AgentPanel connected={connected} />
       )}

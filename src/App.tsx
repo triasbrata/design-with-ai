@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useScreens } from "./hooks/useScreens";
 import { useProjects } from "./hooks/useProjects";
 import { useToast } from "./hooks/useToast";
+import { useMarkers } from "./hooks/useMarkers";
 import { useAcpBridge } from "./acp/useAcpBridge";
 import { DrawerTabs } from "./acp/DrawerTabs";
 import { Viewer } from "./components/Viewer";
@@ -117,6 +118,8 @@ export default function App() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [dockTool, setDockTool] = useState("");
   const [capturing, setCapturing] = useState(false);
+  const [markingEnabled, setMarkingEnabled] = useState(false);
+  const { markers, addMarker, removeMarker } = useMarkers();
 
   const acpState = useAcpBridge({
     currentScreen,
@@ -159,6 +162,11 @@ export default function App() {
         case "\\":
           e.preventDefault();
           setLeftDrawerOpen((prev) => !prev);
+          break;
+        case "m":
+        case "M":
+          e.preventDefault();
+          setMarkingEnabled((p) => !p);
           break;
       }
     };
@@ -347,6 +355,11 @@ export default function App() {
                   onPrev={goPrev}
                   onNext={goNext}
                   onStateChange={handleStateChange}
+                  markingEnabled={markingEnabled}
+                  markers={markers}
+                  onMarkerCreate={addMarker}
+                  onRemoveMarker={removeMarker}
+                  onToggleMarking={() => setMarkingEnabled((p) => !p)}
                 />
               )}
             </div>
@@ -363,8 +376,10 @@ export default function App() {
           <RightDrawer
             open={rightDrawerOpen}
             onToggle={() => setRightDrawerOpen((p) => !p)}
+            markers={markers}
+            onRemoveMarker={removeMarker}
           >
-            <DrawerTabs connected={acpState.connected} currentScreen={currentScreen} />
+            <DrawerTabs connected={acpState.connected} currentScreen={currentScreen} markers={markers} />
           </RightDrawer>
           {!isSummary && (
             <BottomBar
