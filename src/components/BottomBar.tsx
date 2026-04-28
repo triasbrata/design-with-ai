@@ -6,6 +6,7 @@ interface BottomBarProps {
   index: number;
   total: number;
   activeTool: string;
+  projectName?: string;
   onToolChange: (tool: string) => void;
   onPrev: () => void;
   onNext: () => void;
@@ -27,6 +28,7 @@ export function BottomBar({
   index,
   total,
   activeTool,
+  projectName,
   onToolChange,
   onPrev,
   onNext,
@@ -54,7 +56,7 @@ export function BottomBar({
     <>
       {/* Info + nav pill — bottom-left */}
       <div className="pill pill-info">
-        <span className="bar-name">{name}</span>
+        <span className="bar-name">{projectName ? `${projectName} / ` : ""}{name}</span>
         <span className="bar-spacer" />
         <button className="bar-nav-btn" onClick={onPrev} disabled={index === 0}>
           <ChevronLeft size={16} />

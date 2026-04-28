@@ -1,15 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useScreens } from './hooks/useScreens';
-import { useToast } from './hooks/useToast';
-import { Viewer } from './components/Viewer';
-import { Summary } from './components/Summary';
-import { CaptureProgress } from './components/CaptureProgress';
-import { BottomBar } from './components/BottomBar';
-import { RightDrawer } from './components/RightDrawer';
-import { HelpModal } from './components/HelpModal';
-import { Toast } from './components/Toast';
-import { screenName } from './constants';
-import type { CaptureResult } from './types';
+import { useState, useEffect, useCallback } from "react";
+import { useScreens } from "./hooks/useScreens";
+import { useProjects } from "./hooks/useProjects";
+import { useToast } from "./hooks/useToast";
+import { Viewer } from "./components/Viewer";
+import { Summary } from "./components/Summary";
+import { CaptureProgress } from "./components/CaptureProgress";
+import { BottomBar } from "./components/BottomBar";
+import { RightDrawer } from "./components/RightDrawer";
+import { HelpModal } from "./components/HelpModal";
+import { ProjectSelector } from "./components/ProjectSelector";
+import { Toast } from "./components/Toast";
+import { screenName } from "./constants";
+import type { CaptureResult } from "./types";
 
 declare global {
   interface Window {
@@ -18,6 +20,16 @@ declare global {
 }
 
 export default function App() {
+  const {
+    projects,
+    activeIndex,
+    activeProject,
+    addProject,
+    removeProject,
+    setActive,
+  } = useProjects();
+
+  const dir = activeProject?.dir ?? "";
   const {
     metadata,
     orderedScreens,
@@ -29,23 +41,23 @@ export default function App() {
     goNext,
     goPrev,
     goHome,
-  } = useScreens();
+  } = useScreens(dir);
 
   const { toast, show } = useToast();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
-  const [activeState, setActiveState] = useState('default');
+  const [activeState, setActiveState] = useState("default");
   const [helpOpen, setHelpOpen] = useState(false);
-  const [dockTool, setDockTool] = useState('');
+  const [dockTool, setDockTool] = useState("");
   const [capturing, setCapturing] = useState(false);
 
   const screenMeta = metadata?.screens?.[currentScreen];
-  const screenStates = screenMeta?.states || ['default'];
+  const screenStates = screenMeta?.states || ["default"];
 
   // Reset activeState when currentScreen changes
   useEffect(() => {
-    setActiveState('default');
+    setActiveState("default");
   }, [currentScreen]);
 
   // Keyboard shortcuts
@@ -54,45 +66,45 @@ export default function App() {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
       switch (e.key) {
-        case 'ArrowLeft':
+        case "ArrowLeft":
           e.preventDefault();
           goPrev();
           break;
-        case 'ArrowRight':
+        case "ArrowRight":
           e.preventDefault();
           goNext();
           break;
-        case 'Escape':
+        case "Escape":
           e.preventDefault();
           goHome();
           break;
-        case '\\':
+        case "\\":
           e.preventDefault();
           setMenuOpen((prev) => !prev);
           break;
       }
     };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
   }, [goPrev, goNext, goHome]);
 
   // Capture the current screen with its active state
   const handleCapture = useCallback(async () => {
-    const iframe = document.getElementById('phone-frame') as HTMLIFrameElement | null;
+    const iframe = document.getElementById("phone-frame") as HTMLIFrameElement | null;
     if (!iframe?.contentDocument?.body) {
-      show('No iframe content to capture', false);
+      show("No iframe content to capture", false);
       return;
     }
 
-    const states = metadata?.screens?.[currentScreen]?.states || ['default'];
+    const states = metadata?.screens?.[currentScreen]?.states || ["default"];
     const isDefaultState = activeState === states[0] || states.length <= 1;
     const filename = isDefaultState
       ? `phone_${currentScreen}.png`
       : `phone_${currentScreen}_${activeState}.png`;
 
     try {
-      if (typeof window.html2canvas !== 'function') {
-        show('html2canvas not loaded', false);
+      if (typeof window.html2canvas !== "function") {
+        show("html2canvas not loaded", false);
         return;
       }
 
@@ -100,25 +112,25 @@ export default function App() {
         width: 390,
         height: 844,
         scale: 2,
-        backgroundColor: '#ffffff',
+        backgroundColor: "#ffffff",
         useCORS: true,
         allowTaint: true,
       });
-      const dataUrl = canvas.toDataURL('image/png');
+      const dataUrl = canvas.toDataURL("image/png");
 
       // Trigger download via anchor click
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.download = filename;
       link.href = dataUrl;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
-      // POST to /api/capture
+      // POST to /api/capture with dir
       try {
-        const res = await fetch('/api/capture', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch(`/api/capture?dir=${encodeURIComponent(dir)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ filename, data: dataUrl }),
         });
         const result = await res.json();
@@ -128,12 +140,12 @@ export default function App() {
           show(`Save failed: ${result.error}`, false);
         }
       } catch {
-        show('Captured locally but upload failed', false);
+        show("Captured locally but upload failed", false);
       }
     } catch {
-      show('Capture failed', false);
+      show("Capture failed", false);
     }
-  }, [currentScreen, activeState, metadata, show]);
+  }, [currentScreen, activeState, metadata, show, dir]);
 
   // Start batch capture of all screens
   const handleCaptureAll = useCallback(() => {
@@ -151,36 +163,35 @@ export default function App() {
           ? `${okCount} succeeded, ${failCount} failed`
           : `All ${okCount} captured`;
       show(msg, failCount === 0);
-      navigate('summary');
+      navigate("summary");
     },
-    [show, navigate]
+    [show, navigate],
   );
 
   // Handle dock tool button clicks
   const handleDockTool = useCallback(
     (tool: string) => {
       if (tool === dockTool) {
-        setDockTool('');
+        setDockTool("");
         return;
       }
       setDockTool(tool);
       switch (tool) {
-        case 'capture':
+        case "capture":
           handleCapture();
           break;
-        case 'summary':
-          navigate('summary');
-          setDockTool('');
+        case "summary":
+          navigate("summary");
+          setDockTool("");
           break;
-        case 'help':
+        case "help":
           setHelpOpen(true);
           break;
-        // 'states' and 'export' are placeholder toggles
         default:
           break;
       }
     },
-    [dockTool, handleCapture, navigate]
+    [dockTool, handleCapture, navigate],
   );
 
   // Update active state when Viewer requests a state change
@@ -191,26 +202,28 @@ export default function App() {
   // Empty state
   if (orderedScreens.length === 0) {
     return (
-      <div className="main-content">
-        <div
-          style={{
-            padding: '40px',
-            textAlign: 'center',
-            color: 'var(--brand-muted)',
-          }}
-        >
-          No screens found. Check screen-metadata.json.
-        </div>
+      <div className="main-content" style={{ padding: "40px", textAlign: "center" }}>
+        <ProjectSelector
+          projects={projects}
+          activeIndex={activeIndex}
+          onSelect={setActive}
+          onAdd={addProject}
+          onRemove={removeProject}
+        />
+        <p style={{ color: "var(--brand-muted)", marginTop: 24 }}>
+          No screens found. Check the project directory.
+        </p>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', width: '100%', height: '100vh' }}>
+    <div style={{ display: "flex", width: "100%", height: "100vh" }}>
       {capturing ? (
         <CaptureProgress
           screens={orderedScreens}
           metadata={metadata!}
+          dir={dir}
           onDone={handleCaptureAllDone}
         />
       ) : (
@@ -221,6 +234,7 @@ export default function App() {
                 <Summary
                   screens={orderedScreens}
                   metadata={metadata}
+                  dir={dir}
                   onSelect={navigate}
                   onBack={goPrev}
                   onCaptureAll={handleCaptureAll}
@@ -231,6 +245,7 @@ export default function App() {
                   index={currentIndex}
                   total={total}
                   metadata={metadata}
+                  dir={dir}
                   activeState={activeState}
                   menuOpen={menuOpen}
                   onToggleMenu={() => setMenuOpen((p) => !p)}
@@ -242,18 +257,26 @@ export default function App() {
               )}
             </div>
           </div>
-          <RightDrawer open={rightDrawerOpen} onToggle={() => setRightDrawerOpen((p) => !p)} />
+          <RightDrawer
+            open={rightDrawerOpen}
+            onToggle={() => setRightDrawerOpen((p) => !p)}
+            metadata={metadata}
+          />
           {!isSummary && (
             <BottomBar
               name={screenName(currentScreen)}
               index={currentIndex}
               total={total}
               activeTool={dockTool}
+              projectName={activeProject?.name}
               onToolChange={handleDockTool}
               onPrev={goPrev}
               onNext={goNext}
               onCapture={handleCapture}
-              onSummary={() => { goNext(); setDockTool(''); }}
+              onSummary={() => {
+                goNext();
+                setDockTool("");
+              }}
               onHelp={() => setHelpOpen(true)}
             />
           )}

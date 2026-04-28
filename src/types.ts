@@ -37,3 +37,8 @@ export interface CaptureResult {
   ok: boolean;
   error?: string;
 }
+
+export interface ProjectConfig {
+  name: string;
+  dir: string;
+}

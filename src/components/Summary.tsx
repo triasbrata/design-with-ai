@@ -6,6 +6,7 @@ import { Camera, ArrowLeft } from "./base/icons";
 interface SummaryProps {
   screens: string[];
   metadata: Metadata | null;
+  dir: string;
   onSelect: (screen: string) => void;
   onBack: () => void;
   onCaptureAll: () => void;
@@ -20,7 +21,7 @@ function getFilename(screen: string, state: string, states: string[]): string {
   return `phone_${screen}_${state}.png`;
 }
 
-export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: SummaryProps) {
+export function Summary({ screens, metadata, dir, onSelect, onBack, onCaptureAll }: SummaryProps) {
   const existing = new Set(screens);
 
   let totalStates = 0;

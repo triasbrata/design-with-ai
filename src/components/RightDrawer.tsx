@@ -1,12 +1,15 @@
-import { useEffect, useRef } from "react";
-import { Menu } from "./base/icons";
+import { useEffect, useRef, useMemo } from "react";
+import { Menu, CheckCircle2, Loader2 } from "./base/icons";
+import type { Metadata } from "../types";
+import { TIERS } from "../constants";
 
 interface RightDrawerProps {
   open: boolean;
   onToggle: () => void;
+  metadata: Metadata | null;
 }
 
-export function RightDrawer({ open, onToggle }: RightDrawerProps) {
+export function RightDrawer({ open, onToggle, metadata }: RightDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -20,6 +23,25 @@ export function RightDrawer({ open, onToggle }: RightDrawerProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open, onToggle]);
 
+  const workspace = useMemo(() => {
+    if (!metadata) return null;
+    const existing = new Set(Object.keys(metadata.screens));
+    const tierBreakdown = Object.entries(TIERS).map(([tier, info]) => {
+      const count = info.screens.filter((s) => existing.has(s)).length;
+      return { tier, label: info.label, count };
+    });
+    const totalInTiers = tierBreakdown.reduce((s, t) => s + t.count, 0);
+    const unlisted = existing.size - totalInTiers;
+    return {
+      version: metadata.meta.version,
+      lastUpdated: metadata.meta.lastUpdated,
+      totalScreens: metadata.meta.totalScreens,
+      components: Object.keys(metadata.components).length,
+      tierBreakdown,
+      unlisted,
+    };
+  }, [metadata]);
+
   return (
     <>
       {/* Trigger button — top-right */}
@@ -32,8 +54,65 @@ export function RightDrawer({ open, onToggle }: RightDrawerProps) {
       {/* Drawer panel — slides from right */}
       <aside ref={drawerRef} className={`right-drawer${open ? " open" : ""}`}>
         <div className="right-drawer-inner">
-          <h3>Panel</h3>
-          <p className="sub">Coming soon</p>
+          {workspace ? (
+            <>
+              <h3>MoneyKitty</h3>
+              <p className="sub">Design Review Workspace</p>
+
+              <div className="ws-section">
+                <div className="ws-label">Version</div>
+                <div className="ws-value">{workspace.version}</div>
+              </div>
+              <div className="ws-section">
+                <div className="ws-label">Last Updated</div>
+                <div className="ws-value">{workspace.lastUpdated}</div>
+              </div>
+
+              <div className="ws-divider" />
+
+              <div className="ws-section">
+                <div className="ws-label">Screens</div>
+                <div className="ws-value ws-num">{workspace.totalScreens}</div>
+              </div>
+              {workspace.tierBreakdown.map((t) =>
+                t.count > 0 ? (
+                  <div className="ws-tier" key={t.tier}>
+                    <span className="ws-tier-label">{t.tier}</span>
+                    <span className="ws-tier-bar">
+                      <span className="ws-tier-fill" style={{ width: `${(t.count / workspace.totalScreens) * 100}%` }} />
+                    </span>
+                    <span className="ws-tier-count">{t.count}</span>
+                  </div>
+                ) : null
+              )}
+              {workspace.unlisted > 0 && (
+                <div className="ws-tier">
+                  <span className="ws-tier-label">Other</span>
+                  <span className="ws-tier-count">{workspace.unlisted}</span>
+                </div>
+              )}
+
+              <div className="ws-divider" />
+
+              <div className="ws-section">
+                <div className="ws-label">Components</div>
+                <div className="ws-value ws-num">{workspace.components}</div>
+              </div>
+
+              <div className="ws-status">
+                <CheckCircle2 size={14} />
+                <span>Workspace ready</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <h3>Workspace</h3>
+              <p className="sub">Loading workspace data...</p>
+              <div className="ws-loading">
+                <Loader2 size={18} className="animate-spin" />
+              </div>
+            </>
+          )}
         </div>
       </aside>
     </>

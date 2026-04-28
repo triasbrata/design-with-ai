@@ -7,6 +7,7 @@ import { X, Check, Loader2 } from "./base/icons";
 interface CaptureProgressProps {
   screens: string[];
   metadata: Metadata;
+  dir: string;
   onDone: (results: CaptureResult[]) => void;
 }
 
@@ -40,7 +41,7 @@ function waitForLoad(iframe: HTMLIFrameElement, timeoutMs: number): Promise<void
   });
 }
 
-export function CaptureProgress({ screens, metadata, onDone }: CaptureProgressProps) {
+export function CaptureProgress({ screens, metadata, dir, onDone }: CaptureProgressProps) {
   const [currentFile, setCurrentFile] = useState("");
   const [progress, setProgress] = useState("");
   const [resultsLog, setResultsLog] = useState<CaptureResult[]>([]);
@@ -91,7 +92,7 @@ export function CaptureProgress({ screens, metadata, onDone }: CaptureProgressPr
           document.body.appendChild(wrapper);
 
           try {
-            iframe.src = `/screens/${screen}.html`;
+            iframe.src = `/screens/${screen}.html?dir=${encodeURIComponent(dir)}`;
             await waitForLoad(iframe, 15000);
 
             if (!isDefault && !isFirstState) {
@@ -102,7 +103,7 @@ export function CaptureProgress({ screens, metadata, onDone }: CaptureProgressPr
               if (win?.__baseline?.setState) {
                 win.postMessage({ type: "setState", state }, "*");
               } else {
-                iframe.src = `/screens/${screen}_${state}.html`;
+                iframe.src = `/screens/${screen}_${state}.html?dir=${encodeURIComponent(dir)}`;
                 await waitForLoad(iframe, 15000);
               }
             }
@@ -124,7 +125,7 @@ export function CaptureProgress({ screens, metadata, onDone }: CaptureProgressPr
 
             const dataUrl = canvas.toDataURL();
 
-            const resp = await fetch("/api/capture", {
+            const resp = await fetch(`/api/capture?dir=${encodeURIComponent(dir)}`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ filename, data: dataUrl }),
