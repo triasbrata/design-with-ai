@@ -154,7 +154,7 @@ export function acpPlugin(): Plugin {
         req.on('data', (chunk: string) => { body += chunk; });
         req.on('end', async () => {
           try {
-            const { message } = JSON.parse(body) as { message: string };
+            const { message, context } = JSON.parse(body) as { message: string; context?: { currentScreen?: string; markers?: unknown[] } };
             const q = message.toLowerCase();
 
             // Tool queries — instant (no streaming)
@@ -182,7 +182,8 @@ export function acpPlugin(): Plugin {
             // AI queries — streaming via ndjson
             const screens = listScreens();
             const screenNames = ((screens as Record<string, unknown>).screens as string[] || []).join(', ');
-            const prompt = `Kamu asisten design review MoneyKitty. Screen yang tersedia: ${screenNames || '(none)'}\n\nPertanyaan: ${message}\n\nJawab singkat dan informatif.`;
+            const fileHint = context?.currentScreen ? `\nKonteks: user lagi liat file ${context.currentScreen}.` : '';
+            const prompt = `Kamu asisten design review MoneyKitty. Screen yang tersedia: ${screenNames || '(none)'}${fileHint}\n\nPertanyaan: ${message}\n\nJawab singkat dan informatif.`;
 
             res.writeHead(200, {
               'Content-Type': 'application/x-ndjson',
