@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CaptureResult, Metadata } from '../types';
+import { Button } from './base';
 
 interface CaptureProgressProps {
   screens: string[];
@@ -172,9 +173,9 @@ export function CaptureProgress({ screens, metadata, onDone }: CaptureProgressPr
   return (
     <div style={{ width: '100%' }}>
       <div className="toolbar">
-        <button className="nav-btn" onClick={handleCancel} title="Cancel">
-          &#10005;
-        </button>
+        <Button color="secondary" size="sm" onClick={handleCancel}>
+          &#10005; Cancel
+        </Button>
         <span className="name">Creating Baseline...</span>
         <span className="pos">{progress}</span>
       </div>
