@@ -26,6 +26,7 @@ export {
   Menu,
   MessageCircle,
   Monitor,
+  PanelLeft,
   PanelRightOpen,
   Paperclip,
   Pin,

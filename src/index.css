@@ -85,70 +85,6 @@ body {
   height: 100vh;
 }
 
-/* ── Screen Menu Dropdown ── */
-.menu-wrapper {
-  position: relative;
-}
-.menu-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 4px;
-  background: var(--brand-surface);
-  border: 1px solid var(--brand-border);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px var(--brand-shadow);
-  width: var(--sidebar-width);
-  max-height: 420px;
-  overflow-y: auto;
-  padding: 12px;
-  z-index: 20;
-}
-.menu-dropdown h3 {
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-.menu-dropdown .sub {
-  font-size: 10px;
-  color: var(--brand-muted);
-  margin-bottom: 16px;
-}
-
-.side-link {
-  display: block;
-  font-size: 12px;
-  padding: 5px 10px;
-  border-radius: 8px;
-  color: #4A4A4A;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 0.1s;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  background: none;
-  border: none;
-  width: 100%;
-  text-align: left;
-  font-family: inherit;
-}
-.side-link:hover { background: var(--brand-chip); }
-.side-link.active {
-  background: var(--brand-accent-light);
-  color: var(--brand-accent);
-  font-weight: 600;
-}
-
-.tier-group { margin-bottom: 12px; }
-.tier-label {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--brand-accent);
-  padding: 4px 0 2px;
-  letter-spacing: 0.5px;
-}
 
 /* ── Burger ── */
 .burger-btn {
@@ -192,16 +128,8 @@ body {
   overflow: hidden;
 }
 
-/* ── Burger Float ── */
-.burger-float {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  z-index: 16;
-}
-
 /* ── Left Drawer ── */
-.left-drawer-trigger {
+.ld-trigger {
   position: fixed;
   top: 12px;
   left: 12px;
@@ -234,9 +162,9 @@ body {
   width: var(--sidebar-width);
   padding: 16px 12px;
 }
-.left-drawer h3 {
-  font-size: 13px;
-  font-weight: 700;
+
+/* ── Left Drawer Sections (collapsible) ── */
+.ld-section {
   margin-bottom: 4px;
 }
 .left-drawer .sub {
@@ -501,41 +429,17 @@ body {
   color: var(--brand-text);
 }
 
-/* ── Right Drawer Sections ── */
-.rd-section {
-  margin-bottom: 4px;
-}
-.rd-section-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding: 8px 6px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--brand-text);
-  text-align: left;
-  transition: background 0.1s;
-}
-.rd-section-header:hover {
-  background: var(--brand-chip);
-}
-.rd-chevron {
+.ld-chevron {
   width: 14px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   color: var(--brand-muted);
 }
-.rd-section-title {
+.ld-section-title {
   flex: 1;
 }
-.rd-section-count {
+.ld-section-count {
   font-size: 10px;
   font-weight: 600;
   color: var(--brand-muted);
@@ -543,36 +447,21 @@ body {
   padding: 1px 7px;
   border-radius: 10px;
 }
-.rd-section-body {
+.ld-section-body {
   padding-left: 24px;
   margin-bottom: 8px;
 }
-.rd-project-name {
+.ld-project-name {
   font-size: 11px;
   font-weight: 600;
   color: var(--brand-accent);
   padding: 4px 6px;
   margin-bottom: 4px;
 }
-.rd-meta-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 3px 6px;
-  font-size: 11px;
-}
-.rd-meta-label {
-  color: var(--brand-muted);
-  font-weight: 500;
-}
-.rd-meta-value {
-  color: var(--brand-text);
-  font-weight: 600;
-}
-.rd-tier-group {
+.ld-tier-group {
   margin-bottom: 8px;
 }
-.rd-tier-label {
+.ld-tier-label {
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
@@ -580,7 +469,7 @@ body {
   padding: 5px 6px 3px;
   letter-spacing: 0.5px;
 }
-.rd-screen-item {
+.ld-screen-item {
   display: block;
   width: 100%;
   font-size: 11px;
@@ -598,96 +487,69 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.rd-screen-item:hover {
+.ld-screen-item:hover {
   background: var(--brand-chip);
 }
-.rd-screen-item.active {
+.ld-screen-item.active {
   background: var(--brand-accent-light);
   color: var(--brand-accent);
   font-weight: 600;
 }
-.rd-chat-placeholder {
-  padding: 24px 8px;
-  text-align: center;
-  color: var(--brand-muted);
-  font-size: 12px;
-}
-
-/* ── Workspace Drawer ── */
-.ws-section {
+.ld-meta-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 0;
-  font-size: 12px;
+  padding: 3px 6px;
+  font-size: 11px;
 }
-.ws-label {
+.ld-meta-label {
   color: var(--brand-muted);
   font-weight: 500;
 }
-.ws-value {
+.ld-meta-value {
   color: var(--brand-text);
   font-weight: 600;
 }
-.ws-value.ws-num {
-  font-size: 18px;
-  color: var(--brand-accent);
+
+/* ── Chat Drawer Trigger ── */
+.cd-trigger {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 16;
 }
-.ws-divider {
-  height: 1px;
-  background: var(--brand-border-hairline);
-  margin: 10px 0;
+
+/* ── Chat Drawer ── */
+.chat-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 40;
+  width: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--brand-surface);
+  border-left: 1px solid transparent;
+  transition: width 0.25s ease;
 }
-.ws-tier {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 0;
-  font-size: 11px;
+.chat-drawer.open {
+  width: var(--sidebar-width);
+  border-left-color: var(--brand-border);
 }
-.ws-tier-label {
-  width: 24px;
+.chat-drawer-inner {
+  width: var(--sidebar-width);
+  padding: 16px 12px;
+}
+.chat-drawer h3 {
+  font-size: 13px;
   font-weight: 700;
-  color: var(--brand-accent);
-  flex-shrink: 0;
+  margin-bottom: 4px;
 }
-.ws-tier-bar {
-  flex: 1;
-  height: 4px;
-  background: var(--brand-chip);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.ws-tier-fill {
-  display: block;
-  height: 100%;
-  background: var(--brand-accent-muted);
-  border-radius: 4px;
-  transition: width 0.5s ease;
-}
-.ws-tier-count {
-  width: 20px;
-  text-align: right;
+.chat-drawer .sub {
+  font-size: 10px;
   color: var(--brand-muted);
-  font-weight: 600;
-}
-.ws-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 16px;
-  padding: 8px 10px;
-  background: var(--state-success-bg);
-  color: var(--state-success-text);
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 8px;
-}
-.ws-loading {
-  display: flex;
-  justify-content: center;
-  padding: 24px;
-  color: var(--brand-muted);
+  margin-bottom: 16px;
 }
 
 /* ── Navigation Buttons ── */
