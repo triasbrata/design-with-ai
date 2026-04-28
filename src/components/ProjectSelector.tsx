@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import type { ProjectConfig } from "../types";
 import { Button } from "./base";
 import { Check, Folder, Plus, Trash2, ChevronDown } from "./base/icons";
@@ -105,44 +106,46 @@ export function ProjectSelector({
         </div>
       )}
 
-      {/* Add project modal */}
-      {showAdd && (
-        <div className="ps-overlay" onClick={() => setShowAdd(false)}>
-          <div className="ps-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Add Project</h3>
-            <p className="ps-modal-sub">Enter a name and the path to the golden spec directory.</p>
+      {/* Add project modal — portaled to body to escape transform stacking context */}
+      {showAdd &&
+        createPortal(
+          <div className="ps-overlay" onClick={() => setShowAdd(false)}>
+            <div className="ps-modal" onClick={(e) => e.stopPropagation()}>
+              <h3>Add Project</h3>
+              <p className="ps-modal-sub">Enter a name and the path to the golden spec directory.</p>
 
-            <label className="ps-field-label">Project Name</label>
-            <input
-              className="ps-input"
-              type="text"
-              placeholder="e.g. MoneyKitty"
-              value={addName}
-              onChange={(e) => setAddName(e.target.value)}
-              autoFocus
-            />
+              <label className="ps-field-label">Project Name</label>
+              <input
+                className="ps-input"
+                type="text"
+                placeholder="e.g. MoneyKitty"
+                value={addName}
+                onChange={(e) => setAddName(e.target.value)}
+                autoFocus
+              />
 
-            <label className="ps-field-label">Directory Path</label>
-            <input
-              className="ps-input"
-              type="text"
-              placeholder='e.g. ../../docs/moneykitty/design/golden/'
-              value={addDir}
-              onChange={(e) => setAddDir(e.target.value)}
-            />
-            <p className="ps-hint">Relative to project root. Directory must contain screen-metadata.json.</p>
+              <label className="ps-field-label">Directory Path</label>
+              <input
+                className="ps-input"
+                type="text"
+                placeholder='e.g. ../../docs/moneykitty/design/golden/'
+                value={addDir}
+                onChange={(e) => setAddDir(e.target.value)}
+              />
+              <p className="ps-hint">Relative to project root. Directory must contain screen-metadata.json.</p>
 
-            <div className="ps-modal-actions">
-              <Button color="secondary" size="sm" onClick={() => setShowAdd(false)}>
-                Cancel
-              </Button>
-              <Button color="primary" size="sm" onClick={handleAdd} isDisabled={!addName.trim() || !addDir.trim()}>
-                Add Project
-              </Button>
+              <div className="ps-modal-actions">
+                <Button color="secondary" size="sm" onClick={() => setShowAdd(false)}>
+                  Cancel
+                </Button>
+                <Button color="primary" size="sm" onClick={handleAdd} isDisabled={!addName.trim() || !addDir.trim()}>
+                  Add Project
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
