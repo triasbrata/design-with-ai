@@ -150,7 +150,7 @@ export default function App() {
           break;
         case "\\":
           e.preventDefault();
-          setRightDrawerOpen((prev) => !prev);
+          setLeftDrawerOpen((prev) => !prev);
           break;
       }
     };
@@ -347,15 +347,14 @@ export default function App() {
             open={leftDrawerOpen}
             onToggle={() => setLeftDrawerOpen((p) => !p)}
             metadata={metadata}
+            screens={orderedScreens}
+            activeScreen={currentScreen}
+            onSelect={navigate}
+            projectName={projectLabel}
           />
           <RightDrawer
             open={rightDrawerOpen}
             onToggle={() => setRightDrawerOpen((p) => !p)}
-            screens={orderedScreens}
-            activeScreen={currentScreen}
-            metadata={metadata}
-            onSelect={navigate}
-            projectName={projectLabel}
           />
           {!isSummary && (
             <BottomBar

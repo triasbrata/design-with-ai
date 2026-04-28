@@ -235,6 +235,131 @@ body {
   margin-bottom: 16px;
 }
 
+/* ── Left Drawer Sections (collapsible) ── */
+.ld-section {
+  margin-bottom: 4px;
+}
+.ld-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand-text);
+  text-align: left;
+  transition: background 0.1s;
+}
+.ld-section-header:hover {
+  background: var(--brand-chip);
+}
+.ld-chevron {
+  width: 14px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--brand-muted);
+}
+.ld-section-title {
+  flex: 1;
+}
+.ld-section-count {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--brand-muted);
+  background: var(--brand-chip);
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+.ld-section-body {
+  padding-left: 24px;
+  margin-bottom: 8px;
+}
+.ld-project-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--brand-accent);
+  padding: 4px 6px;
+  margin-bottom: 4px;
+}
+.ld-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 6px;
+  font-size: 11px;
+}
+.ld-meta-label {
+  color: var(--brand-muted);
+  font-weight: 500;
+}
+.ld-meta-value {
+  color: var(--brand-text);
+  font-weight: 600;
+}
+.ld-tier-group {
+  margin-bottom: 8px;
+}
+.ld-tier-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--brand-accent);
+  padding: 5px 6px 3px;
+  letter-spacing: 0.5px;
+}
+.ld-screen-item {
+  display: block;
+  width: 100%;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: #4A4A4A;
+  text-decoration: none;
+  cursor: pointer;
+  background: none;
+  border: none;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.1s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ld-screen-item:hover {
+  background: var(--brand-chip);
+}
+.ld-screen-item.active {
+  background: var(--brand-accent-light);
+  color: var(--brand-accent);
+  font-weight: 600;
+}
+.ld-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  margin-left: 6px;
+  padding: 6px 10px;
+  background: var(--state-success-bg);
+  color: var(--state-success-text);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+.ld-loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+  color: var(--brand-muted);
+}
+
 /* ── Right Drawer Trigger ── */
 .drawer-trigger {
   position: fixed;
@@ -276,114 +401,6 @@ body {
   margin-bottom: 16px;
 }
 
-/* ── Right Drawer Sections (collapsible) ── */
-.rd-section {
-  margin-bottom: 4px;
-}
-.rd-section-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding: 8px 6px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--brand-text);
-  text-align: left;
-  transition: background 0.1s;
-}
-.rd-section-header:hover {
-  background: var(--brand-chip);
-}
-.rd-chevron {
-  width: 14px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  color: var(--brand-muted);
-}
-.rd-section-icon {
-  color: var(--brand-muted);
-}
-.rd-section-title {
-  flex: 1;
-}
-.rd-section-count {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--brand-muted);
-  background: var(--brand-chip);
-  padding: 1px 7px;
-  border-radius: 10px;
-}
-.rd-section-body {
-  padding-left: 24px;
-  margin-bottom: 8px;
-}
-.rd-project-name {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--brand-accent);
-  padding: 4px 6px;
-  margin-bottom: 4px;
-}
-.rd-meta-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 3px 6px;
-  font-size: 11px;
-}
-.rd-meta-label {
-  color: var(--brand-muted);
-  font-weight: 500;
-}
-.rd-meta-value {
-  color: var(--brand-text);
-  font-weight: 600;
-}
-.rd-tier-group {
-  margin-bottom: 8px;
-}
-.rd-tier-label {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--brand-accent);
-  padding: 5px 6px 3px;
-  letter-spacing: 0.5px;
-}
-.rd-screen-item {
-  display: block;
-  width: 100%;
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  color: #4A4A4A;
-  text-decoration: none;
-  cursor: pointer;
-  background: none;
-  border: none;
-  text-align: left;
-  font-family: inherit;
-  transition: background 0.1s;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.rd-screen-item:hover {
-  background: var(--brand-chip);
-}
-.rd-screen-item.active {
-  background: var(--brand-accent-light);
-  color: var(--brand-accent);
-  font-weight: 600;
-}
 
 /* ── Workspace Drawer ── */
 .ws-section {
