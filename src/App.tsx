@@ -385,9 +385,16 @@ export default function App() {
   }, [addProject]);
 
   // Add folder to workspace (from plus button or context menu)
-  const handleAddFolder = useCallback((workspaceIdx: number, name: string) => {
-    addFolderToWorkspace(workspaceIdx, { name, inputDir: "", outputDir: "" });
-  }, [addFolderToWorkspace]);
+  const handleAddFolder = useCallback(
+    (workspaceIdx: number, name: string, inputDir: string, outputDir: string) => {
+      addFolderToWorkspace(workspaceIdx, {
+        name,
+        inputDir,
+        outputDir: outputDir || inputDir,
+      });
+    },
+    [addFolderToWorkspace],
+  );
 
   // Empty state
   if (orderedScreens.length === 0) {

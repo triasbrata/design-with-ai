@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { MessageCircle, Pin } from "./base/icons";
+import { MessageCircle } from "./base/icons";
 
 interface RightDrawerProps {
   open: boolean;
@@ -32,16 +32,6 @@ export function RightDrawer({ open, onToggle, pinned, onPinToggle, children }: R
       </div>
       <aside ref={drawerRef} className={open ? `right-drawer${pinned ? " push" : " floating"} open` : "right-drawer"}>
         <div className="right-drawer-inner">
-          <div style={{ marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span className="name" style={{ fontSize: 12 }}>Design Review</span>
-            <button
-              className={`ld-pin-btn${pinned ? " pinned" : ""}`}
-              onClick={onPinToggle}
-              title={pinned ? "Switch to floating overlay" : "Pin (push mode)"}
-            >
-              <Pin size={14} />
-            </button>
-          </div>
           {children}
         </div>
       </aside>

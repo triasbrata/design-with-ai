@@ -16,7 +16,7 @@ interface LeftDrawerProps {
   onSelect: (screen: string) => void;
   onSetActive: (index: number, folderIdx?: number) => void;
   onAddWorkspace?: (name: string) => void;
-  onAddFolder?: (workspaceIdx: number, name: string) => void;
+  onAddFolder?: (workspaceIdx: number, name: string, inputDir: string, outputDir: string) => void;
   onRemoveProject?: (index: number) => void;
 }
 
@@ -49,6 +49,14 @@ export function LeftDrawer({
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createName, setCreateName] = useState("");
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [folderForm, setFolderForm] = useState<{
+    workspaceIdx: number;
+    name: string;
+    inputDir: string;
+    outputDir: string;
+  } | null>(null);
+  const folderFileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open || pinned) return;
@@ -74,6 +82,13 @@ export function LeftDrawer({
       inputRef.current.focus();
     }
   }, [showCreateForm]);
+
+  // Auto-focus folder name input when folder form appears
+  useEffect(() => {
+    if (folderForm && folderInputRef.current) {
+      folderInputRef.current.focus();
+    }
+  }, [folderForm]);
 
   // Close context menu on outside click and escape
   useEffect(() => {
@@ -103,6 +118,33 @@ export function LeftDrawer({
       document.removeEventListener("keydown", handleKey);
     };
   }, [contextMenu]);
+
+  const handleBrowseFolder = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      const firstFile = files[0];
+      const folderName = firstFile.webkitRelativePath.split("/")[0];
+      const parts = firstFile.webkitRelativePath.split("/");
+      const docsIdx = parts.findIndex((p) => p === "docs" || p === "golden");
+      let inputDir = "";
+      if (docsIdx >= 0) {
+        inputDir = "../../" + parts.slice(docsIdx).join("/").replace(/\/[^/]+$/, "/");
+      }
+      setFolderForm((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: folderName,
+              inputDir: inputDir || "",
+              outputDir: inputDir || "",
+            }
+          : null,
+      );
+      e.target.value = "";
+    },
+    [],
+  );
 
   const existing = useMemo(() => new Set(screens), [screens]);
 
@@ -136,12 +178,9 @@ export function LeftDrawer({
   const handleAddFolderFromMenu = useCallback(() => {
     const state = contextMenu;
     if (!state) return;
-    const name = window.prompt("Folder name:");
-    if (name?.trim()) {
-      onAddFolder?.(state.projectIdx, name.trim());
-    }
+    setFolderForm({ workspaceIdx: state.projectIdx, name: "", inputDir: "", outputDir: "" });
     setContextMenu(null);
-  }, [contextMenu, onAddFolder]);
+  }, [contextMenu]);
 
   const handleRemoveProjectFromMenu = useCallback(() => {
     const state = contextMenu;
@@ -149,6 +188,18 @@ export function LeftDrawer({
     onRemoveProject?.(state.projectIdx);
     setContextMenu(null);
   }, [contextMenu, onRemoveProject]);
+
+  const handleSubmitFolder = useCallback(() => {
+    if (!folderForm) return;
+    const { workspaceIdx, name, inputDir, outputDir } = folderForm;
+    if (!name.trim() || !inputDir.trim()) return;
+    onAddFolder?.(workspaceIdx, name.trim(), inputDir.trim(), outputDir.trim() || inputDir.trim());
+    setFolderForm(null);
+  }, [folderForm, onAddFolder]);
+
+  const handleCancelFolder = useCallback(() => {
+    setFolderForm(null);
+  }, []);
 
   return (
     <>
@@ -219,10 +270,7 @@ export function LeftDrawer({
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
                         e.stopPropagation();
-                        const name = window.prompt("Folder name:");
-                        if (name?.trim()) {
-                          onAddFolder?.(pi, name.trim());
-                        }
+                        setFolderForm({ workspaceIdx: pi, name: "", inputDir: "", outputDir: "" });
                       }}
                     >
                       <Plus size={12} />
@@ -233,6 +281,65 @@ export function LeftDrawer({
                   </button>
                   {isExpanded && (
                     <div className="ld-section-body">
+                      {folderForm && folderForm.workspaceIdx === pi && (
+                        <div className="ld-folder-create">
+                          <div className="ld-folder-create-row">
+                            <input
+                              ref={folderInputRef}
+                              className="ld-folder-input"
+                              placeholder="Folder name"
+                              value={folderForm.name}
+                              onChange={(e) =>
+                                setFolderForm((prev) =>
+                                  prev ? { ...prev, name: e.target.value } : null,
+                                )
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleSubmitFolder();
+                                if (e.key === "Escape") handleCancelFolder();
+                              }}
+                            />
+                            <button
+                              className="ld-folder-browse"
+                              onClick={() => folderFileInputRef.current?.click()}
+                            >
+                              Browse...
+                            </button>
+                          </div>
+                          <div className="ld-folder-create-row">
+                            <input
+                              className="ld-folder-input"
+                              placeholder="Input directory"
+                              value={folderForm.inputDir}
+                              onChange={(e) =>
+                                setFolderForm((prev) =>
+                                  prev ? { ...prev, inputDir: e.target.value } : null,
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="ld-folder-create-row">
+                            <input
+                              className="ld-folder-input"
+                              placeholder="Same as input directory"
+                              value={folderForm.outputDir}
+                              onChange={(e) =>
+                                setFolderForm((prev) =>
+                                  prev ? { ...prev, outputDir: e.target.value } : null,
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="ld-folder-create-actions">
+                            <button className="ld-inline-cancel" onClick={handleCancelFolder}>
+                              <X size={14} />
+                            </button>
+                            <button className="ld-inline-confirm" onClick={handleSubmitFolder}>
+                              <Check size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       {project.folders.map((folder, fi) => {
                         const isActiveFolder = isActiveWs && fi === activeFolderIdx;
                         return (
@@ -354,6 +461,16 @@ export function LeftDrawer({
             );
           })}
         </div>
+        {/* Hidden file input for native folder picker */}
+        <input
+          ref={folderFileInputRef}
+          type="file"
+          style={{ display: "none" }}
+          // @ts-ignore
+          webkitdirectory=""
+          directory=""
+          onChange={handleBrowseFolder}
+        />
       </aside>
       {contextMenu && (
         <div
