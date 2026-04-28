@@ -1,0 +1,94 @@
+interface BottomBarProps {
+  name: string;
+  index: number;
+  total: number;
+  activeTool: string;
+  onToolChange: (tool: string) => void;
+  onPrev: () => void;
+  onNext: () => void;
+  onCapture: () => void;
+  onSummary: () => void;
+  onHelp: () => void;
+}
+
+interface ToolDef {
+  id: string;
+  icon: string;
+  label: string;
+  tooltip: string;
+  action?: () => void;
+}
+
+export function BottomBar({
+  name,
+  index,
+  total,
+  activeTool,
+  onToolChange,
+  onPrev,
+  onNext,
+  onCapture,
+  onSummary,
+  onHelp,
+}: BottomBarProps) {
+  const tools: ToolDef[] = [
+    { id: 'capture', icon: '📷', label: 'Capture', tooltip: 'Screenshot current screen', action: onCapture },
+    { id: 'states', icon: '🏷', label: 'States', tooltip: 'Toggle state view' },
+    { id: 'summary', icon: '📋', label: 'Summary', tooltip: 'View all screens summary', action: onSummary },
+    { id: 'export', icon: '📊', label: 'Export', tooltip: 'Export screenshots' },
+  ];
+
+  function handleClick(tool: ToolDef) {
+    if (activeTool === tool.id) {
+      onToolChange('');
+    } else {
+      onToolChange(tool.id);
+      if (tool.action) tool.action();
+    }
+  }
+
+  return (
+    <>
+      {/* Info + nav pill — bottom-left */}
+      <div className="pill pill-info">
+        <span className="bar-name">{name}</span>
+        <span className="bar-spacer" />
+        <button className="bar-nav-btn" onClick={onPrev} disabled={index === 0}>←</button>
+        <span className="bar-pos">{index + 1} / {total}</span>
+        <button className="bar-nav-btn" onClick={onNext}>→</button>
+      </div>
+
+      {/* Tools pill — bottom-center */}
+      <div className="pill pill-tools">
+        {tools.map((tool) => (
+          <button
+            key={tool.id}
+            className={`dock-tool${activeTool === tool.id ? ' active' : ''}`}
+            data-tooltip={tool.tooltip}
+            onClick={() => handleClick(tool)}
+            aria-label={tool.tooltip}
+          >
+            {tool.icon}
+            {activeTool === tool.id ? ` ${tool.label}` : ''}
+          </button>
+        ))}
+      </div>
+
+      {/* Help pill — bottom-right */}
+      <div className="pill pill-help">
+        <button
+          className={`dock-tool${activeTool === 'help' ? ' active' : ''}`}
+          data-tooltip="Keyboard shortcuts"
+          onClick={() => {
+            if (activeTool === 'help') onToolChange('');
+            else { onToolChange('help'); onHelp(); }
+          }}
+          aria-label="Keyboard shortcuts"
+        >
+          ❓
+          {activeTool === 'help' ? ' Help' : ''}
+        </button>
+      </div>
+    </>
+  );
+}

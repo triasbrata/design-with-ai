@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import fs from 'node:fs';
 import type { Plugin } from 'vite';
@@ -39,9 +40,8 @@ function capturePlugin(): Plugin {
       });
 
       // Proxy /screens/* → golden dir for clean URLs
-      server.middlewares.use('/screens', (req, res, next) => {
+      server.middlewares.use('/screens', (req, res, _next) => {
         const filePath = path.join(GOLDEN_DIR, (req.url || '/').replace(/^\/screens\//, ''));
-        // Only serve existing files, let Vite handle 404s
         if (fs.existsSync(filePath)) {
           const ext = path.extname(filePath);
           const mime: Record<string, string> = {
@@ -62,7 +62,7 @@ function capturePlugin(): Plugin {
 
 export default defineConfig({
   root: __dirname,
-  plugins: [capturePlugin()],
+  plugins: [react(), capturePlugin()],
   server: {
     port: 4200,
     open: false,
