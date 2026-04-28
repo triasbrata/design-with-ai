@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import type { CaptureResult, Metadata } from '../types';
-import { Button } from './base';
+import { useEffect, useRef, useState } from "react";
+import type { CaptureResult, Metadata } from "../types";
+import { Button } from "./base";
+import { X, Check, Loader2 } from "./base/icons";
+
 
 interface CaptureProgressProps {
   screens: string[];
@@ -28,19 +30,19 @@ function waitForLoad(iframe: HTMLIFrameElement, timeoutMs: number): Promise<void
       resolve();
     }
 
-    if (iframe.contentDocument?.readyState === 'complete') {
+    if (iframe.contentDocument?.readyState === "complete") {
       clearTimeout(timer);
       resolve();
       return;
     }
 
-    iframe.addEventListener('load', onLoad, { once: true });
+    iframe.addEventListener("load", onLoad, { once: true });
   });
 }
 
 export function CaptureProgress({ screens, metadata, onDone }: CaptureProgressProps) {
-  const [currentFile, setCurrentFile] = useState('');
-  const [progress, setProgress] = useState('');
+  const [currentFile, setCurrentFile] = useState("");
+  const [progress, setProgress] = useState("");
   const [resultsLog, setResultsLog] = useState<CaptureResult[]>([]);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
@@ -54,7 +56,7 @@ export function CaptureProgress({ screens, metadata, onDone }: CaptureProgressPr
     let total = 0;
     for (const screen of screens) {
       const meta = metadata.screens[screen];
-      const states = meta?.states || ['default'];
+      const states = meta?.states || ["default"];
       total += states.length;
     }
 
@@ -65,28 +67,26 @@ export function CaptureProgress({ screens, metadata, onDone }: CaptureProgressPr
         if (!mountedRef.current || window._captureStop) break;
 
         const meta = metadata.screens[screen];
-        const states = meta?.states || ['default'];
+        const states = meta?.states || ["default"];
 
         for (let si = 0; si < states.length; si++) {
           if (!mountedRef.current || window._captureStop) break;
 
           const state = states[si];
           const isFirstState = si === 0;
-          const isDefault = state === 'default';
-          const filename = isDefault || isFirstState
-            ? `phone_${screen}.png`
-            : `phone_${screen}_${state}.png`;
+          const isDefault = state === "default";
+          const filename = isDefault || isFirstState ? `phone_${screen}.png` : `phone_${screen}_${state}.png`;
 
           setCurrentFile(filename);
           setProgress(`${completed + 1}/${total}`);
 
-          const wrapper = document.createElement('div');
-          wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:390px;height:844px';
+          const wrapper = document.createElement("div");
+          wrapper.style.cssText = "position:fixed;left:-9999px;top:0;width:390px;height:844px";
 
-          const iframe = document.createElement('iframe');
-          iframe.style.width = '390px';
-          iframe.style.height = '844px';
-          iframe.style.border = 'none';
+          const iframe = document.createElement("iframe");
+          iframe.style.width = "390px";
+          iframe.style.height = "844px";
+          iframe.style.border = "none";
           wrapper.appendChild(iframe);
           document.body.appendChild(wrapper);
 
@@ -100,7 +100,7 @@ export function CaptureProgress({ screens, metadata, onDone }: CaptureProgressPr
                 | null;
 
               if (win?.__baseline?.setState) {
-                win.postMessage({ type: 'setState', state }, '*');
+                win.postMessage({ type: "setState", state }, "*");
               } else {
                 iframe.src = `/screens/${screen}_${state}.html`;
                 await waitForLoad(iframe, 15000);
@@ -110,29 +110,29 @@ export function CaptureProgress({ screens, metadata, onDone }: CaptureProgressPr
             await delay(300);
 
             if (!iframe.contentDocument?.body) {
-              throw new Error('iframe body not available');
+              throw new Error("iframe body not available");
             }
 
             const canvas = await window.html2canvas(iframe.contentDocument.body, {
               width: 390,
               height: 844,
               scale: 2,
-              backgroundColor: '#fff',
+              backgroundColor: "#fff",
               useCORS: true,
               allowTaint: true,
             });
 
             const dataUrl = canvas.toDataURL();
 
-            const resp = await fetch('/api/capture', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+            const resp = await fetch("/api/capture", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ filename, data: dataUrl }),
             });
 
             const capResult = await resp.json();
             if (!capResult.ok) {
-              throw new Error(capResult.error || 'save failed');
+              throw new Error(capResult.error || "save failed");
             }
 
             const result: CaptureResult = { filename, ok: true };
@@ -162,7 +162,6 @@ export function CaptureProgress({ screens, metadata, onDone }: CaptureProgressPr
       mountedRef.current = false;
       window._captureStop = true;
     };
-    // Run once on mount — intentionally no deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -171,34 +170,35 @@ export function CaptureProgress({ screens, metadata, onDone }: CaptureProgressPr
   }
 
   return (
-    <div style={{ width: '100%' }}>
+    <div style={{ width: "100%" }}>
       <div className="toolbar">
-        <Button color="secondary" size="sm" onClick={handleCancel}>
-          &#10005; Cancel
+        <Button color="secondary" size="sm" onClick={handleCancel} iconLeading={<X size={18} />}>
+          Cancel
         </Button>
         <span className="name">Creating Baseline...</span>
         <span className="pos">{progress}</span>
       </div>
       <div
         style={{
-          padding: '16px',
-          fontSize: '12px',
-          color: 'var(--brand-muted)',
+          padding: "16px",
+          fontSize: "12px",
+          color: "var(--brand-muted)",
         }}
       >
         {currentFile}
       </div>
       <div
         style={{
-          maxHeight: 'calc(100vh - 180px)',
-          overflowY: 'auto',
-          padding: '0 16px 16px',
+          maxHeight: "calc(100vh - 180px)",
+          overflowY: "auto",
+          padding: "0 16px 16px",
         }}
       >
         {resultsLog.map((r, i) => (
-          <div key={i} className={r.ok ? 'cap-result-ok' : 'cap-result-err'}>
-            {r.ok ? '\u2713' : '\u2717'} {r.filename}
-            {r.error ? ` \u2014 ${r.error}` : ''}
+          <div key={i} className={r.ok ? "cap-result-ok" : "cap-result-err"}>
+            {r.ok ? <Check size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> : <X size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} />}{" "}
+            {r.filename}
+            {r.error ? ` \u2014 ${r.error}` : ""}
           </div>
         ))}
       </div>

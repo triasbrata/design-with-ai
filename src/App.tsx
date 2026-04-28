@@ -241,8 +241,8 @@ export default function App() {
                 />
               )}
             </div>
-            <RightDrawer open={rightDrawerOpen} onToggle={() => setRightDrawerOpen((p) => !p)} />
           </div>
+          <RightDrawer open={rightDrawerOpen} onToggle={() => setRightDrawerOpen((p) => !p)} />
           {!isSummary && (
             <BottomBar
               name={screenName(currentScreen)}
