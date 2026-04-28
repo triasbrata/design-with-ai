@@ -218,6 +218,9 @@ export function LeftDrawer({
             >
               <Pin size={14} />
             </button>
+            <button className="ld-close-btn" onClick={onToggle} title="Close drawer">
+              <X size={14} />
+            </button>
           </div>
           {onAddWorkspace && (
             <>

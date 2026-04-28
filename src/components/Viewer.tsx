@@ -19,9 +19,6 @@ interface ViewerProps {
   markerMode: boolean;
   markerRect: MarkerRect | null;
   onMark: (payload: MarkPayload) => void;
-  scale: number;
-  logicalW: number;
-  logicalH: number;
 }
 
 export function Viewer({
@@ -38,9 +35,6 @@ export function Viewer({
   markerMode,
   markerRect,
   onMark,
-  scale,
-  logicalW,
-  logicalH,
 }: ViewerProps) {
   const phoneRef = useRef<{ getIframe: () => HTMLIFrameElement | null }>(null);
 
@@ -72,50 +66,23 @@ export function Viewer({
     iframe.src = getScreenUrl(screen, activeState);
   }, [activeState, screen, getScreenUrl]);
 
-  const visualW = logicalW * scale;
-  const visualH = logicalH * scale;
-
   return (
     <>
       <div className="main-layout">
-        <div
-          className="phone-container"
-          style={{
-            width: `${visualW}px`,
-            height: `${visualH}px`,
-            flexShrink: 0,
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            style={{
-              transform: `scale(${scale})`,
-              transformOrigin: 'top left',
-              width: `${logicalW}px`,
-              height: `${logicalH}px`,
-              position: 'absolute',
-              top: 0,
-              left: 0,
-            }}
-          >
-            <PhoneFrame
-              ref={phoneRef}
-              key={`${screen}-${activeState}`}
-              src={getScreenUrl(screen)}
-              onLoad={handleLoad}
-              width={logicalW}
-              height={logicalH}
-            />
-            <MarkerOverlay
-              active={markerMode}
-              rect={markerRect}
-              screen={screen}
-              activeState={activeState}
-              onMark={onMark}
-              scale={scale}
-            />
-          </div>
+        <div className="phone-container">
+          <PhoneFrame
+            ref={phoneRef}
+            key={`${screen}-${activeState}`}
+            src={getScreenUrl(screen)}
+            onLoad={handleLoad}
+          />
+          <MarkerOverlay
+            active={markerMode}
+            rect={markerRect}
+            screen={screen}
+            activeState={activeState}
+            onMark={onMark}
+          />
         </div>
         <MetaPanel
           meta={meta}

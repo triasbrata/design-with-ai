@@ -20,8 +20,9 @@ export function useDeviceScale(
     setLogicalH(logicalHeight);
 
     const padding = 48;
-    const availW = container.clientWidth - padding;
-    const availH = container.clientHeight - padding;
+    // Preview max 70% width (30% for spec panel), max 80vh height
+    const availW = (container.clientWidth * 0.7) - padding;
+    const availH = Math.min(container.clientHeight, window.innerHeight * 0.8) - padding;
 
     const scaleX = availW / logicalWidth;
     const scaleY = availH / logicalHeight;

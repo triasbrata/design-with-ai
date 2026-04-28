@@ -179,11 +179,11 @@ export default function App() {
     const handleKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-      // Device mode shortcuts: Meta/Ctrl + 1-5
-      if ((e.metaKey || e.ctrlKey) && /^[1-5]$/.test(e.key)) {
+      // Device mode shortcuts: Meta/Ctrl + 1-6
+      if ((e.metaKey || e.ctrlKey) && /^[1-6]$/.test(e.key)) {
         e.preventDefault();
         const idx = parseInt(e.key) - 1;
-        setDeviceMode(DEVICE_CYCLE[idx]);
+        if (idx < DEVICE_CYCLE.length) setDeviceMode(DEVICE_CYCLE[idx]);
         return;
       }
 
