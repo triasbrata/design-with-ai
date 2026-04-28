@@ -1,5 +1,7 @@
-import type { ReactNode } from "react";
-import { Camera, ChevronLeft, ChevronRight, ClipboardList, BarChart3, HelpCircle, List, Square } from "./base/icons";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Camera, ChevronLeft, ChevronRight, ClipboardList, BarChart3, HelpCircle, List, Smartphone, Square, Monitor, Tablet } from "./base/icons";
+import { DEVICE_PRESETS } from "../constants";
+import type { DeviceMode } from "../constants";
 
 interface BottomBarProps {
   name: string;
@@ -7,12 +9,14 @@ interface BottomBarProps {
   total: number;
   activeTool: string;
   projectName?: string;
+  deviceMode: DeviceMode;
   onToolChange: (tool: string) => void;
   onPrev: () => void;
   onNext: () => void;
   onCapture: () => void;
   onSummary: () => void;
   onHelp: () => void;
+  onDeviceModeChange: (mode: DeviceMode) => void;
 }
 
 interface ToolDef {
@@ -24,10 +28,10 @@ interface ToolDef {
 }
 
 function NameDisplay({ projectName, name }: { projectName?: string; name: string }) {
-  const fullName = projectName ? `${projectName} / ${name}` : name;
-  const displayName = fullName.length > 50 ? `... / ${name}` : fullName;
+  const full = projectName ? `${projectName} / ${name}` : name;
+  const display = name.length > 20 ? name.slice(0, 20) + "..." : name;
 
-  return <span className="bar-name" title={fullName}>{displayName}</span>;
+  return <span className="bar-name" title={full}>{display}</span>;
 }
 
 export function BottomBar({
@@ -36,16 +40,41 @@ export function BottomBar({
   total,
   activeTool,
   projectName,
+  deviceMode,
   onToolChange,
   onPrev,
   onNext,
   onCapture,
   onSummary,
   onHelp,
+  onDeviceModeChange,
 }: BottomBarProps) {
+  function deviceIcon(mode: DeviceMode): ReactNode {
+    const size = 14;
+    if (mode.startsWith("phone")) return <Smartphone size={size} />;
+    if (mode.startsWith("tablet")) return <Tablet size={size} />;
+    return <Monitor size={size} />;
+  }
+
+  const deviceLabel = DEVICE_PRESETS[deviceMode].label;
+  const [deviceMenuOpen, setDeviceMenuOpen] = useState(false);
+  const deviceMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!deviceMenuOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (deviceMenuRef.current && !deviceMenuRef.current.contains(e.target as Node)) {
+        setDeviceMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [deviceMenuOpen]);
+
   const tools: ToolDef[] = [
     { id: "marker", icon: <Square size={20} />, label: "Marker", tooltip: "Draw rectangle marker on screen" },
     { id: "capture", icon: <Camera size={20} />, label: "Capture", tooltip: "Screenshot current screen", action: onCapture },
+    { id: "device", icon: deviceIcon(deviceMode), label: deviceLabel, tooltip: `Device: ${deviceLabel}` },
     { id: "states", icon: <List size={20} />, label: "States", tooltip: "Toggle state view" },
     { id: "summary", icon: <ClipboardList size={20} />, label: "Summary", tooltip: "View all screens summary", action: onSummary },
     { id: "export", icon: <BarChart3 size={20} />, label: "Export", tooltip: "Export screenshots" },
@@ -79,18 +108,58 @@ export function BottomBar({
 
       {/* Tools pill — bottom-center */}
       <div className="pill pill-tools">
-        {tools.map((tool) => (
-          <button
-            key={tool.id}
-            className={`dock-tool${activeTool === tool.id ? " active" : ""}`}
-            data-tooltip={tool.tooltip}
-            onClick={() => handleClick(tool)}
-            aria-label={tool.tooltip}
-          >
-            {tool.icon}
-            {activeTool === tool.id ? ` ${tool.label}` : ""}
-          </button>
-        ))}
+        {tools.map((tool) => {
+          if (tool.id === "device") {
+            return (
+              <div className="device-menu-wrapper" ref={deviceMenuRef} key="device">
+                <button
+                  className="dock-tool active"
+                  data-tooltip={tool.tooltip}
+                  onClick={() => setDeviceMenuOpen((prev) => !prev)}
+                  aria-label={tool.tooltip}
+                >
+                  {tool.icon}
+                  {` ${tool.label}`}
+                </button>
+                {deviceMenuOpen && (
+                  <div className="device-dropdown">
+                    {(Object.keys(DEVICE_PRESETS) as DeviceMode[]).map((mode) => {
+                      const preset = DEVICE_PRESETS[mode];
+                      return (
+                        <button
+                          key={mode}
+                          className={`device-option${mode === deviceMode ? " active" : ""}`}
+                          onClick={() => {
+                            onDeviceModeChange(mode);
+                            setDeviceMenuOpen(false);
+                          }}
+                        >
+                          <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                            {deviceIcon(mode)}
+                            <span style={{ whiteSpace: "nowrap" }}>{preset.label}</span>
+                          </span>
+                          <span className="device-shortcut">{preset.shortcut}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+          return (
+            <button
+              key={tool.id}
+              className={`dock-tool${activeTool === tool.id ? " active" : ""}`}
+              data-tooltip={tool.tooltip}
+              onClick={() => handleClick(tool)}
+              aria-label={tool.tooltip}
+            >
+              {tool.icon}
+              {activeTool === tool.id ? ` ${tool.label}` : ""}
+            </button>
+          );
+        })}
       </div>
 
       {/* Help pill — bottom-right */}

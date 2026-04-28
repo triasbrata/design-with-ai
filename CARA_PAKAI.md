@@ -119,11 +119,11 @@ window.addEventListener('message', function(e) {
 | `data-baseline-state` | Setiap state dibungkus div dengan atribut ini |
 | `display:none` | Semua state non-default harus hidden |
 | `postMessage` listener | Terima command dari parent viewer |
-| `ai-id` attribute | Setiap komponen wajib punya `ai-id` (lihat section 1.3) |
+| `cai-id` attribute | Setiap komponen wajib punya `cai-id` (lihat section 1.3) |
 
-### 1.3 Konvensi `ai-id` Attribute
+### 1.3 Konvensi `cai-id` Attribute
 
-Setiap elemen komponen dalam golden HTML spec **wajib** punya atribut `ai-id`. Tujuannya: ketika context HTML dikasi ke AI, AI langsung tahu elemen yang mana tanpa perlu baca struktur DOM.
+Setiap elemen komponen dalam golden HTML spec **wajib** punya atribut `cai-id` (Context AI Identifier). Tujuannya: ketika context HTML dikasi ke AI, AI langsung tahu elemen yang mana tanpa perlu baca struktur DOM.
 
 #### Format
 
@@ -140,29 +140,29 @@ Setiap elemen komponen dalam golden HTML spec **wajib** punya atribut `ai-id`. T
 
 ```html
 <!-- Screen-level containers -->
-<div class="curved-sheet" ai-id="record--curved-sheet">...</div>
-<div class="top-pills" ai-id="record--top-pills">...</div>
+<div class="curved-sheet" cai-id="record--curved-sheet">...</div>
+<div class="top-pills" cai-id="record--top-pills">...</div>
 
 <!-- Interactive elements -->
-<button class="fab" ai-id="record--fab">+</button>
-<div class="toggle" ai-id="settings--toggle-dark-theme">...</div>
+<button class="fab" cai-id="record--fab">+</button>
+<div class="toggle" cai-id="settings--toggle-dark-theme">...</div>
 
 <!-- Content components -->
-<div class="card card-yellow" ai-id="assets--account-card-cash">...</div>
-<div class="filter-chips" ai-id="assets--filter-chips">...</div>
-<div class="section-title" ai-id="bills--section-title-expenses">...</div>
+<div class="card card-yellow" cai-id="assets--account-card-cash">...</div>
+<div class="filter-chips" cai-id="assets--filter-chips">...</div>
+<div class="section-title" cai-id="bills--section-title-expenses">...</div>
 
 <!-- State-specific containers -->
-<div data-baseline-state="empty" ai-id="record--empty-state">...</div>
-<div data-baseline-state="loading" ai-id="record--loading-skeleton">...</div>
+<div data-baseline-state="empty" cai-id="record--empty-state">...</div>
+<div data-baseline-state="loading" cai-id="record--loading-skeleton">...</div>
 
 <!-- List items -->
-<li class="settings-item" ai-id="settings--item-membership">...</li>
-<li class="settings-item" ai-id="settings--item-dark-theme">...</li>
+<li class="settings-item" cai-id="settings--item-membership">...</li>
+<li class="settings-item" cai-id="settings--item-dark-theme">...</li>
 
 <!-- Nav elements -->
-<div class="nav-capsule" ai-id="nav--capsule">...</div>
-<div class="nav-tab active" ai-id="nav--tab-bills">...</div>
+<div class="nav-capsule" cai-id="nav--capsule">...</div>
+<div class="nav-tab active" cai-id="nav--tab-bills">...</div>
 ```
 
 #### Aturan
@@ -171,14 +171,14 @@ Setiap elemen komponen dalam golden HTML spec **wajib** punya atribut `ai-id`. T
 |--------|-----------|
 | Scope prefix | Gunakan nama screen sebagai prefix: `record--`, `bills--`, `assets--`, `settings--` |
 | Shared components | Komponen yang muncul di banyak screen pakai prefix screen tempat dia muncul |
-| State divs | State container juga wajib `ai-id` |
+| State divs | State container juga wajib `cai-id` |
 | Naming | Deskriptif — baca nama langsung paham elemen apa. Contoh: `record--quick-action-grid`, bukan `record--grid-1` |
-| Unik per file | Tidak boleh ada 2 elemen dengan `ai-id` sama dalam 1 file |
+| Unik per file | Tidak boleh ada 2 elemen dengan `cai-id` sama dalam 1 file |
 
-#### Daftar ai-id per screen (reference)
+#### Daftar cai-id per screen (reference)
 
 **Record Screen:**
-| Element | ai-id |
+| Element | cai-id |
 |---------|-------|
 | TopPillsRow | `record--top-pills` |
 | Pill kiri "All ledgers" | `record--pill-all-ledgers` |
@@ -194,7 +194,7 @@ Setiap elemen komponen dalam golden HTML spec **wajib** punya atribut `ai-id`. T
 | FAB | `record--fab` |
 
 **Bills Screen:**
-| Element | ai-id |
+| Element | cai-id |
 |---------|-------|
 | TopPillsRow | `bills--top-pills` |
 | Pill kiri | `bills--pill-all-ledgers` |
@@ -217,7 +217,7 @@ Setiap elemen komponen dalam golden HTML spec **wajib** punya atribut `ai-id`. T
 | FAB | `bills--fab` |
 
 **Assets Screen:**
-| Element | ai-id |
+| Element | cai-id |
 |---------|-------|
 | TopPillsRow | `assets--top-pills` |
 | Pill kiri | `assets--pill-all-ledgers` |
@@ -238,7 +238,7 @@ Setiap elemen komponen dalam golden HTML spec **wajib** punya atribut `ai-id`. T
 | FAB | `assets--fab` |
 
 **Settings Screen:**
-| Element | ai-id |
+| Element | cai-id |
 |---------|-------|
 | TopPillsRow | `settings--top-pills` |
 | Pill kiri | `settings--pill-all-ledgers` |
@@ -257,7 +257,7 @@ Setiap elemen komponen dalam golden HTML spec **wajib** punya atribut `ai-id`. T
 | Loading skeleton | `settings--loading-skeleton` |
 
 **FloatingBottomNav:**
-| Element | ai-id |
+| Element | cai-id |
 |---------|-------|
 | Nav capsule | `nav--capsule` |
 | Tab Record | `nav--tab-record` |

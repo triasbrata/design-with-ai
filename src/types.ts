@@ -79,6 +79,7 @@ export interface MarkedElement {
   text: string;
   selector: string;
   boundingBox: MarkerRect;
+  caiId?: string;  // context AI identifier from cai-id attribute
 }
 
 export interface MarkerContext {

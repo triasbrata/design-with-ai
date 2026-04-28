@@ -47,21 +47,23 @@ export function useScreens(dir: string, preloadedMetadata?: Metadata | null) {
   const total = orderedScreens.length;
   const isSummary = currentIndex === -2;
 
-  // Navigate to a screen by name
+  // Navigate to a screen by name, optionally preserving state
   const navigate = useCallback(
-    (screen: string) => {
+    (screen: string, state?: string) => {
+      const params = new URLSearchParams();
       if (screen === "summary") {
         setCurrentIndex(-2);
         setCurrentScreen("");
-        history.replaceState({}, "", "?file=summary");
-        return;
-      }
-      const idx = orderedScreens.indexOf(screen);
-      if (idx >= 0) {
+        params.set("file", "summary");
+      } else {
+        const idx = orderedScreens.indexOf(screen);
+        if (idx < 0) return;
         setCurrentIndex(idx);
         setCurrentScreen(screen);
-        history.replaceState({}, "", `?file=${screen}`);
+        params.set("file", screen);
       }
+      if (state) params.set("state", state);
+      history.replaceState({}, "", `?${params.toString()}`);
     },
     [orderedScreens],
   );
@@ -103,17 +105,23 @@ export function useScreens(dir: string, preloadedMetadata?: Metadata | null) {
     }
   }, [orderedScreens, navigate]);
 
+  // Read initial state from URL (stable across renders via lazy useState init)
+  const [queryState] = useState<string | undefined>(
+    () => new URLSearchParams(location.search).get("state") || undefined,
+  );
+
   // Read ?file= param on initial load (runs once orderedScreens populated)
   useEffect(() => {
     if (orderedScreens.length === 0) return;
     const params = new URLSearchParams(location.search);
     const fileParam = params.get("file");
+    const stateParam = params.get("state") || undefined;
     if (fileParam === "summary") {
-      navigate("summary");
+      navigate("summary", stateParam);
     } else if (fileParam && orderedScreens.includes(fileParam)) {
-      navigate(fileParam);
+      navigate(fileParam, stateParam);
     } else {
-      navigate(orderedScreens[0]);
+      navigate(orderedScreens[0], stateParam);
     }
   }, [orderedScreens, navigate]);
 
@@ -129,5 +137,6 @@ export function useScreens(dir: string, preloadedMetadata?: Metadata | null) {
     goNext,
     goPrev,
     goHome,
+    queryState,
   };
 }

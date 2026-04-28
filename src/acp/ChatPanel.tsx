@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, type FormEvent } from 'react';
+import { useState, useRef, useEffect, type FormEvent, type KeyboardEvent } from 'react';
+import { Send, X } from '../components/base/icons';
 import type { MarkerContext } from '../types';
 
 interface Message {
@@ -73,6 +74,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
   const [loading, setLoading] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (listRef.current) {
@@ -84,6 +86,14 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
   useEffect(() => {
     return () => abortRef.current?.abort();
   }, []);
+
+  // Auto-resize textarea on input change
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 60) + 'px';
+  }, [input]);
 
   async function send(query: string) {
     if (!query.trim() || loading) return;
@@ -194,74 +204,99 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
     }
   }
 
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    send(input);
+  }
+
+  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      send(input);
+    }
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)' }}>
+    <div className="chat-container">
       {/* Marker context indicator */}
       {markerContext && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '6px 8px',
-            marginBottom: 8,
-            borderRadius: 6,
-            background: 'var(--brand-accent)',
-            color: '#fff',
-            fontSize: 11,
-          }}
-        >
-          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            Marked: &lt;{markerContext.element?.tag}&gt;{' '}
-            &ldquo;{(markerContext.element?.text ?? '').substring(0, 35)}&rdquo;
+        <div className="chat-marker-banner">
+          <span className="chat-marker-label">
+            {markerContext.element?.caiId ? (
+              <>Marked: <strong>cai-id=&ldquo;{markerContext.element.caiId}&rdquo;</strong></>
+            ) : (
+              <>Marked: &lt;{markerContext.element?.tag}&gt;{' '}
+                &ldquo;{(markerContext.element?.text ?? '').substring(0, 35)}&rdquo;</>
+            )}
           </span>
           {onResetMarker && (
-            <button
-              onClick={onResetMarker}
-              style={{
-                background: 'rgba(255,255,255,0.25)',
-                border: 'none',
-                borderRadius: 4,
-                color: '#fff',
-                cursor: 'pointer',
-                fontSize: 11,
-                padding: '2px 6px',
-              }}
-            >
-              Clear
+            <button className="chat-marker-close" onClick={onResetMarker} title="Clear marker">
+              <X size={12} />
             </button>
           )}
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+      {/* Quick actions */}
+      <div className="chat-actions">
         {QUICK_ACTIONS.map((a) => (
           <button key={a.label} className="chat-quick-btn" onClick={() => send(a.query)} disabled={loading}>
             {a.label}
           </button>
         ))}
         {loading && (
-          <button className="chat-quick-btn" style={{ color: '#C45353' }} onClick={() => abortRef.current?.abort()}>
+          <button className="chat-quick-btn chat-quick-btn--stop" onClick={() => abortRef.current?.abort()}>
             Stop
           </button>
         )}
       </div>
 
-      <div ref={listRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
+      {/* Messages */}
+      <div ref={listRef} className="chat-messages">
+        {messages.length === 0 && (
+          <div className="chat-empty">Ask something about the design...</div>
+        )}
         {messages.map((m, i) => (
-          <div key={i} className={`chat-bubble ${m.role}${m.error ? ' error' : ''}`}>
-            {m.text}
-            {m.streaming && <span className="chat-cursor">▊</span>}
+          <div key={i} className={`chat-row ${m.role}`}>
+            {m.role === 'assistant' && <div className="chat-avatar">AI</div>}
+            <div className={`chat-bubble ${m.role}${m.error ? ' error' : ''}`}>
+              {m.text}
+              {m.streaming && <span className="chat-cursor">|</span>}
+            </div>
+            {m.role === 'user' && <div className="chat-avatar">U</div>}
           </div>
         ))}
         {loading && messages[messages.length - 1]?.streaming !== true && (
-          <div className="chat-bubble assistant loading">Claude mikir...</div>
+          <div className="chat-row assistant">
+            <div className="chat-avatar">AI</div>
+            <div className="chat-bubble assistant loading">
+              <div className="chat-dots">
+                <span className="chat-dot" />
+                <span className="chat-dot" />
+                <span className="chat-dot" />
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="chat-form">
-        <input className="chat-input" placeholder="Tanya design review atau ngobrol pake Claude..." value={input} onChange={(e) => setInput(e.target.value)} disabled={loading} />
-        <button className="chat-send-btn" type="submit" disabled={loading || !input.trim()}>Kirim</button>
+      {/* Input */}
+      <form onSubmit={handleSubmit} className="chat-form">
+        <div className="chat-input-pill">
+          <textarea
+            ref={textareaRef}
+            className="chat-input-field"
+            placeholder="Ask about this design..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={loading}
+            rows={1}
+          />
+          <button className="chat-send-btn" type="submit" disabled={loading || !input.trim()}>
+            <Send size={13} />
+          </button>
+        </div>
       </form>
     </div>
   );
