@@ -1,19 +1,30 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import type { Metadata } from '../types';
-import { TIERS } from '../constants';
+import { useState, useEffect, useMemo, useCallback } from "react";
+import type { Metadata } from "../types";
+import { TIERS } from "../constants";
 
-export function useScreens() {
+export function useScreens(dir: string, preloadedMetadata?: Metadata | null) {
   const [metadata, setMetadata] = useState<Metadata | null>(null);
   const [currentIndex, setCurrentIndex] = useState(-1);
-  const [currentScreen, setCurrentScreen] = useState('');
+  const [currentScreen, setCurrentScreen] = useState("");
 
-  // Fetch metadata
+  // Fetch metadata — use preloaded (client project) or fetch from server
   useEffect(() => {
-    fetch('/screens/screen-metadata.json')
+    if (preloadedMetadata != null) {
+      setMetadata(preloadedMetadata);
+      return;
+    }
+    setMetadata(null);
+    fetch(`/api/metadata?dir=${encodeURIComponent(dir)}`)
       .then((r) => r.json())
       .then(setMetadata)
-      .catch(() => setMetadata({ meta: { version: '0', lastUpdated: '', totalScreens: 0 }, screens: {}, components: {} }));
-  }, []);
+      .catch(() =>
+        setMetadata({
+          meta: { version: "0", lastUpdated: "", totalScreens: 0 },
+          screens: {},
+          components: {},
+        }),
+      );
+  }, [dir, preloadedMetadata]);
 
   // Compute ordered screen list from metadata
   const orderedScreens = useMemo(() => {
@@ -39,40 +50,40 @@ export function useScreens() {
   // Navigate to a screen by name
   const navigate = useCallback(
     (screen: string) => {
-      if (screen === 'summary') {
+      if (screen === "summary") {
         setCurrentIndex(-2);
-        setCurrentScreen('');
-        history.replaceState({}, '', '?file=summary');
+        setCurrentScreen("");
+        history.replaceState({}, "", "?file=summary");
         return;
       }
       const idx = orderedScreens.indexOf(screen);
       if (idx >= 0) {
         setCurrentIndex(idx);
         setCurrentScreen(screen);
-        history.replaceState({}, '', `?file=${screen}`);
+        history.replaceState({}, "", `?file=${screen}`);
       }
     },
-    [orderedScreens]
+    [orderedScreens],
   );
 
   // Navigate by index
   const goTo = useCallback(
     (idx: number) => {
       if (idx === -2) {
-        navigate('summary');
+        navigate("summary");
         return;
       }
       if (idx >= 0 && idx < orderedScreens.length) {
         navigate(orderedScreens[idx]);
       }
     },
-    [orderedScreens, navigate]
+    [orderedScreens, navigate],
   );
 
   const goNext = useCallback(() => {
     if (isSummary) return;
     if (currentIndex === orderedScreens.length - 1) {
-      navigate('summary');
+      navigate("summary");
     } else {
       goTo(currentIndex + 1);
     }
@@ -92,13 +103,13 @@ export function useScreens() {
     }
   }, [orderedScreens, navigate]);
 
-  // Read ?file= param on initial load
+  // Read ?file= param on initial load (runs once orderedScreens populated)
   useEffect(() => {
     if (orderedScreens.length === 0) return;
     const params = new URLSearchParams(location.search);
-    const fileParam = params.get('file');
-    if (fileParam === 'summary') {
-      navigate('summary');
+    const fileParam = params.get("file");
+    if (fileParam === "summary") {
+      navigate("summary");
     } else if (fileParam && orderedScreens.includes(fileParam)) {
       navigate(fileParam);
     } else {

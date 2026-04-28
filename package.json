@@ -7,10 +7,13 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "review": "vite",
-    "review:old": "npx tsx dev-server.ts"
+    "review:old": "npx tsx dev-server.ts",
+    "acp-agent": "npx tsx src/acp/agent.ts"
   },
   "dependencies": {
+    "@agentclientprotocol/sdk": "^0.20.0",
     "@tailwindcss/vite": "^4.2.4",
+    "lucide-react": "^1.11.0",
     "react": "^18.3.1",
     "react-aria-components": "^1.17.0",
     "react-dom": "^18.3.1",

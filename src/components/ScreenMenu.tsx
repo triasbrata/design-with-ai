@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
-import { screenName, TIERS } from '../constants';
-import type { TierInfo } from '../types';
+import { useEffect, useRef } from "react";
+import { screenName, TIERS } from "../constants";
+import type { TierInfo } from "../types";
+import { Menu } from "./base/icons";
 
 interface ScreenMenuProps {
   screens: string[];
@@ -21,8 +22,8 @@ export function ScreenMenu({ screens, activeScreen, onSelect, open, onToggle }: 
         onToggle();
       }
     }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, [open, onToggle]);
 
   const existing = new Set(screens);
@@ -32,12 +33,17 @@ export function ScreenMenu({ screens, activeScreen, onSelect, open, onToggle }: 
     if (!tierScreens.length) return null;
     return (
       <div className="tier-group" key={tier}>
-        <div className="tier-label">{tier} — {info.label}</div>
+        <div className="tier-label">
+          {tier} &mdash; {info.label}
+        </div>
         {tierScreens.map((s) => (
           <button
             key={s}
-            className={`side-link${s === activeScreen ? ' active' : ''}`}
-            onClick={() => { onSelect(s); onToggle(); }}
+            className={`side-link${s === activeScreen ? " active" : ""}`}
+            onClick={() => {
+              onSelect(s);
+              onToggle();
+            }}
             title={screenName(s)}
           >
             {screenName(s)}
@@ -49,14 +55,8 @@ export function ScreenMenu({ screens, activeScreen, onSelect, open, onToggle }: 
 
   return (
     <div className="menu-wrapper" ref={menuRef}>
-      <button
-        className="burger-btn"
-        onClick={onToggle}
-        aria-label="Screens menu"
-      >
-        <span />
-        <span />
-        <span />
+      <button className="burger-btn" onClick={onToggle} aria-label="Screens menu">
+        <Menu size={18} />
       </button>
       {open && (
         <div className="menu-dropdown">
