@@ -12,12 +12,23 @@ import { BottomBar } from "./components/BottomBar";
 import { LeftDrawer } from "./components/LeftDrawer";
 import { RightDrawer } from "./components/RightDrawer";
 import { HelpModal } from "./components/HelpModal";
+import { ScanFoldersModal } from "./components/ScanFoldersModal";
 import { Toast } from "./components/Toast";
 import { screenName, DEVICE_PRESETS, DEVICE_CYCLE } from "./constants";
 import type { DeviceMode } from "./constants";
 import type { CaptureResult, ClientProject, MarkerRect, MarkerContext, Metadata } from "./types";
 import { extractMarkedContext } from "./acp/extractMarkerContext";
-import { loadHandle, readMetadata, listHtmlFiles, readFile, writeFile, dataUrlToBlob } from "./hooks/useFileSystem";
+import type { FileSource } from "./hooks/useFileSystem";
+import {
+  createFileSource,
+  preloadOpfsCache,
+  loadHandle,
+  readMetadata,
+  listHtmlFiles,
+  readFile,
+  writeFile,
+  dataUrlToBlob,
+} from "./hooks/useFileSystem";
 
 
 declare global {
@@ -212,41 +223,45 @@ export default function App() {
     [activeProject, activeInputDir, projectFileMap, activeFolder?.inputHandleId],
   );
 
-  // Save capture: FS handle → direct write, workspace → POST, client → no-op
+  // ── FileSource abstraction ──
+  const fileSource = useMemo<FileSource | null>(() => {
+    const project = projects[activeIndex];
+    return createFileSource({
+      projectType: project?.type,
+      inputDir: activeInputDir,
+      outputDir: activeOutputDir,
+      inputHandle: inputHandle ?? undefined,
+      outputHandle: outputHandle ?? undefined,
+      uploadFiles: project?.type === 'client' ? project.files : undefined,
+      uploadMetadata: project?.type === 'client' ? project.metadata : null,
+    });
+  }, [projects, activeIndex, activeInputDir, activeOutputDir, inputHandle, outputHandle]);
+
+  // Preload OPFS cache when file source changes (background, non-blocking)
+  useEffect(() => {
+    if (!fileSource || !activeFolder?.name) return;
+    const folderKey = `folder_${activeFolder.name}`;
+    preloadOpfsCache(fileSource, folderKey).catch(() => {});
+  }, [fileSource, activeFolder?.name]);
+
+  // Save capture: delegates to FileSource abstraction
   const saveCapture = useCallback(
     async (filename: string, dataUrl: string): Promise<CaptureResult> => {
-      // FS handle mode: write directly to the file system
-      if (outputHandle) {
-        try {
-          const blob = dataUrlToBlob(dataUrl);
-          await writeFile(outputHandle, filename, blob);
-          return { filename, ok: true };
-        } catch (err) {
-          return { filename, ok: false, error: err instanceof Error ? err.message : String(err) };
-        }
+      if (!fileSource || !fileSource.writable) {
+        return { filename, ok: true }; // read-only source → no-op
       }
-
-      if (activeProject?.type === "client") {
-        return { filename, ok: true };
-      }
-
-      // Fallback: POST to Vite middleware
       try {
-        const res = await fetch(`/api/capture?dir=${encodeURIComponent(activeOutputDir)}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename, data: dataUrl }),
-        });
-        const result = await res.json();
-        if (!result.ok) {
-          return { filename, ok: false, error: result.error || "save failed" };
-        }
+        // FS API wants a Blob; middleware/upload API wants the data URL string
+        const content = fileSource.type === 'fs-api'
+          ? dataUrlToBlob(dataUrl)
+          : dataUrl;
+        await fileSource.writeFile(filename, content);
         return { filename, ok: true };
       } catch (err) {
         return { filename, ok: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    [outputHandle, activeProject, activeOutputDir],
+    [fileSource],
   );
 
   // Pre-loaded metadata: FS handle mode, then client project mode
@@ -288,6 +303,7 @@ export default function App() {
   const [rightPinned, setRightPinned] = useState(false);
   const [activeState, setActiveState] = useState(queryState || "default");
   const isFirstRender = useRef(true);
+  const [scanFoldersOpen, setScanFoldersOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [dockTool, setDockTool] = useState("");
   const [capturing, setCapturing] = useState(false);
@@ -557,6 +573,36 @@ export default function App() {
     renameFolder(projectIdx, folderIdx, name);
   }, [renameFolder]);
 
+  // Handler for scanned folders from ScanFoldersModal
+  const handleAddScannedFolders = useCallback(
+    (folders: { name: string; path: string }[]) => {
+      if (folders.length === 0) return;
+
+      // Derive workspace name from first folder's parent directory
+      const parts = folders[0].path.split("/");
+      let wsName = "Scanned Projects";
+      if (parts.length >= 2) {
+        const parentName = parts[parts.length - 2];
+        wsName = parentName.charAt(0).toUpperCase() + parentName.slice(1);
+      }
+
+      addProject({
+        type: "workspace",
+        name: wsName,
+        activeFolder: 0,
+        folders: folders.map((f) => ({
+          name: f.name,
+          inputDir: f.path,
+          outputDir: f.path,
+        })),
+      });
+
+      setScanFoldersOpen(false);
+      show(`Added ${folders.length} folder(s) to "${wsName}"`, true);
+    },
+    [addProject, show],
+  );
+
   return (
     <div style={{ display: "flex", width: "100%", height: "100vh", overflow: "hidden" }}>
       {capturing ? (
@@ -590,6 +636,9 @@ export default function App() {
             onRemoveFolder={removeFolder}
             onRenameWorkspace={handleRenameWorkspace}
             onRenameFolder={handleRenameFolder}
+            onScanProjects={() => setScanFoldersOpen(true)}
+            fileSourceType={fileSource?.type ?? null}
+            fileSourceLabel={fileSource?.label ?? ''}
           />
           <div className="content-area" ref={contentAreaRef}>
             <div className="main-content">
@@ -694,6 +743,11 @@ export default function App() {
               onDeviceModeChange={handleDeviceModeCycle}
             />
           )}
+          <ScanFoldersModal
+            open={scanFoldersOpen}
+            onClose={() => setScanFoldersOpen(false)}
+            onAddFolders={handleAddScannedFolders}
+          />
           <HelpModal show={helpOpen} onClose={() => setHelpOpen(false)} />
           <Toast message={toast.message} visible={toast.visible} ok={toast.ok} />
         </>
