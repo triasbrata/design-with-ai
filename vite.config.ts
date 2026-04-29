@@ -18,7 +18,7 @@ const GOLDEN_DIR = path.resolve(
 const REPO_ROOT = path.resolve(__dirname, "../..");
 
 /** Allowed base directories for multi-project dir resolution */
-const ALLOWED_BASES = [path.resolve(__dirname, "../../docs"), path.resolve(__dirname, "../../packages")];
+const ALLOWED_BASES = [REPO_ROOT, path.resolve(__dirname, "../../docs"), path.resolve(__dirname, "../../packages")];
 
 /**
  * Resolve a ?dir= query param to an absolute path.

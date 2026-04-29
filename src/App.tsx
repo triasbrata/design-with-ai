@@ -706,6 +706,9 @@ export default function App() {
                   markerMode={markerMode}
                   markerRect={markerRect}
                   onMark={handleMark}
+                  scale={scale}
+                  logicalW={logicalW}
+                  logicalH={logicalH}
                 />
               )}
             </div>
