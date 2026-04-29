@@ -51,12 +51,17 @@ export default function App() {
   const [fsMetadata, setFsMetadata] = useState<Metadata | null | undefined>(undefined);
   const [handlesLoading, setHandlesLoading] = useState(false);
   const blobUrlCacheRef = useRef<Record<string, string>>({});
+  const [fsPermissionError, setFsPermissionError] = useState<string | null>(null);
+  const [fsRetryCount, setFsRetryCount] = useState(0);
+  const [fsLoading, setFsLoading] = useState(false);
 
   // Load FS handles when active folder changes
   useEffect(() => {
     setInputHandle(null);
     setOutputHandle(null);
     setFsMetadata(undefined);
+    setFsPermissionError(null);
+    setFsLoading(false);
     blobUrlCacheRef.current = {};
 
     if (!activeFolder?.inputHandleId && !activeFolder?.outputHandleId) return;
@@ -108,6 +113,8 @@ export default function App() {
       }
       blobUrlCacheRef.current = {};
       setFsMetadata(undefined);
+      setFsPermissionError(null);
+      setFsLoading(false);
       return;
     }
 
@@ -117,37 +124,52 @@ export default function App() {
 
     (async () => {
       setFsMetadata(undefined);
+      setFsPermissionError(null);
+      setFsLoading(true);
 
-      // Load metadata
-      const meta = await readMetadata(inputHandle);
-      if (cancelled) return;
-
-      // Pre-cache blob URLs for all HTML files
-      const cache: Record<string, string> = {};
       try {
-        const files = await listHtmlFiles(inputHandle);
-        for (const file of files) {
-          if (cancelled) break;
-          const content = await readFile(inputHandle, file);
-          const key = file.replace(/\.html$/, '');
-          cache[key] = URL.createObjectURL(new Blob([content], { type: 'text/html' }));
-        }
-      } catch {
-        // Blob pre-caching failure is non-fatal; metadata is still usable
-      }
+        // Load metadata
+        const meta = await readMetadata(inputHandle);
+        if (cancelled) return;
 
-      if (!cancelled) {
-        // Revoke old URLs
-        for (const url of prevUrls) {
-          URL.revokeObjectURL(url);
+        // Pre-cache blob URLs for all HTML files
+        const cache: Record<string, string> = {};
+        try {
+          const files = await listHtmlFiles(inputHandle);
+          for (const file of files) {
+            if (cancelled) break;
+            const content = await readFile(inputHandle, file);
+            const key = file.replace(/\.html$/, '');
+            cache[key] = URL.createObjectURL(new Blob([content], { type: 'text/html' }));
+          }
+        } catch {
+          // Blob pre-caching failure is non-fatal; metadata is still usable
         }
-        blobUrlCacheRef.current = cache;
-        setFsMetadata(meta as Metadata | null);
+
+        if (!cancelled) {
+          // Revoke old URLs
+          for (const url of prevUrls) {
+            URL.revokeObjectURL(url);
+          }
+          blobUrlCacheRef.current = cache;
+          setFsMetadata(meta as Metadata | null);
+        }
+      } catch (err) {
+        // Permission denied or other read error
+        if (!cancelled) {
+          if (err instanceof Error && (err.message.toLowerCase().includes('permission'))) {
+            setFsPermissionError(err.message);
+          }
+          // Set metadata to null so orderedScreens stays empty shown
+          setFsMetadata(null);
+        }
+      } finally {
+        if (!cancelled) setFsLoading(false);
       }
     })();
 
     return () => { cancelled = true; };
-  }, [inputHandle]);
+  }, [inputHandle, fsRetryCount]);
 
   // Pre-built file URL map for client projects
   const projectFileMap = useMemo(() => {
@@ -237,6 +259,15 @@ export default function App() {
         ? (activeProject as ClientProject).metadata
         : undefined;
 
+  // Re-authorize folder when FS permission was denied
+  const handleReauthorizeFs = useCallback(() => {
+    setFsPermissionError(null);
+    setFsRetryCount((c) => c + 1);
+  }, []);
+
+  // When FS handle mode is active, force dir to "" to skip Vite middleware fetch
+  const screensDir = activeFolder?.inputHandleId ? "" : activeInputDir;
+
   const {
     metadata,
     orderedScreens,
@@ -249,7 +280,7 @@ export default function App() {
     goPrev,
     goHome,
     queryState,
-  } = useScreens(activeInputDir, preloadedMetadata);
+  } = useScreens(screensDir, preloadedMetadata);
 
   const [leftDrawerOpen, setLeftDrawerOpen] = useState(false);
   const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
@@ -563,10 +594,45 @@ export default function App() {
           <div className="content-area" ref={contentAreaRef}>
             <div className="main-content">
               {orderedScreens.length === 0 ? (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
-                  <p style={{ color: "var(--brand-muted)", fontSize: 14 }}>
-                    No screens found. Press \ to open workspace drawer and add a project.
-                  </p>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, flexDirection: "column", gap: 12 }}>
+                  {fsPermissionError ? (
+                    <>
+                      <p style={{ color: "var(--brand-warning)", fontSize: 14, margin: 0 }}>
+                        Permission denied &mdash; screens cannot be read
+                      </p>
+                      <p style={{ color: "var(--brand-muted)", fontSize: 12, margin: 0, maxWidth: 320, textAlign: "center" }}>
+                        The browser needs your permission to access the directory.
+                        Click below to re-authorize.
+                      </p>
+                      <button
+                        onClick={handleReauthorizeFs}
+                        style={{
+                          padding: "8px 20px",
+                          background: "var(--brand-accent)",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 6,
+                          cursor: "pointer",
+                          fontSize: 13,
+                          fontWeight: 500,
+                        }}
+                      >
+                        Re-authorize
+                      </button>
+                    </>
+                  ) : handlesLoading || fsLoading ? (
+                    <p style={{ color: "var(--brand-muted)", fontSize: 14 }}>
+                      Loading screens...
+                    </p>
+                  ) : activeFolder?.inputHandleId && fsMetadata === undefined ? (
+                    <p style={{ color: "var(--brand-muted)", fontSize: 14 }}>
+                      Loading screens from file system...
+                    </p>
+                  ) : (
+                    <p style={{ color: "var(--brand-muted)", fontSize: 14 }}>
+                      No screens found. Press \ to open workspace drawer and add a project.
+                    </p>
+                  )}
                 </div>
               ) : isSummary ? (
                 <Summary
