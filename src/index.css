@@ -1341,6 +1341,30 @@ body {
   color: var(--brand-text);
 }
 
+/* Inline rename */
+.ld-rename-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+}
+.ld-rename-icon {
+  color: var(--brand-muted);
+  flex-shrink: 0;
+}
+.ld-rename-input {
+  flex: 1;
+  border: none;
+  border-bottom: 1px solid var(--brand-accent-muted);
+  border-radius: 0;
+  outline: none;
+  padding: 2px 0;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--brand-text);
+  background: transparent;
+}
+
 /* Context menu */
 .ld-context-menu {
   position: fixed;

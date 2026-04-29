@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
-import { Menu, Plus, ChevronDown, ChevronRight, Folder, FolderOpen, Pin, Check, X, Trash2 } from "./base/icons";
+import { Menu, Plus, ChevronDown, ChevronRight, Folder, FolderOpen, Pin, Check, X, Trash2, Pencil } from "./base/icons";
 import { screenName, truncateName, TIERS } from "../constants";
 import { ConfirmModal } from "./ConfirmModal";
 import type { Project } from "../types";
@@ -21,12 +21,23 @@ interface LeftDrawerProps {
   onAddFolder?: (workspaceIdx: number, name: string, inputDir: string, outputDir: string, inputHandleId?: string, outputHandleId?: string) => void;
   onRemoveProject?: (index: number) => void;
   onRemoveFolder?: (projectIdx: number, folderIdx: number) => void;
+  onRenameWorkspace?: (index: number, name: string) => void;
+  onRenameFolder?: (projectIdx: number, folderIdx: number, name: string) => void;
 }
 
 interface ContextMenuState {
   x: number;
   y: number;
+  type: "workspace" | "folder";
   projectIdx: number;
+  folderIdx?: number;
+}
+
+interface RenameState {
+  type: "workspace" | "folder";
+  projectIdx: number;
+  folderIdx?: number;
+  currentName: string;
 }
 
 export function LeftDrawer({
@@ -45,16 +56,20 @@ export function LeftDrawer({
   onAddFolder,
   onRemoveProject,
   onRemoveFolder,
+  onRenameWorkspace,
+  onRenameFolder,
 }: LeftDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set([activeIndex]));
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createName, setCreateName] = useState("");
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ pi: number; fi: number; workspaceName: string; folderName: string } | null>(null);
+  const [renameState, setRenameState] = useState<RenameState | null>(null);
   const [folderForm, setFolderForm] = useState<{
     workspaceIdx: number;
     name: string;
@@ -97,6 +112,14 @@ export function LeftDrawer({
       folderInputRef.current.focus();
     }
   }, [folderForm]);
+
+  // Auto-focus + select rename input when rename state appears
+  useEffect(() => {
+    if (renameState && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renameState]);
 
   // Close context menu on outside click and escape
   useEffect(() => {
@@ -202,9 +225,9 @@ export function LeftDrawer({
     setShowCreateForm(false);
   }, []);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent, projectIdx: number) => {
+  const handleContextMenu = useCallback((e: React.MouseEvent, projectIdx: number, type: "workspace" | "folder" = "workspace", folderIdx?: number) => {
     e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, projectIdx });
+    setContextMenu({ x: e.clientX, y: e.clientY, type, projectIdx, folderIdx });
   }, []);
 
   const handleAddFolderFromMenu = useCallback(() => {
@@ -220,6 +243,60 @@ export function LeftDrawer({
     onRemoveProject?.(state.projectIdx);
     setContextMenu(null);
   }, [contextMenu, onRemoveProject]);
+
+  const handleRenameFromMenu = useCallback(() => {
+    const state = contextMenu;
+    if (!state) return;
+    if (state.type === "workspace") {
+      const project = projects[state.projectIdx];
+      if (!project) return;
+      setRenameState({ type: "workspace", projectIdx: state.projectIdx, currentName: project.name });
+    } else {
+      const project = projects[state.projectIdx];
+      if (!project || project.type !== "workspace") return;
+      const folder = project.folders[state.folderIdx!];
+      if (!folder) return;
+      setRenameState({ type: "folder", projectIdx: state.projectIdx, folderIdx: state.folderIdx, currentName: folder.name });
+    }
+    setContextMenu(null);
+  }, [contextMenu, projects]);
+
+  const handleRemoveFolderFromMenu = useCallback(() => {
+    const state = contextMenu;
+    if (!state || state.folderIdx === undefined) return;
+    const project = projects[state.projectIdx];
+    if (!project || project.type !== "workspace") return;
+    if (project.folders.length <= 1) {
+      setDeleteConfirm({ pi: state.projectIdx, fi: state.folderIdx, workspaceName: project.name, folderName: project.folders[state.folderIdx].name });
+    } else {
+      onRemoveFolder?.(state.projectIdx, state.folderIdx);
+    }
+    setContextMenu(null);
+  }, [contextMenu, projects, onRemoveFolder]);
+
+  const handleConfirmRename = useCallback(() => {
+    if (!renameState) return;
+    const trimmed = renameState.currentName.trim();
+    if (!trimmed) { setRenameState(null); return; }
+    if (renameState.type === "workspace") {
+      onRenameWorkspace?.(renameState.projectIdx, trimmed);
+    } else {
+      onRenameFolder?.(renameState.projectIdx, renameState.folderIdx!, trimmed);
+    }
+    setRenameState(null);
+  }, [renameState, onRenameWorkspace, onRenameFolder]);
+
+  const handleCancelRename = useCallback(() => {
+    setRenameState(null);
+  }, []);
+
+  const handleDoubleClickWorkspace = useCallback((pi: number, name: string) => {
+    setRenameState({ type: "workspace", projectIdx: pi, currentName: name });
+  }, []);
+
+  const handleDoubleClickFolder = useCallback((pi: number, fi: number, name: string) => {
+    setRenameState({ type: "folder", projectIdx: pi, folderIdx: fi, currentName: name });
+  }, []);
 
   const handleSubmitFolder = useCallback(() => {
     if (!folderForm) return;
@@ -293,6 +370,22 @@ export function LeftDrawer({
               )}
             </>
           )}
+          {renameState && (
+            <div className="ld-rename-row">
+              <Pencil size={12} className="ld-rename-icon" />
+              <input
+                ref={renameInputRef}
+                className="ld-rename-input"
+                value={renameState.currentName}
+                onChange={(e) => setRenameState((prev) => prev ? { ...prev, currentName: e.target.value } : null)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleConfirmRename();
+                  if (e.key === "Escape") handleCancelRename();
+                }}
+                onBlur={handleConfirmRename}
+              />
+            </div>
+          )}
           {projects.map((project, pi) => {
             const isActiveWs = pi === activeIndex;
             const isExpanded = expanded.has(pi);
@@ -303,11 +396,15 @@ export function LeftDrawer({
                   <button
                     className="ld-section-header"
                     onClick={() => toggle(pi)}
-                    onContextMenu={(e) => handleContextMenu(e, pi)}
+                    onContextMenu={(e) => handleContextMenu(e, pi, "workspace")}
                     style={isActiveWs ? { fontWeight: 600 } : undefined}
                   >
                     <Folder size={14} />
-                    <span className="ld-section-title" title={project.name.length > 30 ? project.name : undefined}>{truncateName(project.name)}</span>
+                    <span
+                      className="ld-section-title"
+                      title={project.name.length > 30 ? project.name : undefined}
+                      onDoubleClick={(e) => { e.stopPropagation(); handleDoubleClickWorkspace(pi, project.name); }}
+                    >{truncateName(project.name)}</span>
                     <button
                       className="ld-folder-add"
                       title="Add folder"
@@ -434,6 +531,8 @@ export function LeftDrawer({
                                 onClick={() => {
                                   if (!isActiveFolder) onSetActive(pi, fi);
                                 }}
+                                onContextMenu={(e) => handleContextMenu(e, pi, "folder", fi)}
+                                onDoubleClick={(e) => { e.stopPropagation(); handleDoubleClickFolder(pi, fi, folder.name); }}
                                 style={{ cursor: 'pointer', fontWeight: isActiveFolder ? 600 : 400 }}
                               >
                                 {truncateName(folder.name)}
@@ -571,12 +670,28 @@ export function LeftDrawer({
           className="ld-context-menu"
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
-          <button className="ld-context-item" onClick={handleAddFolderFromMenu}>
-            Add Folder
-          </button>
-          <button className="ld-context-item danger" onClick={handleRemoveProjectFromMenu}>
-            Close Project
-          </button>
+          {contextMenu.type === "workspace" ? (
+            <>
+              <button className="ld-context-item" onClick={handleRenameFromMenu}>
+                Rename
+              </button>
+              <button className="ld-context-item" onClick={handleAddFolderFromMenu}>
+                Add Folder
+              </button>
+              <button className="ld-context-item danger" onClick={handleRemoveProjectFromMenu}>
+                Close Project
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="ld-context-item" onClick={handleRenameFromMenu}>
+                Rename
+              </button>
+              <button className="ld-context-item danger" onClick={handleRemoveFolderFromMenu}>
+                Delete Folder
+              </button>
+            </>
+          )}
         </div>
       )}
       {deleteConfirm && (

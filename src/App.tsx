@@ -39,6 +39,8 @@ export default function App() {
     removeProject,
     removeFolder,
     setActive,
+    renameProject,
+    renameFolder,
   } = useProjects();
 
   const { toast, show } = useToast();
@@ -516,6 +518,14 @@ export default function App() {
     [addFolderToWorkspace],
   );
 
+  const handleRenameWorkspace = useCallback((index: number, name: string) => {
+    renameProject(index, name);
+  }, [renameProject]);
+
+  const handleRenameFolder = useCallback((projectIdx: number, folderIdx: number, name: string) => {
+    renameFolder(projectIdx, folderIdx, name);
+  }, [renameFolder]);
+
   return (
     <div style={{ display: "flex", width: "100%", height: "100vh", overflow: "hidden" }}>
       {capturing ? (
@@ -547,6 +557,8 @@ export default function App() {
             onAddFolder={handleAddFolder}
             onRemoveProject={removeProject}
             onRemoveFolder={removeFolder}
+            onRenameWorkspace={handleRenameWorkspace}
+            onRenameFolder={handleRenameFolder}
           />
           <div className="content-area" ref={contentAreaRef}>
             <div className="main-content">

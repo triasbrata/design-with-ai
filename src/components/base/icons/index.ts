@@ -28,6 +28,7 @@ export {
   Monitor,
   PanelRightOpen,
   Paperclip,
+  Pencil,
   Pin,
   Plus,
   Save,

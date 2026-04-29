@@ -192,6 +192,28 @@ export function useProjects() {
     [],
   );
 
+  const renameProject = useCallback((index: number, name: string) => {
+    setProjects((prev) => {
+      const next = prev.map((p, i) => i === index ? { ...p, name } : p);
+      const workspaces = next.filter((p): p is Workspace => p.type === "workspace");
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaces));
+      return next;
+    });
+  }, []);
+
+  const renameFolder = useCallback((projectIdx: number, folderIdx: number, name: string) => {
+    setProjects((prev) => {
+      const next = prev.map((p, i) => {
+        if (i !== projectIdx || p.type !== "workspace") return p;
+        const newFolders = p.folders.map((f, fi) => fi === folderIdx ? { ...f, name } : f);
+        return { ...p, folders: newFolders };
+      });
+      const workspaces = next.filter((p): p is Workspace => p.type === "workspace");
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaces));
+      return next;
+    });
+  }, []);
+
   return {
     projects,
     activeIndex,
@@ -205,5 +227,7 @@ export function useProjects() {
     removeProject,
     removeFolder,
     setActive,
+    renameProject,
+    renameFolder,
   };
 }
