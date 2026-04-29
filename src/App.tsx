@@ -516,17 +516,6 @@ export default function App() {
     [addFolderToWorkspace],
   );
 
-  // Empty state
-  if (orderedScreens.length === 0) {
-    return (
-      <div className="main-content" style={{ padding: "40px", textAlign: "center" }}>
-        <p style={{ color: "var(--brand-muted)", marginTop: 24 }}>
-          No screens found. Press \ to open workspace drawer and add a project.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div style={{ display: "flex", width: "100%", height: "100vh", overflow: "hidden" }}>
       {capturing ? (
@@ -542,7 +531,13 @@ export default function App() {
         <>
           <div className="content-area" ref={contentAreaRef}>
             <div className="main-content">
-              {isSummary ? (
+              {orderedScreens.length === 0 ? (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
+                  <p style={{ color: "var(--brand-muted)", fontSize: 14 }}>
+                    No screens found. Press \ to open workspace drawer and add a project.
+                  </p>
+                </div>
+              ) : isSummary ? (
                 <Summary
                   screens={orderedScreens}
                   metadata={metadata}
