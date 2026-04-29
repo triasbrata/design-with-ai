@@ -68,7 +68,6 @@ export function LeftDrawer({
   const drawerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
-  const renameInputRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set([activeIndex]));
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -119,13 +118,6 @@ export function LeftDrawer({
     }
   }, [folderForm]);
 
-  // Auto-focus + select rename input when rename state appears
-  useEffect(() => {
-    if (renameState && renameInputRef.current) {
-      renameInputRef.current.focus();
-      renameInputRef.current.select();
-    }
-  }, [renameState]);
 
   // Close context menu on outside click and escape
   useEffect(() => {
@@ -376,22 +368,6 @@ export function LeftDrawer({
               )}
             </>
           )}
-          {renameState && (
-            <div className="ld-rename-row">
-              <Pencil size={12} className="ld-rename-icon" />
-              <input
-                ref={renameInputRef}
-                className="ld-rename-input"
-                value={renameState.currentName}
-                onChange={(e) => setRenameState((prev) => prev ? { ...prev, currentName: e.target.value } : null)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleConfirmRename();
-                  if (e.key === "Escape") handleCancelRename();
-                }}
-                onBlur={handleConfirmRename}
-              />
-            </div>
-          )}
           {projects.map((project, pi) => {
             const isActiveWs = pi === activeIndex;
             const isExpanded = expanded.has(pi);
@@ -406,11 +382,28 @@ export function LeftDrawer({
                     style={isActiveWs ? { fontWeight: 600 } : undefined}
                   >
                     <Folder size={14} />
-                    <span
-                      className="ld-section-title"
-                      title={project.name.length > 30 ? project.name : undefined}
-                      onDoubleClick={(e) => { e.stopPropagation(); handleDoubleClickWorkspace(pi, project.name); }}
-                    >{truncateName(project.name)}</span>
+                    {renameState?.type === "workspace" && renameState.projectIdx === pi ? (
+                      <>
+                        <Pencil size={12} className="ld-rename-icon" />
+                        <input
+                          className="ld-rename-input"
+                          autoFocus
+                          value={renameState.currentName}
+                          onChange={(e) => setRenameState((prev) => prev ? { ...prev, currentName: e.target.value } : null)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleConfirmRename();
+                            if (e.key === "Escape") handleCancelRename();
+                          }}
+                          onBlur={handleConfirmRename}
+                        />
+                      </>
+                    ) : (
+                      <span
+                        className="ld-section-title"
+                        title={project.name.length > 30 ? project.name : undefined}
+                        onDoubleClick={(e) => { e.stopPropagation(); handleDoubleClickWorkspace(pi, project.name); }}
+                      >{truncateName(project.name)}</span>
+                    )}
                     <button
                       className="ld-folder-add"
                       title="Add folder"
@@ -531,18 +524,35 @@ export function LeftDrawer({
                                 {isFolderExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                               </span>
                               <Folder size={12} />
-                              <span
-                                className="ld-section-title"
-                                title={folder.name.length > 30 ? folder.name : undefined}
-                                onClick={() => {
-                                  if (!isActiveFolder) onSetActive(pi, fi);
-                                }}
-                                onContextMenu={(e) => handleContextMenu(e, pi, "folder", fi)}
-                                onDoubleClick={(e) => { e.stopPropagation(); handleDoubleClickFolder(pi, fi, folder.name); }}
-                                style={{ cursor: 'pointer', fontWeight: isActiveFolder ? 600 : 400 }}
-                              >
-                                {truncateName(folder.name)}
-                              </span>
+                              {renameState?.type === "folder" && renameState.projectIdx === pi && renameState.folderIdx === fi ? (
+                                <>
+                                  <Pencil size={12} className="ld-rename-icon" />
+                                  <input
+                                    ref={renameInputRef}
+                                    className="ld-rename-input"
+                                    value={renameState.currentName}
+                                    onChange={(e) => setRenameState((prev) => prev ? { ...prev, currentName: e.target.value } : null)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") handleConfirmRename();
+                                      if (e.key === "Escape") handleCancelRename();
+                                    }}
+                                    onBlur={handleConfirmRename}
+                                  />
+                                </>
+                              ) : (
+                                <span
+                                  className="ld-section-title"
+                                  title={folder.name.length > 30 ? folder.name : undefined}
+                                  onClick={() => {
+                                    if (!isActiveFolder) onSetActive(pi, fi);
+                                  }}
+                                  onContextMenu={(e) => handleContextMenu(e, pi, "folder", fi)}
+                                  onDoubleClick={(e) => { e.stopPropagation(); handleDoubleClickFolder(pi, fi, folder.name); }}
+                                  style={{ cursor: 'pointer', fontWeight: isActiveFolder ? 600 : 400 }}
+                                >
+                                  {truncateName(folder.name)}
+                                </span>
+                              )}
                               <button
                                 className="ld-folder-delete"
                                 title="Delete folder"
