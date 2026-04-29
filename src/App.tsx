@@ -497,7 +497,7 @@ export default function App() {
     addProject({
       type: "workspace",
       name: name.trim(),
-      folders: [{ name: "Main", inputDir: "", outputDir: "" }],
+      folders: [],
       activeFolder: 0,
     });
   }, [addProject]);
@@ -529,6 +529,25 @@ export default function App() {
         />
       ) : (
         <>
+          <LeftDrawer
+            open={leftDrawerOpen}
+            onToggle={() => setLeftDrawerOpen((p) => !p)}
+            pinned={leftPinned}
+            onPinToggle={() => setLeftPinned((p) => !p)}
+            projects={projects}
+            activeIndex={activeIndex}
+            activeFolderIdx={
+              activeProject?.type === "workspace" ? activeProject.activeFolder : 0
+            }
+            screens={orderedScreens}
+            activeScreen={currentScreen}
+            onSelect={navigate}
+            onSetActive={setActive}
+            onAddWorkspace={handleAddWorkspace}
+            onAddFolder={handleAddFolder}
+            onRemoveProject={removeProject}
+            onRemoveFolder={removeFolder}
+          />
           <div className="content-area" ref={contentAreaRef}>
             <div className="main-content">
               {orderedScreens.length === 0 ? (
@@ -564,19 +583,6 @@ export default function App() {
               )}
             </div>
           </div>
-          <LeftDrawer
-            open={leftDrawerOpen}
-            onToggle={() => setLeftDrawerOpen((p) => !p)}
-            pinned={leftPinned}
-            onPinToggle={() => setLeftPinned((p) => !p)}
-            projects={projects}
-            activeIndex={activeIndex}
-            onSelectWorkspace={setActive}
-            screens={orderedScreens}
-            activeScreen={currentScreen}
-            onSelectScreen={navigate}
-            metadata={metadata}
-          />
           <ChatDrawer
             open={chatDrawerOpen}
             onToggle={() => setChatDrawerOpen((p) => !p)}
