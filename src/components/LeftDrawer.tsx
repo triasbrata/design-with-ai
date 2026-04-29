@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
-import { Menu, Plus, ChevronDown, ChevronRight, Folder, FolderOpen, Pin, Check, X, Trash2, Pencil } from "./base/icons";
+import { Menu, Plus, ChevronDown, ChevronRight, Folder, FolderOpen, Pin, Check, X, Trash2, Pencil, Search } from "./base/icons";
 import { screenName, truncateName, TIERS } from "../constants";
 import { ConfirmModal } from "./ConfirmModal";
 import type { Project, Metadata } from "../types";
@@ -25,6 +25,9 @@ interface LeftDrawerProps {
   onRemoveFolder?: (projectIdx: number, folderIdx: number) => void;
   onRenameWorkspace?: (index: number, name: string) => void;
   onRenameFolder?: (projectIdx: number, folderIdx: number, name: string) => void;
+  onScanProjects?: () => void;
+  fileSourceType?: string | null;
+  fileSourceLabel?: string;
   metadata?: Metadata | null;
 }
 
@@ -63,6 +66,9 @@ export function LeftDrawer({
   onRemoveFolder,
   onRenameWorkspace,
   onRenameFolder,
+  onScanProjects,
+  fileSourceType,
+  fileSourceLabel,
   metadata,
 }: LeftDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -367,6 +373,16 @@ export function LeftDrawer({
                   Add Workspace
                 </button>
               )}
+              {onScanProjects && !showCreateForm && (
+                <button
+                  className="ld-add-workspace"
+                  onClick={onScanProjects}
+                  style={{ marginTop: 4 }}
+                >
+                  <Search size={14} />
+                  Scan for projects
+                </button>
+              )}
             </>
           )}
           {projects.map((project, pi) => {
@@ -559,6 +575,9 @@ export function LeftDrawer({
                                 >
                                   {truncateName(folder.name)}
                                 </span>
+                              )}
+                              {isActiveFolder && fileSourceType && (
+                                <span className={`ld-source-badge ${fileSourceType}`}>{fileSourceLabel}</span>
                               )}
                               <button
                                 className="ld-folder-delete"

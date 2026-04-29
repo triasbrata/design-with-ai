@@ -108,6 +108,54 @@ function capturePlugin(): Plugin {
         });
       });
 
+      // ── /api/scan-folders — find all screen-metadata.json under docs/ ──
+      server.middlewares.use("/api/scan-folders", async (_req, res) => {
+        const results: { name: string; path: string; screenCount: number }[] = [];
+
+        for (const base of ALLOWED_BASES) {
+          if (!fs.existsSync(base)) continue;
+          const scanDir = (dir: string) => {
+            try {
+              for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                if (entry.isDirectory() && !entry.name.startsWith(".") && entry.name !== "node_modules") {
+                  scanDir(path.join(dir, entry.name));
+                }
+              }
+              const metaPath = path.join(dir, "screen-metadata.json");
+              if (fs.existsSync(metaPath)) {
+                try {
+                  const raw = fs.readFileSync(metaPath, "utf-8");
+                  const meta = JSON.parse(raw);
+                  const relPath = path.relative(REPO_ROOT, dir);
+                  // Derive descriptive name from path: "moneykitty/design/golden" → "MoneyKitty Golden"
+                  const pathParts = relPath.split(path.sep);
+                  const projectIdx = pathParts.indexOf("golden") - 1;
+                  const projectName = projectIdx >= 0 ? pathParts[projectIdx] : pathParts[0];
+                  const displayName = projectName
+                    .replace(/[_-]/g, " ")
+                    .replace(/\b\w/g, (c) => c.toUpperCase());
+                  results.push({
+                    name: displayName,
+                    path: relPath,
+                    screenCount:
+                      meta.meta?.totalScreens ??
+                      Object.keys(meta.screens || {}).length,
+                  });
+                } catch {
+                  /* skip invalid json */
+                }
+              }
+            } catch {
+              /* skip permission errors */
+            }
+          };
+          scanDir(base);
+        }
+
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ folders: results }));
+      });
+
       // ── /screens/* — serve static files from specified dir ──
       server.middlewares.use("/screens", (req, res) => {
         try {
