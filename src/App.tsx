@@ -15,8 +15,9 @@ import { HelpModal } from "./components/HelpModal";
 import { Toast } from "./components/Toast";
 import { screenName, DEVICE_PRESETS, DEVICE_CYCLE } from "./constants";
 import type { DeviceMode } from "./constants";
-import type { CaptureResult, ClientProject, MarkerRect, MarkerContext } from "./types";
+import type { CaptureResult, ClientProject, MarkerRect, MarkerContext, Metadata } from "./types";
 import { extractMarkedContext } from "./acp/extractMarkerContext";
+import { loadHandle, readMetadata, listHtmlFiles, readFile, writeFile, dataUrlToBlob } from "./hooks/useFileSystem";
 
 
 declare global {
@@ -42,6 +43,110 @@ export default function App() {
 
   const { toast, show } = useToast();
 
+  // ── File System Access API state ──
+  const [inputHandle, setInputHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [outputHandle, setOutputHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [fsMetadata, setFsMetadata] = useState<Metadata | null | undefined>(undefined);
+  const [handlesLoading, setHandlesLoading] = useState(false);
+  const blobUrlCacheRef = useRef<Record<string, string>>({});
+
+  // Load FS handles when active folder changes
+  useEffect(() => {
+    setInputHandle(null);
+    setOutputHandle(null);
+    setFsMetadata(undefined);
+    blobUrlCacheRef.current = {};
+
+    if (!activeFolder?.inputHandleId && !activeFolder?.outputHandleId) return;
+
+    let cancelled = false;
+
+    (async () => {
+      setHandlesLoading(true);
+      try {
+        const bothSame =
+          activeFolder?.inputHandleId &&
+          activeFolder?.outputHandleId &&
+          activeFolder.inputHandleId === activeFolder.outputHandleId;
+
+        if (bothSame) {
+          const h = await loadHandle(activeFolder!.inputHandleId!);
+          if (!cancelled) {
+            setInputHandle(h);
+            setOutputHandle(h);
+          }
+        } else {
+          if (activeFolder?.inputHandleId) {
+            const h = await loadHandle(activeFolder.inputHandleId);
+            if (!cancelled) setInputHandle(h);
+          }
+          if (activeFolder?.outputHandleId) {
+            const h = await loadHandle(activeFolder.outputHandleId);
+            if (!cancelled) setOutputHandle(h);
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          setInputHandle(null);
+          setOutputHandle(null);
+        }
+      }
+      if (!cancelled) setHandlesLoading(false);
+    })();
+
+    return () => { cancelled = true; };
+  }, [activeFolder?.inputHandleId, activeFolder?.outputHandleId]);
+
+  // Load metadata and pre-cache blob URLs from FS handle
+  useEffect(() => {
+    if (!inputHandle) {
+      // Revoke and clear blob URL cache
+      for (const url of Object.values(blobUrlCacheRef.current)) {
+        URL.revokeObjectURL(url);
+      }
+      blobUrlCacheRef.current = {};
+      setFsMetadata(undefined);
+      return;
+    }
+
+    let cancelled = false;
+    const prevUrls = Object.values(blobUrlCacheRef.current);
+    blobUrlCacheRef.current = {};
+
+    (async () => {
+      setFsMetadata(undefined);
+
+      // Load metadata
+      const meta = await readMetadata(inputHandle);
+      if (cancelled) return;
+
+      // Pre-cache blob URLs for all HTML files
+      const cache: Record<string, string> = {};
+      try {
+        const files = await listHtmlFiles(inputHandle);
+        for (const file of files) {
+          if (cancelled) break;
+          const content = await readFile(inputHandle, file);
+          const key = file.replace(/\.html$/, '');
+          cache[key] = URL.createObjectURL(new Blob([content], { type: 'text/html' }));
+        }
+      } catch {
+        // Blob pre-caching failure is non-fatal; metadata is still usable
+      }
+
+      if (!cancelled) {
+        // Revoke old URLs
+        for (const url of prevUrls) {
+          URL.revokeObjectURL(url);
+        }
+        blobUrlCacheRef.current = cache;
+        setFsMetadata(meta as Metadata | null);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [inputHandle]);
+
   // Pre-built file URL map for client projects
   const projectFileMap = useMemo(() => {
     if (activeProject?.type !== "client") return null;
@@ -53,15 +158,26 @@ export default function App() {
     return map;
   }, [activeProject]);
 
-  // Resolve screen URLs: workspace (inputDir) → Vite middleware, client → blob URL
+  // Resolve screen URLs:
+  //   FS handle mode   → blob URL cache (from indexedDB handles)
+  //   Workspace        → Vite middleware (/screens/...?dir=...)
+  //   Client project   → pre-loaded blob URLs from webkitdirectory picker
   const getScreenUrl = useCallback(
     (screen: string, state?: string): string => {
+      // FS handle mode: use blob URL cache
+      if (activeFolder?.inputHandleId) {
+        const key = state ? `${screen}_${state}` : screen;
+        return blobUrlCacheRef.current[key] || blobUrlCacheRef.current[screen] || '';
+      }
+
+      // Workspace mode: Vite middleware
       if (activeProject?.type === "workspace") {
         if (state) {
           return `/screens/${screen}_${state}.html?dir=${encodeURIComponent(activeInputDir)}`;
         }
         return `/screens/${screen}.html?dir=${encodeURIComponent(activeInputDir)}`;
       }
+
       // Client project
       if (!projectFileMap) return "";
       if (state && projectFileMap[`${screen}_${state}`]) {
@@ -69,15 +185,28 @@ export default function App() {
       }
       return projectFileMap[screen] ?? "";
     },
-    [activeProject, activeInputDir, projectFileMap],
+    [activeProject, activeInputDir, projectFileMap, activeFolder?.inputHandleId],
   );
 
-  // Save capture: workspace → POST to outputDir, client → no-op
+  // Save capture: FS handle → direct write, workspace → POST, client → no-op
   const saveCapture = useCallback(
     async (filename: string, dataUrl: string): Promise<CaptureResult> => {
+      // FS handle mode: write directly to the file system
+      if (outputHandle) {
+        try {
+          const blob = dataUrlToBlob(dataUrl);
+          await writeFile(outputHandle, filename, blob);
+          return { filename, ok: true };
+        } catch (err) {
+          return { filename, ok: false, error: err instanceof Error ? err.message : String(err) };
+        }
+      }
+
       if (activeProject?.type === "client") {
         return { filename, ok: true };
       }
+
+      // Fallback: POST to Vite middleware
       try {
         const res = await fetch(`/api/capture?dir=${encodeURIComponent(activeOutputDir)}`, {
           method: "POST",
@@ -93,13 +222,18 @@ export default function App() {
         return { filename, ok: false, error: err instanceof Error ? err.message : String(err) };
       }
     },
-    [activeProject, activeOutputDir],
+    [outputHandle, activeProject, activeOutputDir],
   );
 
-  // Pre-loaded metadata for client projects (skip fetch)
-  const preloadedMetadata = activeProject?.type === "client"
-    ? (activeProject as ClientProject).metadata
-    : undefined;
+  // Pre-loaded metadata: FS handle mode, then client project mode
+  // When fsMetadata is undefined (no FS handle or still loading), fall through
+  // When fsMetadata is null (no metadata file found), pass null to useScreens
+  const preloadedMetadata =
+    fsMetadata !== undefined
+      ? fsMetadata
+      : activeProject?.type === "client"
+        ? (activeProject as ClientProject).metadata
+        : undefined;
 
   const {
     metadata,
@@ -246,7 +380,7 @@ export default function App() {
       });
       const dataUrl = canvas.toDataURL("image/png");
 
-      // Trigger download via anchor click (works for both project types)
+      // Trigger download via anchor click (works for all modes)
       const link = document.createElement("a");
       link.download = filename;
       link.href = dataUrl;
@@ -254,30 +388,17 @@ export default function App() {
       link.click();
       document.body.removeChild(link);
 
-      // For workspace projects: POST to save on server
-      if (activeProject?.type !== "client") {
-        try {
-          const res = await fetch(`/api/capture?dir=${encodeURIComponent(activeOutputDir)}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ filename, data: dataUrl }),
-          });
-          const result = await res.json();
-          if (result.ok) {
-            show(`Saved: ${result.path}`, true);
-          } else {
-            show(`Save failed: ${result.error}`, false);
-          }
-        } catch {
-          show("Captured locally but upload failed", false);
-        }
+      // Save via unified path (FS handle, middleware POST, or no-op for client)
+      const result = await saveCapture(filename, dataUrl);
+      if (result.ok) {
+        show(`Saved: ${filename}`, true);
       } else {
-        show(`Downloaded: ${filename}`, true);
+        show(`Save failed: ${result.error}`, false);
       }
     } catch {
       show("Capture failed", false);
     }
-  }, [currentScreen, activeState, metadata, show, activeOutputDir, activeProject, deviceMode]);
+  }, [currentScreen, activeState, metadata, show, deviceMode, saveCapture]);
 
   // Start batch capture of all screens
   const handleCaptureAll = useCallback(() => {
@@ -383,11 +504,13 @@ export default function App() {
 
   // Add folder to workspace (from plus button or context menu)
   const handleAddFolder = useCallback(
-    (workspaceIdx: number, name: string, inputDir: string, outputDir: string) => {
+    (workspaceIdx: number, name: string, inputDir: string, outputDir: string, inputHandleId?: string, outputHandleId?: string) => {
       addFolderToWorkspace(workspaceIdx, {
         name,
         inputDir,
         outputDir: outputDir || inputDir,
+        ...(inputHandleId ? { inputHandleId } : {}),
+        ...(outputHandleId ? { outputHandleId } : {}),
       });
     },
     [addFolderToWorkspace],
@@ -460,9 +583,6 @@ export default function App() {
                   markerMode={markerMode}
                   markerRect={markerRect}
                   onMark={handleMark}
-                  scale={scale}
-                  logicalW={logicalW}
-                  logicalH={logicalH}
                 />
               )}
             </div>

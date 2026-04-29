@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Menu, Plus, ChevronDown, ChevronRight, Folder, FolderOpen, Pin, Check, X } from "./base/icons";
 import { screenName, truncateName, TIERS } from "../constants";
 import type { Project } from "../types";
+import { isSupported as fsIsSupported, pickDirectory, saveHandle, generateHandleId } from "../hooks/useFileSystem";
 
 interface LeftDrawerProps {
   open: boolean;
@@ -16,7 +17,7 @@ interface LeftDrawerProps {
   onSelect: (screen: string) => void;
   onSetActive: (index: number, folderIdx?: number) => void;
   onAddWorkspace?: (name: string) => void;
-  onAddFolder?: (workspaceIdx: number, name: string, inputDir: string, outputDir: string) => void;
+  onAddFolder?: (workspaceIdx: number, name: string, inputDir: string, outputDir: string, inputHandleId?: string, outputHandleId?: string) => void;
   onRemoveProject?: (index: number) => void;
 }
 
@@ -54,6 +55,8 @@ export function LeftDrawer({
     name: string;
     inputDir: string;
     outputDir: string;
+    inputHandleId?: string;
+    outputHandleId?: string;
   } | null>(null);
   const folderFileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -146,6 +149,30 @@ export function LeftDrawer({
     [],
   );
 
+  /** Handle native directory picker via File System Access API */
+  const handlePickFolderNative = useCallback(async () => {
+    const dir = await pickDirectory();
+    if (!dir) return;
+    try {
+      const handleId = generateHandleId();
+      await saveHandle(handleId, dir.handle);
+      setFolderForm((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: dir.name || prev.name,
+              inputHandleId: handleId,
+              outputHandleId: handleId,
+              inputDir: "",   // Clear path fields — handle takes precedence
+              outputDir: "",
+            }
+          : null,
+      );
+    } catch {
+      // Failed to save handle — silently ignore, user can retry
+    }
+  }, []);
+
   const existing = useMemo(() => new Set(screens), [screens]);
 
   function toggle(idx: number) {
@@ -191,9 +218,18 @@ export function LeftDrawer({
 
   const handleSubmitFolder = useCallback(() => {
     if (!folderForm) return;
-    const { workspaceIdx, name, inputDir, outputDir } = folderForm;
-    if (!name.trim() || !inputDir.trim()) return;
-    onAddFolder?.(workspaceIdx, name.trim(), inputDir.trim(), outputDir.trim() || inputDir.trim());
+    const { workspaceIdx, name, inputDir, outputDir, inputHandleId, outputHandleId } = folderForm;
+    if (!name.trim()) return;
+    // Require either a path or a file system handle
+    if (!inputDir.trim() && !inputHandleId) return;
+    onAddFolder?.(
+      workspaceIdx,
+      name.trim(),
+      inputDir.trim(),
+      outputDir.trim() || inputDir.trim(),
+      inputHandleId,
+      outputHandleId,
+    );
     setFolderForm(null);
   }, [folderForm, onAddFolder]);
 
@@ -308,31 +344,48 @@ export function LeftDrawer({
                             >
                               Browse...
                             </button>
+                            {fsIsSupported() && (
+                              <button
+                                className="ld-folder-browse"
+                                onClick={handlePickFolderNative}
+                                title="Pick folder using native file picker (persistent, survives reload)"
+                              >
+                                Pick Folder
+                              </button>
+                            )}
                           </div>
-                          <div className="ld-folder-create-row">
-                            <input
-                              className="ld-folder-input"
-                              placeholder="Input directory"
-                              value={folderForm.inputDir}
-                              onChange={(e) =>
-                                setFolderForm((prev) =>
-                                  prev ? { ...prev, inputDir: e.target.value } : null,
-                                )
-                              }
-                            />
-                          </div>
-                          <div className="ld-folder-create-row">
-                            <input
-                              className="ld-folder-input"
-                              placeholder="Same as input directory"
-                              value={folderForm.outputDir}
-                              onChange={(e) =>
-                                setFolderForm((prev) =>
-                                  prev ? { ...prev, outputDir: e.target.value } : null,
-                                )
-                              }
-                            />
-                          </div>
+                          {folderForm.inputHandleId ? (
+                            <div className="ld-folder-create-row" style={{ color: "var(--brand-muted)", fontSize: 11, padding: "4px 0" }}>
+                              Using native file system access &mdash; no paths needed
+                            </div>
+                          ) : (
+                            <>
+                              <div className="ld-folder-create-row">
+                                <input
+                                  className="ld-folder-input"
+                                  placeholder="Input directory"
+                                  value={folderForm.inputDir}
+                                  onChange={(e) =>
+                                    setFolderForm((prev) =>
+                                      prev ? { ...prev, inputDir: e.target.value } : null,
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className="ld-folder-create-row">
+                                <input
+                                  className="ld-folder-input"
+                                  placeholder="Same as input directory"
+                                  value={folderForm.outputDir}
+                                  onChange={(e) =>
+                                    setFolderForm((prev) =>
+                                      prev ? { ...prev, outputDir: e.target.value } : null,
+                                    )
+                                  }
+                                />
+                              </div>
+                            </>
+                          )}
                           <div className="ld-folder-create-actions">
                             <button className="ld-inline-cancel" onClick={handleCancelFolder}>
                               <X size={14} />
