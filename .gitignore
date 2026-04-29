@@ -4,3 +4,6 @@ node_modules/
 !index.html
 .omc/
 dist/
+test-results/
+playwright-report/
+
