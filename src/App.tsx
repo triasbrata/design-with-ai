@@ -116,7 +116,6 @@ export default function App() {
   } = useScreens(activeInputDir, preloadedMetadata);
 
   const [leftDrawerOpen, setLeftDrawerOpen] = useState(false);
-  const [leftDrawerOpen, setLeftDrawerOpen] = useState(false);
   const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
   const [leftPinned, setLeftPinned] = useState(false);
   const [rightPinned, setRightPinned] = useState(false);
@@ -418,24 +417,6 @@ export default function App() {
         />
       ) : (
         <>
-          <LeftDrawer
-            open={leftDrawerOpen}
-            onToggle={() => setLeftDrawerOpen((p) => !p)}
-            pinned={leftPinned}
-            onPinToggle={() => setLeftPinned((p) => !p)}
-            projects={projects}
-            activeIndex={activeIndex}
-            activeFolderIdx={
-              activeProject?.type === "workspace" ? activeProject.activeFolder : 0
-            }
-            screens={orderedScreens}
-            activeScreen={currentScreen}
-            onSelect={navigate}
-            onSetActive={setActive}
-            onAddWorkspace={handleAddWorkspace}
-            onAddFolder={handleAddFolder}
-            onRemoveProject={removeProject}
-          />
           <div className="content-area" ref={contentAreaRef}>
             <div className="main-content">
               {isSummary ? (
