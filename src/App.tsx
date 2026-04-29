@@ -497,7 +497,7 @@ export default function App() {
     addProject({
       type: "workspace",
       name: name.trim(),
-      folders: [{ name: "Main", inputDir: "", outputDir: "" }],
+      folders: [],
       activeFolder: 0,
     });
   }, [addProject]);
@@ -546,6 +546,7 @@ export default function App() {
             onAddWorkspace={handleAddWorkspace}
             onAddFolder={handleAddFolder}
             onRemoveProject={removeProject}
+            onRemoveFolder={removeFolder}
           />
           <div className="content-area" ref={contentAreaRef}>
             <div className="main-content">

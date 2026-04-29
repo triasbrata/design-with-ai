@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
-import { Menu, Plus, ChevronDown, ChevronRight, Folder, FolderOpen, Pin, Check, X } from "./base/icons";
+import { Menu, Plus, ChevronDown, ChevronRight, Folder, FolderOpen, Pin, Check, X, Trash2 } from "./base/icons";
 import { screenName, truncateName, TIERS } from "../constants";
 import type { Project } from "../types";
 import { isSupported as fsIsSupported, pickDirectory, saveHandle, generateHandleId } from "../hooks/useFileSystem";
@@ -19,6 +19,7 @@ interface LeftDrawerProps {
   onAddWorkspace?: (name: string) => void;
   onAddFolder?: (workspaceIdx: number, name: string, inputDir: string, outputDir: string, inputHandleId?: string, outputHandleId?: string) => void;
   onRemoveProject?: (index: number) => void;
+  onRemoveFolder?: (projectIdx: number, folderIdx: number) => void;
 }
 
 interface ContextMenuState {
@@ -42,6 +43,7 @@ export function LeftDrawer({
   onAddWorkspace,
   onAddFolder,
   onRemoveProject,
+  onRemoveFolder,
 }: LeftDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -396,6 +398,11 @@ export function LeftDrawer({
                           </div>
                         </div>
                       )}
+                      {project.folders.length === 0 && (
+                        <div style={{ padding: "8px 4px", color: "var(--brand-muted)", fontSize: 11 }}>
+                          No folders — click + to add one
+                        </div>
+                      )}
                       {project.folders.map((folder, fi) => {
                         const isActiveFolder = isActiveWs && fi === activeFolderIdx;
                         return (
@@ -409,6 +416,17 @@ export function LeftDrawer({
                             >
                               <Folder size={12} />
                               <span className="ld-section-title" title={folder.name.length > 30 ? folder.name : undefined}>{truncateName(folder.name)}</span>
+                              <button
+                                className="ld-folder-delete"
+                                title="Delete folder"
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onRemoveFolder?.(pi, fi);
+                                }}
+                              >
+                                <Trash2 size={11} />
+                              </button>
                               <span className="ld-chevron">
                                 {isActiveFolder ? (
                                   <ChevronDown size={12} />

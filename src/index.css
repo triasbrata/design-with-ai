@@ -1231,6 +1231,30 @@ body {
   margin-left: auto;
 }
 
+/* Folder delete button */
+.ld-folder-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--brand-muted-light);
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.ld-section-header:hover .ld-folder-delete {
+  opacity: 1;
+}
+.ld-folder-delete:hover {
+  background: var(--brand-accent-light);
+  color: var(--brand-accent);
+}
+
 /* Plus button on workspace */
 .ld-folder-add {
   display: flex;
