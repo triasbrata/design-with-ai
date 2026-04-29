@@ -7,13 +7,14 @@ export function useScreens(dir: string, preloadedMetadata?: Metadata | null) {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [currentScreen, setCurrentScreen] = useState("");
 
-  // Fetch metadata — use preloaded (client project) or fetch from server
+  // Fetch metadata — use preloaded (client project or FS handle) or fetch from server
   useEffect(() => {
     if (preloadedMetadata != null) {
       setMetadata(preloadedMetadata);
       return;
     }
     setMetadata(null);
+    if (!dir) return; // Skip fetch for empty dirs (FS handle mode or no dir configured)
     fetch(`/api/metadata?dir=${encodeURIComponent(dir)}`)
       .then((r) => r.json())
       .then(setMetadata)

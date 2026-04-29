@@ -88,6 +88,27 @@ export function useProjects() {
     [],
   );
 
+  /** Update a folder in a workspace (e.g. to set handle IDs after directory pick) */
+  const updateFolder = useCallback(
+    (projectIdx: number, folderIdx: number, updates: Partial<CaptureFolder>) => {
+      setProjects((prev) => {
+        const next = prev.map((p, i) => {
+          if (i !== projectIdx || p.type !== "workspace") return p;
+          const newFolders = p.folders.map((f, fi) =>
+            fi === folderIdx ? { ...f, ...updates } : f,
+          );
+          return { ...p, folders: newFolders };
+        });
+        const workspaces = next.filter(
+          (p): p is Workspace => p.type === "workspace",
+        );
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaces));
+        return next;
+      });
+    },
+    [],
+  );
+
   const removeProject = useCallback(
     (index: number) => {
       if (projects.length <= 1) return;
@@ -195,6 +216,7 @@ export function useProjects() {
     activeOutputDir,
     addProject,
     addFolderToWorkspace,
+    updateFolder,
     removeProject,
     removeFolder,
     setActive,
