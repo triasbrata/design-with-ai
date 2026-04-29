@@ -14,19 +14,36 @@ const GOLDEN_DIR = path.resolve(
   process.env.GOLDEN_DIR || path.join(__dirname, "../../docs/moneykitty/design/golden"),
 );
 
+/** Project root (two levels up from tools/screenshot_device_html) */
+const REPO_ROOT = path.resolve(__dirname, "../..");
+
 /** Allowed base directories for multi-project dir resolution */
 const ALLOWED_BASES = [path.resolve(__dirname, "../../docs"), path.resolve(__dirname, "../../packages")];
 
 /**
  * Resolve a ?dir= query param to an absolute path.
  * Falls back to GOLDEN_DIR if invalid or missing.
+ *
+ * Resolution order:
+ *   1. Relative to __dirname  — supports existing configs with paths like "../../docs/moneykitty/..."
+ *   2. Relative to REPO_ROOT  — supports user-typed paths like "docs/moneymanager/design/golden/"
  */
 function resolveDir(queryDir: string | null): string {
   if (!queryDir) return GOLDEN_DIR;
-  const resolved = path.resolve(__dirname, queryDir);
-  const allowed = ALLOWED_BASES.some((base) => resolved.startsWith(base));
-  if (!allowed) return GOLDEN_DIR;
-  return resolved;
+
+  // Try relative to the tool directory (backward compatible with existing saved configs)
+  const fromCwd = path.resolve(__dirname, queryDir);
+  if (ALLOWED_BASES.some((base) => fromCwd.startsWith(base))) {
+    return fromCwd;
+  }
+
+  // Try relative to the repo root (for user-typed paths like "docs/moneymanager/design/golden/")
+  const fromRoot = path.resolve(REPO_ROOT, queryDir);
+  if (ALLOWED_BASES.some((base) => fromRoot.startsWith(base))) {
+    return fromRoot;
+  }
+
+  return GOLDEN_DIR;
 }
 
 function capturePlugin(): Plugin {
