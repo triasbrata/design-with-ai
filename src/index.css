@@ -1401,6 +1401,32 @@ body {
   background: var(--brand-accent-light);
 }
 
+/* ── Scanning indicator ── */
+@keyframes ld-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.ld-scanning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  color: var(--brand-muted);
+  font-size: 11px;
+}
+.ld-scanning .ld-spinner {
+  animation: ld-spin 1s linear infinite;
+}
+
+/* Existing folder in scan list — grayed out */
+.sf-item.existing {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.sf-item.existing .sf-checkbox {
+  cursor: not-allowed;
+}
+
 /* Main content needs padding-bottom for dock */
 .main-content {
   padding-bottom: 60px;

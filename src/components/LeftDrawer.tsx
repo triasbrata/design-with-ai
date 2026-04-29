@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
-import { Menu, Plus, ChevronDown, ChevronRight, Folder, FolderOpen, Pin, Check, X, Trash2, Pencil, Search } from "./base/icons";
+import { Menu, Plus, ChevronDown, ChevronRight, Folder, FolderOpen, Pin, Check, X, Trash2, Pencil, Loader2 } from "./base/icons";
 import { screenName, truncateName, TIERS } from "../constants";
 import { ConfirmModal } from "./ConfirmModal";
-import type { Project } from "../types";
+import { BulkAddFoldersModal } from "./BulkAddFoldersModal";
+import type { Project, CaptureFolder } from "../types";
 import { isSupported as fsIsSupported, pickDirectory, saveHandle, generateHandleId } from "../hooks/useFileSystem";
 
 interface LeftDrawerProps {
@@ -23,7 +24,7 @@ interface LeftDrawerProps {
   onRemoveFolder?: (projectIdx: number, folderIdx: number) => void;
   onRenameWorkspace?: (index: number, name: string) => void;
   onRenameFolder?: (projectIdx: number, folderIdx: number, name: string) => void;
-  onScanProjects?: () => void;
+  onAddFolders?: (workspaceIdx: number, folders: CaptureFolder[]) => void;
   fileSourceType?: string | null;
   fileSourceLabel?: string;
 }
@@ -34,6 +35,12 @@ interface ContextMenuState {
   type: "workspace" | "folder";
   projectIdx: number;
   folderIdx?: number;
+}
+
+interface ScannedFolder {
+  name: string;
+  path: string;
+  screenCount: number;
 }
 
 interface RenameState {
@@ -61,7 +68,7 @@ export function LeftDrawer({
   onRemoveFolder,
   onRenameWorkspace,
   onRenameFolder,
-  onScanProjects,
+  onAddFolders,
   fileSourceType,
   fileSourceLabel,
 }: LeftDrawerProps) {
@@ -86,6 +93,21 @@ export function LeftDrawer({
   } | null>(null);
   const folderFileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const [scanResults, setScanResults] = useState<ScannedFolder[] | null>(null);
+  const [scanningWsIdx, setScanningWsIdx] = useState<number | null>(null);
+
+  // Normalize workspace folder paths to match API response format (relative to REPO_ROOT)
+  const existingPaths = useMemo(() => {
+    const paths = new Set<string>();
+    projects.forEach((p) => {
+      if (p.type === "workspace") {
+        p.folders.forEach((f) => {
+          paths.add(f.inputDir.replace(/^(\.\.\/)+/, "").replace(/\/+$/, ""));
+        });
+      }
+    });
+    return paths;
+  }, [projects]);
 
   useEffect(() => {
     if (!open || pinned) return;
@@ -312,11 +334,53 @@ export function LeftDrawer({
       outputHandleId,
     );
     setFolderForm(null);
+
+    // Auto-scan for related golden spec folders (path-based only)
+    if (inputDir.trim() && !inputHandleId) {
+      setScanningWsIdx(workspaceIdx);
+      fetch(`/api/scan-folder?dir=${encodeURIComponent(inputDir.trim())}`)
+        .then((r) => {
+          if (!r.ok) throw new Error("Scan failed");
+          return r.json();
+        })
+        .then((data) => {
+          if (data.folders && data.folders.length > 1) {
+            setScanResults(data.folders);
+          }
+          setScanningWsIdx(null);
+        })
+        .catch(() => setScanningWsIdx(null));
+    }
   }, [folderForm, onAddFolder]);
 
   const handleCancelFolder = useCallback(() => {
     setFolderForm(null);
   }, []);
+
+  // Bulk add scanned folders to the workspace that was being scanned
+  const handleBulkAddFolders = useCallback(
+    (foldersToAdd: { name: string; path: string }[]) => {
+      if (scanningWsIdx === null) return;
+      const wsIdx = scanningWsIdx;
+      setScanResults(null);
+      if (onAddFolders) {
+        onAddFolders(
+          wsIdx,
+          foldersToAdd.map((f) => ({
+            name: f.name,
+            inputDir: f.path,
+            outputDir: f.path,
+          })),
+        );
+      } else {
+        // Fallback: add one by one
+        foldersToAdd.forEach((f) => {
+          onAddFolder?.(wsIdx, f.name, f.path, f.path);
+        });
+      }
+    },
+    [scanningWsIdx, onAddFolders, onAddFolder],
+  );
 
   return (
     <>
@@ -365,16 +429,6 @@ export function LeftDrawer({
                 <button className="ld-add-workspace" onClick={() => setShowCreateForm(true)}>
                   <Plus size={14} />
                   Add Workspace
-                </button>
-              )}
-              {onScanProjects && !showCreateForm && (
-                <button
-                  className="ld-add-workspace"
-                  onClick={onScanProjects}
-                  style={{ marginTop: 4 }}
-                >
-                  <Search size={14} />
-                  Scan for projects
                 </button>
               )}
             </>
@@ -511,6 +565,12 @@ export function LeftDrawer({
                               <Check size={14} />
                             </button>
                           </div>
+                        </div>
+                      )}
+                      {scanningWsIdx === pi && (
+                        <div className="ld-scanning">
+                          <Loader2 size={12} className="ld-spinner" />
+                          <span>Scanning for related specs...</span>
                         </div>
                       )}
                       {project.folders.length === 0 && (
@@ -748,6 +808,13 @@ export function LeftDrawer({
           }}
         />
       )}
+      <BulkAddFoldersModal
+        open={scanResults !== null}
+        onClose={() => setScanResults(null)}
+        onAddFolders={handleBulkAddFolders}
+        folders={scanResults || []}
+        existingPaths={existingPaths}
+      />
     </>
   );
 }

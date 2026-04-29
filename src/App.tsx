@@ -12,11 +12,10 @@ import { BottomBar } from "./components/BottomBar";
 import { LeftDrawer } from "./components/LeftDrawer";
 import { RightDrawer } from "./components/RightDrawer";
 import { HelpModal } from "./components/HelpModal";
-import { ScanFoldersModal } from "./components/ScanFoldersModal";
 import { Toast } from "./components/Toast";
 import { screenName, DEVICE_PRESETS, DEVICE_CYCLE } from "./constants";
 import type { DeviceMode } from "./constants";
-import type { CaptureResult, ClientProject, MarkerRect, MarkerContext, Metadata } from "./types";
+import type { CaptureResult, CaptureFolder, ClientProject, MarkerRect, MarkerContext, Metadata } from "./types";
 import { extractMarkedContext } from "./acp/extractMarkerContext";
 import type { FileSource } from "./hooks/useFileSystem";
 import {
@@ -47,6 +46,7 @@ export default function App() {
     activeOutputDir,
     addProject,
     addFolderToWorkspace,
+    addFoldersToWorkspace,
     removeProject,
     removeFolder,
     setActive,
@@ -303,7 +303,6 @@ export default function App() {
   const [rightPinned, setRightPinned] = useState(false);
   const [activeState, setActiveState] = useState(queryState || "default");
   const isFirstRender = useRef(true);
-  const [scanFoldersOpen, setScanFoldersOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [dockTool, setDockTool] = useState("");
   const [capturing, setCapturing] = useState(false);
@@ -573,34 +572,14 @@ export default function App() {
     renameFolder(projectIdx, folderIdx, name);
   }, [renameFolder]);
 
-  // Handler for scanned folders from ScanFoldersModal
-  const handleAddScannedFolders = useCallback(
-    (folders: { name: string; path: string }[]) => {
+  // Handler for bulk adding folders to an existing workspace
+  const handleAddFolders = useCallback(
+    (workspaceIdx: number, folders: CaptureFolder[]) => {
       if (folders.length === 0) return;
-
-      // Derive workspace name from first folder's parent directory
-      const parts = folders[0].path.split("/");
-      let wsName = "Scanned Projects";
-      if (parts.length >= 2) {
-        const parentName = parts[parts.length - 2];
-        wsName = parentName.charAt(0).toUpperCase() + parentName.slice(1);
-      }
-
-      addProject({
-        type: "workspace",
-        name: wsName,
-        activeFolder: 0,
-        folders: folders.map((f) => ({
-          name: f.name,
-          inputDir: f.path,
-          outputDir: f.path,
-        })),
-      });
-
-      setScanFoldersOpen(false);
-      show(`Added ${folders.length} folder(s) to "${wsName}"`, true);
+      addFoldersToWorkspace(workspaceIdx, folders);
+      show(`Added ${folders.length} folder(s)`, true);
     },
-    [addProject, show],
+    [addFoldersToWorkspace, show],
   );
 
   return (
@@ -636,7 +615,7 @@ export default function App() {
             onRemoveFolder={removeFolder}
             onRenameWorkspace={handleRenameWorkspace}
             onRenameFolder={handleRenameFolder}
-            onScanProjects={() => setScanFoldersOpen(true)}
+            onAddFolders={handleAddFolders}
             fileSourceType={fileSource?.type ?? null}
             fileSourceLabel={fileSource?.label ?? ''}
           />
@@ -743,11 +722,6 @@ export default function App() {
               onDeviceModeChange={handleDeviceModeCycle}
             />
           )}
-          <ScanFoldersModal
-            open={scanFoldersOpen}
-            onClose={() => setScanFoldersOpen(false)}
-            onAddFolders={handleAddScannedFolders}
-          />
           <HelpModal show={helpOpen} onClose={() => setHelpOpen(false)} />
           <Toast message={toast.message} visible={toast.visible} ok={toast.ok} />
         </>
