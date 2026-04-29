@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Menu, Plus, ChevronDown, ChevronRight, Folder, FolderOpen, Pin, Check, X, Trash2 } from "./base/icons";
 import { screenName, truncateName, TIERS } from "../constants";
+import { ConfirmModal } from "./ConfirmModal";
 import type { Project } from "../types";
 import { isSupported as fsIsSupported, pickDirectory, saveHandle, generateHandleId } from "../hooks/useFileSystem";
 
@@ -53,6 +54,7 @@ export function LeftDrawer({
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createName, setCreateName] = useState("");
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ pi: number; fi: number; workspaceName: string; folderName: string } | null>(null);
   const [folderForm, setFolderForm] = useState<{
     workspaceIdx: number;
     name: string;
@@ -443,14 +445,7 @@ export function LeftDrawer({
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (project.folders.length <= 1) {
-                                    const keep = window.confirm(
-                                      "This is the last folder. Delete workspace too?\n\nOK = Delete workspace\nCancel = Keep empty workspace",
-                                    );
-                                    if (keep) {
-                                      onRemoveProject?.(pi);
-                                    } else {
-                                      onRemoveFolder?.(pi, fi);
-                                    }
+                                    setDeleteConfirm({ pi, fi, workspaceName: project.name, folderName: folder.name });
                                   } else {
                                     onRemoveFolder?.(pi, fi);
                                   }
@@ -583,6 +578,24 @@ export function LeftDrawer({
             Close Project
           </button>
         </div>
+      )}
+      {deleteConfirm && (
+        <ConfirmModal
+          open
+          title="Delete last folder"
+          message={`"${deleteConfirm.folderName}" is the last folder in "${deleteConfirm.workspaceName}".\n\nDelete the entire workspace too?`}
+          confirmLabel="Delete workspace"
+          cancelLabel="Keep workspace"
+          variant="danger"
+          onConfirm={() => {
+            onRemoveProject?.(deleteConfirm.pi);
+            setDeleteConfirm(null);
+          }}
+          onCancel={() => {
+            onRemoveFolder?.(deleteConfirm.pi, deleteConfirm.fi);
+            setDeleteConfirm(null);
+          }}
+        />
       )}
     </>
   );
