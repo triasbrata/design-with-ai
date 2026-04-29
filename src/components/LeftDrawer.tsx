@@ -442,7 +442,18 @@ export function LeftDrawer({
                                 onMouseDown={(e) => e.stopPropagation()}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  onRemoveFolder?.(pi, fi);
+                                  if (project.folders.length <= 1) {
+                                    const keep = window.confirm(
+                                      "This is the last folder. Delete workspace too?\n\nOK = Delete workspace\nCancel = Keep empty workspace",
+                                    );
+                                    if (keep) {
+                                      onRemoveProject?.(pi);
+                                    } else {
+                                      onRemoveFolder?.(pi, fi);
+                                    }
+                                  } else {
+                                    onRemoveFolder?.(pi, fi);
+                                  }
                                 }}
                               >
                                 <Trash2 size={11} />
