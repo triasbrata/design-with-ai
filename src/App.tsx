@@ -10,7 +10,7 @@ import { Summary } from "./components/Summary";
 import { CaptureProgress } from "./components/CaptureProgress";
 import { BottomBar } from "./components/BottomBar";
 import { LeftDrawer } from "./components/LeftDrawer";
-import { RightDrawer } from "./components/RightDrawer";
+import { ChatDrawer } from "./components/ChatDrawer";
 import { HelpModal } from "./components/HelpModal";
 import { Toast } from "./components/Toast";
 import { screenName, DEVICE_PRESETS, DEVICE_CYCLE } from "./constants";
@@ -116,7 +116,7 @@ export default function App() {
   } = useScreens(activeInputDir, preloadedMetadata);
 
   const [leftDrawerOpen, setLeftDrawerOpen] = useState(false);
-  const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
+  const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
   const [leftPinned, setLeftPinned] = useState(false);
   const [rightPinned, setRightPinned] = useState(false);
   const [activeState, setActiveState] = useState(queryState || "default");
@@ -417,24 +417,6 @@ export default function App() {
         />
       ) : (
         <>
-          <LeftDrawer
-            open={leftDrawerOpen}
-            onToggle={() => setLeftDrawerOpen((p) => !p)}
-            pinned={leftPinned}
-            onPinToggle={() => setLeftPinned((p) => !p)}
-            projects={projects}
-            activeIndex={activeIndex}
-            activeFolderIdx={
-              activeProject?.type === "workspace" ? activeProject.activeFolder : 0
-            }
-            screens={orderedScreens}
-            activeScreen={currentScreen}
-            onSelect={navigate}
-            onSetActive={setActive}
-            onAddWorkspace={handleAddWorkspace}
-            onAddFolder={handleAddFolder}
-            onRemoveProject={removeProject}
-          />
           <div className="content-area" ref={contentAreaRef}>
             <div className="main-content">
               {isSummary ? (
@@ -467,9 +449,22 @@ export default function App() {
               )}
             </div>
           </div>
-          <RightDrawer
-            open={rightDrawerOpen}
-            onToggle={() => setRightDrawerOpen((p) => !p)}
+          <LeftDrawer
+            open={leftDrawerOpen}
+            onToggle={() => setLeftDrawerOpen((p) => !p)}
+            pinned={leftPinned}
+            onPinToggle={() => setLeftPinned((p) => !p)}
+            projects={projects}
+            activeIndex={activeIndex}
+            onSelectWorkspace={setActive}
+            screens={orderedScreens}
+            activeScreen={currentScreen}
+            onSelectScreen={navigate}
+            metadata={metadata}
+          />
+          <ChatDrawer
+            open={chatDrawerOpen}
+            onToggle={() => setChatDrawerOpen((p) => !p)}
             pinned={rightPinned}
             onPinToggle={() => setRightPinned((p) => !p)}
           >
@@ -479,7 +474,7 @@ export default function App() {
               markerContext={markerContext}
               onResetMarker={handleResetMarker}
             />
-          </RightDrawer>
+          </ChatDrawer>
           {!isSummary && (
             <BottomBar
               name={screenName(currentScreen)}

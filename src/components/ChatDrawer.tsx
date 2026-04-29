@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { MessageCircle, X } from "./base/icons";
+import { MessageCircle, X, Pin } from "./base/icons";
 
-interface RightDrawerProps {
+interface ChatDrawerProps {
   open: boolean;
   onToggle: () => void;
   pinned: boolean;
@@ -9,7 +9,7 @@ interface RightDrawerProps {
   children?: ReactNode;
 }
 
-export function RightDrawer({ open, onToggle, pinned, onPinToggle, children }: RightDrawerProps) {
+export function ChatDrawer({ open, onToggle, pinned, onPinToggle, children }: ChatDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -25,19 +25,31 @@ export function RightDrawer({ open, onToggle, pinned, onPinToggle, children }: R
 
   return (
     <>
-      <div className="drawer-trigger">
+      <div className="cd-trigger">
         <button className="burger-btn" onClick={onToggle} aria-label="Toggle chat">
           <MessageCircle size={18} />
         </button>
       </div>
-      <aside ref={drawerRef} className={open ? `right-drawer${pinned ? " push" : " floating"} open` : "right-drawer"}>
-        <div className="right-drawer-inner">
+      <aside ref={drawerRef} className={`chat-drawer${open ? " open" : ""}`}>
+        <div className="chat-drawer-inner">
           <div className="rd-drawer-header">
+            <button
+              className={`ld-pin-btn${pinned ? " pinned" : ""}`}
+              onClick={onPinToggle}
+              title={pinned ? "Switch to floating overlay" : "Pin (push mode)"}
+            >
+              <Pin size={14} />
+            </button>
             <button className="ld-close-btn" onClick={onToggle} title="Close drawer">
               <X size={14} />
             </button>
           </div>
-          {children}
+          {children || (
+            <>
+              <h3>AI Chat</h3>
+              <p className="sub">AI Chat panel — coming soon</p>
+            </>
+          )}
         </div>
       </aside>
     </>
