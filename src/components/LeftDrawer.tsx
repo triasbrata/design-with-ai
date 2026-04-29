@@ -49,6 +49,7 @@ export function LeftDrawer({
   const inputRef = useRef<HTMLInputElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set([activeIndex]));
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createName, setCreateName] = useState("");
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -405,17 +406,36 @@ export function LeftDrawer({
                       )}
                       {project.folders.map((folder, fi) => {
                         const isActiveFolder = isActiveWs && fi === activeFolderIdx;
+                        const folderKey = `${pi}-${fi}`;
+                        const isFolderExpanded = expandedFolders.has(folderKey);
                         return (
                           <div key={`f-${fi}`} style={{ paddingLeft: 4 }}>
-                            <button
-                              className="ld-section-header"
-                              onClick={() => {
-                                if (!isActiveFolder) onSetActive(pi, fi);
-                              }}
-                              style={{ fontSize: 13, fontWeight: isActiveFolder ? 600 : 400 }}
-                            >
+                            <div className="ld-section-header" style={{ fontSize: 13 }}>
+                              <span
+                                className="ld-chevron"
+                                onClick={() => {
+                                  setExpandedFolders((prev) => {
+                                    const next = new Set(prev);
+                                    if (next.has(folderKey)) next.delete(folderKey);
+                                    else next.add(folderKey);
+                                    return next;
+                                  });
+                                }}
+                                style={{ cursor: 'pointer' }}
+                              >
+                                {isFolderExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                              </span>
                               <Folder size={12} />
-                              <span className="ld-section-title" title={folder.name.length > 30 ? folder.name : undefined}>{truncateName(folder.name)}</span>
+                              <span
+                                className="ld-section-title"
+                                title={folder.name.length > 30 ? folder.name : undefined}
+                                onClick={() => {
+                                  if (!isActiveFolder) onSetActive(pi, fi);
+                                }}
+                                style={{ cursor: 'pointer', fontWeight: isActiveFolder ? 600 : 400 }}
+                              >
+                                {truncateName(folder.name)}
+                              </span>
                               <button
                                 className="ld-folder-delete"
                                 title="Delete folder"
@@ -427,15 +447,8 @@ export function LeftDrawer({
                               >
                                 <Trash2 size={11} />
                               </button>
-                              <span className="ld-chevron">
-                                {isActiveFolder ? (
-                                  <ChevronDown size={12} />
-                                ) : (
-                                  <ChevronRight size={12} />
-                                )}
-                              </span>
-                            </button>
-                            {isActiveFolder && (
+                            </div>
+                            {(isActiveFolder || isFolderExpanded) && (
                               <div style={{ paddingLeft: 8 }}>
                                 {Object.entries(TIERS).map(([tier, info]) => {
                                   const tierScreens = info.screens.filter((s) =>
