@@ -67,6 +67,7 @@ export function LeftDrawer({
 }: LeftDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set([activeIndex]));
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -530,6 +531,7 @@ export function LeftDrawer({
                                   <input
                                     ref={renameInputRef}
                                     className="ld-rename-input"
+                                    autoFocus
                                     value={renameState.currentName}
                                     onChange={(e) => setRenameState((prev) => prev ? { ...prev, currentName: e.target.value } : null)}
                                     onKeyDown={(e) => {

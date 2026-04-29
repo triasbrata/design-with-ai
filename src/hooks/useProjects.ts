@@ -111,8 +111,6 @@ export function useProjects() {
 
   const removeProject = useCallback(
     (index: number) => {
-      if (projects.length <= 1) return;
-
       // Revoke blob URLs for client projects
       const removed = projects[index];
       if (removed?.type === "client") {
@@ -122,6 +120,10 @@ export function useProjects() {
       const next = projects.filter((_, i) => i !== index);
       persist(next);
       setActiveIndex((prev) => {
+        if (next.length === 0) {
+          localStorage.setItem(ACTIVE_KEY, "0");
+          return 0;
+        }
         if (prev >= next.length) {
           const adjusted = Math.max(0, next.length - 1);
           localStorage.setItem(ACTIVE_KEY, String(adjusted));
