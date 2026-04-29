@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useScreens } from "./hooks/useScreens";
+import { useDeviceScale } from "./hooks/useDeviceScale";
 import { useProjects } from "./hooks/useProjects";
 import { useToast } from "./hooks/useToast";
 import { useAcpBridge } from "./acp/useAcpBridge";
@@ -12,7 +13,8 @@ import { LeftDrawer } from "./components/LeftDrawer";
 import { RightDrawer } from "./components/RightDrawer";
 import { HelpModal } from "./components/HelpModal";
 import { Toast } from "./components/Toast";
-import { screenName } from "./constants";
+import { screenName, DEVICE_PRESETS, DEVICE_CYCLE } from "./constants";
+import type { DeviceMode } from "./constants";
 import type { CaptureResult, ClientProject, MarkerRect, MarkerContext } from "./types";
 import { extractMarkedContext } from "./acp/extractMarkerContext";
 
@@ -110,16 +112,24 @@ export default function App() {
     goNext,
     goPrev,
     goHome,
+    queryState,
   } = useScreens(activeInputDir, preloadedMetadata);
 
   const [leftDrawerOpen, setLeftDrawerOpen] = useState(false);
   const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
-  const [activeState, setActiveState] = useState("default");
+  const [leftPinned, setLeftPinned] = useState(false);
+  const [rightPinned, setRightPinned] = useState(false);
+  const [activeState, setActiveState] = useState(queryState || "default");
+  const isFirstRender = useRef(true);
   const [helpOpen, setHelpOpen] = useState(false);
   const [dockTool, setDockTool] = useState("");
   const [capturing, setCapturing] = useState(false);
   const [markerRect, setMarkerRect] = useState<MarkerRect | null>(null);
   const [markerContext, setMarkerContext] = useState<MarkerContext | null>(null);
+  const [deviceMode, setDeviceMode] = useState<DeviceMode>("phone-v");
+
+  const contentAreaRef = useRef<HTMLDivElement>(null);
+  const { scale, logicalW, logicalH } = useDeviceScale(contentAreaRef, deviceMode);
 
   const acpState = useAcpBridge({
     currentScreen,
@@ -136,10 +146,26 @@ export default function App() {
       ? `${activeProject.name} / ${activeFolder.name}`
       : activeProject?.name ?? "";
 
-  // Reset activeState when currentScreen changes
+  // Reset activeState when currentScreen changes (skip initial mount — URL state rules)
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     setActiveState("default");
   }, [currentScreen]);
+
+  // Sync activeState back to URL so direct-link / refresh preserves the state
+  useEffect(() => {
+    if (!currentScreen || isSummary) return;
+    const params = new URLSearchParams(location.search);
+    if (activeState && activeState !== "default") {
+      params.set("state", activeState);
+    } else {
+      params.delete("state");
+    }
+    history.replaceState({}, "", `?${params.toString()}`);
+  }, [currentScreen, activeState, isSummary]);
 
   // Reset marker on screen change
   useEffect(() => {
@@ -152,6 +178,14 @@ export default function App() {
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      // Device mode shortcuts: Meta/Ctrl + 1-6
+      if ((e.metaKey || e.ctrlKey) && /^[1-6]$/.test(e.key)) {
+        e.preventDefault();
+        const idx = parseInt(e.key) - 1;
+        if (idx < DEVICE_CYCLE.length) setDeviceMode(DEVICE_CYCLE[idx]);
+        return;
+      }
 
       switch (e.key) {
         case "ArrowLeft":
@@ -201,9 +235,10 @@ export default function App() {
         return;
       }
 
+      const preset = DEVICE_PRESETS[deviceMode];
       const canvas = await window.html2canvas(iframe.contentDocument.body, {
-        width: 390,
-        height: 844,
+        width: preset.width,
+        height: preset.height,
         scale: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
@@ -242,7 +277,7 @@ export default function App() {
     } catch {
       show("Capture failed", false);
     }
-  }, [currentScreen, activeState, metadata, show, activeOutputDir, activeProject]);
+  }, [currentScreen, activeState, metadata, show, activeOutputDir, activeProject, deviceMode]);
 
   // Start batch capture of all screens
   const handleCaptureAll = useCallback(() => {
@@ -324,10 +359,20 @@ export default function App() {
     setMarkerContext(null);
   }, []);
 
-  // Quick-add workspace from left drawer
-  const handleAddWorkspace = useCallback(() => {
-    const name = window.prompt("Workspace name:");
-    if (!name?.trim()) return;
+  // Set device mode directly, or cycle to next if no mode provided
+  const handleDeviceModeCycle = useCallback((mode?: DeviceMode) => {
+    if (mode) {
+      setDeviceMode(mode);
+    } else {
+      setDeviceMode((prev) => {
+        const idx = DEVICE_CYCLE.indexOf(prev);
+        return DEVICE_CYCLE[(idx + 1) % DEVICE_CYCLE.length];
+      });
+    }
+  }, []);
+
+  // Quick-add workspace from left drawer inline form
+  const handleAddWorkspace = useCallback((name: string) => {
     addProject({
       type: "workspace",
       name: name.trim(),
@@ -335,6 +380,18 @@ export default function App() {
       activeFolder: 0,
     });
   }, [addProject]);
+
+  // Add folder to workspace (from plus button or context menu)
+  const handleAddFolder = useCallback(
+    (workspaceIdx: number, name: string, inputDir: string, outputDir: string) => {
+      addFolderToWorkspace(workspaceIdx, {
+        name,
+        inputDir,
+        outputDir: outputDir || inputDir,
+      });
+    },
+    [addFolderToWorkspace],
+  );
 
   // Empty state
   if (orderedScreens.length === 0) {
@@ -356,12 +413,15 @@ export default function App() {
           getScreenUrl={getScreenUrl}
           saveCapture={saveCapture}
           onDone={handleCaptureAllDone}
+          deviceMode={deviceMode}
         />
       ) : (
         <>
           <LeftDrawer
             open={leftDrawerOpen}
             onToggle={() => setLeftDrawerOpen((p) => !p)}
+            pinned={leftPinned}
+            onPinToggle={() => setLeftPinned((p) => !p)}
             projects={projects}
             activeIndex={activeIndex}
             activeFolderIdx={
@@ -372,8 +432,10 @@ export default function App() {
             onSelect={navigate}
             onSetActive={setActive}
             onAddWorkspace={handleAddWorkspace}
+            onAddFolder={handleAddFolder}
+            onRemoveProject={removeProject}
           />
-          <div className="content-area">
+          <div className="content-area" ref={contentAreaRef}>
             <div className="main-content">
               {isSummary ? (
                 <Summary
@@ -398,6 +460,9 @@ export default function App() {
                   markerMode={markerMode}
                   markerRect={markerRect}
                   onMark={handleMark}
+                  scale={scale}
+                  logicalW={logicalW}
+                  logicalH={logicalH}
                 />
               )}
             </div>
@@ -405,6 +470,8 @@ export default function App() {
           <RightDrawer
             open={rightDrawerOpen}
             onToggle={() => setRightDrawerOpen((p) => !p)}
+            pinned={rightPinned}
+            onPinToggle={() => setRightPinned((p) => !p)}
           >
             <DrawerTabs
               connected={acpState.connected}
@@ -420,6 +487,7 @@ export default function App() {
               total={total}
               activeTool={dockTool}
               projectName={projectLabel}
+              deviceMode={deviceMode}
               onToolChange={handleDockTool}
               onPrev={goPrev}
               onNext={goNext}
@@ -429,6 +497,7 @@ export default function App() {
                 setDockTool("");
               }}
               onHelp={() => setHelpOpen(true)}
+              onDeviceModeChange={handleDeviceModeCycle}
             />
           )}
           <HelpModal show={helpOpen} onClose={() => setHelpOpen(false)} />

@@ -16,14 +16,19 @@ export function DrawerTabs({ connected, currentScreen, markerContext, onResetMar
   const [tab, setTab] = useState<Tab>('chat');
 
   return (
-    <div>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+      }}
+    >
       {/* Tab bar */}
       <div
         style={{
           display: 'flex',
-          gap: 0,
-          marginBottom: 12,
           borderBottom: '1px solid var(--brand-border)',
+          flexShrink: 0,
         }}
       >
         <TabButton active={tab === 'chat'} onClick={() => setTab('chat')}>
@@ -34,10 +39,13 @@ export function DrawerTabs({ connected, currentScreen, markerContext, onResetMar
         </TabButton>
       </div>
 
+      {/* Content */}
       {tab === 'chat' ? (
         <ChatPanel currentScreen={currentScreen} markerContext={markerContext} onResetMarker={onResetMarker} />
       ) : (
-        <AgentPanel connected={connected} />
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px' }}>
+          <AgentPanel connected={connected} />
+        </div>
       )}
     </div>
   );

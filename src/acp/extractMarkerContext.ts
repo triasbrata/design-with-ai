@@ -68,6 +68,11 @@ export function extractMarkedContext(
   const text = el.textContent?.trim() || '';
   const selector = buildSelector(el);
 
+  // Find nearest cai-id (on element or ancestor)
+  const caiId = el.getAttribute('cai-id')
+    || el.closest('[cai-id]')?.getAttribute('cai-id')
+    || undefined;
+
   return {
     screen,
     state: baselineState || state,
@@ -77,6 +82,7 @@ export function extractMarkedContext(
       text,
       selector,
       boundingBox: rect,
+      caiId,
     },
   };
 }

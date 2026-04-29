@@ -1,5 +1,18 @@
 import type { TierInfo } from './types';
 
+export type DeviceMode = "phone-v" | "phone-h" | "tablet-v" | "tablet-h" | "laptop" | "desktop";
+
+export const DEVICE_PRESETS: Record<DeviceMode, { label: string; width: number; height: number; shortcut: string }> = {
+  "phone-v":   { label: "Vertical",   width: 390,  height: 844,  shortcut: "⌘+1" },
+  "phone-h":   { label: "Horizontal", width: 844,  height: 390,  shortcut: "⌘+2" },
+  "tablet-v":  { label: "Vertical",   width: 820,  height: 1180, shortcut: "⌘+3" },
+  "tablet-h":  { label: "Horizontal", width: 1180, height: 820,  shortcut: "⌘+4" },
+  "laptop":    { label: "Laptop",     width: 1280, height: 800,  shortcut: "⌘+5" },
+  "desktop":   { label: "Desktop",    width: 1440, height: 900,  shortcut: "⌘+6" },
+};
+
+export const DEVICE_CYCLE: DeviceMode[] = ["phone-v", "phone-h", "tablet-v", "tablet-h", "laptop", "desktop"];
+
 export const TIERS: Record<string, TierInfo> = {
   T1: {
     label: 'Main User Flows',
@@ -38,6 +51,11 @@ export const TIERS: Record<string, TierInfo> = {
     screens: ['floating_bottom_nav_spec', 'user_screen_spec'],
   },
 };
+
+export function truncateName(name: string, max = 30): string {
+  if (name.length <= max) return name;
+  return name.slice(0, max) + "...";
+}
 
 export function screenName(filename: string): string {
   return filename

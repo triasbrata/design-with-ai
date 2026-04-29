@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CaptureResult, Metadata } from "../types";
+import { DEVICE_PRESETS } from "../constants";
+import type { DeviceMode } from "../constants";
 import { Button } from "./base";
 import { X, Check, Loader2 } from "./base/icons";
 
@@ -9,6 +11,7 @@ interface CaptureProgressProps {
   getScreenUrl: (screen: string, state?: string) => string;
   saveCapture: (filename: string, dataUrl: string) => Promise<CaptureResult>;
   onDone: (results: CaptureResult[]) => void;
+  deviceMode: DeviceMode;
 }
 
 declare global {
@@ -41,7 +44,7 @@ function waitForLoad(iframe: HTMLIFrameElement, timeoutMs: number): Promise<void
   });
 }
 
-export function CaptureProgress({ screens, metadata, getScreenUrl, saveCapture, onDone }: CaptureProgressProps) {
+export function CaptureProgress({ screens, metadata, getScreenUrl, saveCapture, onDone, deviceMode }: CaptureProgressProps) {
   const [currentFile, setCurrentFile] = useState("");
   const [progress, setProgress] = useState("");
   const [resultsLog, setResultsLog] = useState<CaptureResult[]>([]);
@@ -50,6 +53,8 @@ export function CaptureProgress({ screens, metadata, getScreenUrl, saveCapture, 
   const mountedRef = useRef(true);
 
   useEffect(() => {
+    const preset = DEVICE_PRESETS[deviceMode];
+
     mountedRef.current = true;
     window._captureStop = false;
 
@@ -82,11 +87,11 @@ export function CaptureProgress({ screens, metadata, getScreenUrl, saveCapture, 
           setProgress(`${completed + 1}/${total}`);
 
           const wrapper = document.createElement("div");
-          wrapper.style.cssText = "position:fixed;left:-9999px;top:0;width:390px;height:844px";
+          wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${preset.width}px;height:${preset.height}px`;
 
           const iframe = document.createElement("iframe");
-          iframe.style.width = "390px";
-          iframe.style.height = "844px";
+          iframe.style.width = `${preset.width}px`;
+          iframe.style.height = `${preset.height}px`;
           iframe.style.border = "none";
           iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
           wrapper.appendChild(iframe);
@@ -116,8 +121,8 @@ export function CaptureProgress({ screens, metadata, getScreenUrl, saveCapture, 
             }
 
             const canvas = await window.html2canvas(iframe.contentDocument.body, {
-              width: 390,
-              height: 844,
+              width: preset.width,
+              height: preset.height,
               scale: 2,
               backgroundColor: "#fff",
               useCORS: true,
