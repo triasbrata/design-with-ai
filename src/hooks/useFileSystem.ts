@@ -100,6 +100,15 @@ async function ensureReadPermission(
   if (result !== 'granted') throw new Error('Read permission denied');
 }
 
+/** Request read permission from the user. Returns true if granted. */
+export async function requestReadPermission(
+  handle: FileSystemDirectoryHandle,
+): Promise<boolean> {
+  const h = toFSA(handle);
+  const result = await h.requestPermission({ mode: 'read' });
+  return result === 'granted';
+}
+
 async function ensureWritePermission(
   handle: FileSystemDirectoryHandle,
 ): Promise<void> {

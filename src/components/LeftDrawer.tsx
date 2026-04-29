@@ -440,13 +440,7 @@ export function LeftDrawer({
                                 if (e.key === "Escape") handleCancelFolder();
                               }}
                             />
-                            <button
-                              className="ld-folder-browse"
-                              onClick={() => folderFileInputRef.current?.click()}
-                            >
-                              Browse...
-                            </button>
-                            {fsIsSupported() && (
+                            {fsIsSupported() ? (
                               <button
                                 className="ld-folder-browse"
                                 onClick={handlePickFolderNative}
@@ -454,13 +448,20 @@ export function LeftDrawer({
                               >
                                 Pick Folder
                               </button>
+                            ) : (
+                              <button
+                                className="ld-folder-browse"
+                                onClick={() => folderFileInputRef.current?.click()}
+                              >
+                                Browse...
+                              </button>
                             )}
                           </div>
-                          {folderForm.inputHandleId ? (
+                          {fsIsSupported() && folderForm.inputHandleId ? (
                             <div className="ld-folder-create-row" style={{ color: "var(--brand-muted)", fontSize: 11, padding: "4px 0" }}>
                               Using native file system access &mdash; no paths needed
                             </div>
-                          ) : (
+                          ) : !fsIsSupported() ? (
                             <>
                               <div className="ld-folder-create-row">
                                 <input
@@ -487,12 +488,16 @@ export function LeftDrawer({
                                 />
                               </div>
                             </>
-                          )}
+                          ) : null}
                           <div className="ld-folder-create-actions">
                             <button className="ld-inline-cancel" onClick={handleCancelFolder}>
                               <X size={14} />
                             </button>
-                            <button className="ld-inline-confirm" onClick={handleSubmitFolder}>
+                            <button
+                              className="ld-inline-confirm"
+                              onClick={handleSubmitFolder}
+                              {...(fsIsSupported() && !folderForm.inputHandleId ? { style: { opacity: 0.4 } as React.CSSProperties, title: "Pick a folder first" } : {})}
+                            >
                               <Check size={14} />
                             </button>
                           </div>
