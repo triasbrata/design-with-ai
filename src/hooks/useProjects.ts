@@ -138,27 +138,12 @@ export function useProjects() {
     [projects, persist],
   );
 
-  /** Remove a folder from a workspace. Deletes workspace if last folder removed. */
+  /** Remove a folder from a workspace. Workspace stays even when empty. */
   const removeFolder = useCallback(
     (projectIdx: number, folderIdx: number) => {
       setProjects((prev) => {
         const project = prev[projectIdx];
         if (!project || project.type !== "workspace") return prev;
-
-        if (project.folders.length <= 1) {
-          // Remove the whole workspace
-          const next = prev.filter((_, i) => i !== projectIdx);
-          const workspaces = next.filter(
-            (p): p is Workspace => p.type === "workspace",
-          );
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaces));
-          setActiveIndex((a) => {
-            if (a >= next.length) return Math.max(0, next.length - 1);
-            if (a > projectIdx) return a - 1;
-            return a;
-          });
-          return next;
-        }
 
         // Remove folder, adjust activeFolder if needed
         const next = prev.map((p, i) => {
