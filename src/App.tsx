@@ -596,7 +596,7 @@ export default function App() {
               onResetMarker={handleResetMarker}
             />
           </ChatDrawer>
-          {!isSummary && (
+          {!isSummary && total > 0 && (
             <BottomBar
               name={screenName(currentScreen)}
               index={currentIndex}
