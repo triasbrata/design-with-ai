@@ -42,6 +42,8 @@ export interface CaptureFolder {
   name: string;
   inputDir: string;
   outputDir: string;
+  inputHandleId?: string;
+  outputHandleId?: string;
 }
 
 export interface Workspace {

@@ -88,10 +88,29 @@ export function useProjects() {
     [],
   );
 
+  /** Update a folder in a workspace (e.g. to set handle IDs after directory pick) */
+  const updateFolder = useCallback(
+    (projectIdx: number, folderIdx: number, updates: Partial<CaptureFolder>) => {
+      setProjects((prev) => {
+        const next = prev.map((p, i) => {
+          if (i !== projectIdx || p.type !== "workspace") return p;
+          const newFolders = p.folders.map((f, fi) =>
+            fi === folderIdx ? { ...f, ...updates } : f,
+          );
+          return { ...p, folders: newFolders };
+        });
+        const workspaces = next.filter(
+          (p): p is Workspace => p.type === "workspace",
+        );
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaces));
+        return next;
+      });
+    },
+    [],
+  );
+
   const removeProject = useCallback(
     (index: number) => {
-      if (projects.length <= 1) return;
-
       // Revoke blob URLs for client projects
       const removed = projects[index];
       if (removed?.type === "client") {
@@ -101,6 +120,10 @@ export function useProjects() {
       const next = projects.filter((_, i) => i !== index);
       persist(next);
       setActiveIndex((prev) => {
+        if (next.length === 0) {
+          localStorage.setItem(ACTIVE_KEY, "0");
+          return 0;
+        }
         if (prev >= next.length) {
           const adjusted = Math.max(0, next.length - 1);
           localStorage.setItem(ACTIVE_KEY, String(adjusted));
@@ -117,27 +140,12 @@ export function useProjects() {
     [projects, persist],
   );
 
-  /** Remove a folder from a workspace. Deletes workspace if last folder removed. */
+  /** Remove a folder from a workspace. Workspace stays even when empty. */
   const removeFolder = useCallback(
     (projectIdx: number, folderIdx: number) => {
       setProjects((prev) => {
         const project = prev[projectIdx];
         if (!project || project.type !== "workspace") return prev;
-
-        if (project.folders.length <= 1) {
-          // Remove the whole workspace
-          const next = prev.filter((_, i) => i !== projectIdx);
-          const workspaces = next.filter(
-            (p): p is Workspace => p.type === "workspace",
-          );
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaces));
-          setActiveIndex((a) => {
-            if (a >= next.length) return Math.max(0, next.length - 1);
-            if (a > projectIdx) return a - 1;
-            return a;
-          });
-          return next;
-        }
 
         // Remove folder, adjust activeFolder if needed
         const next = prev.map((p, i) => {
@@ -186,6 +194,28 @@ export function useProjects() {
     [],
   );
 
+  const renameProject = useCallback((index: number, name: string) => {
+    setProjects((prev) => {
+      const next = prev.map((p, i) => i === index ? { ...p, name } : p);
+      const workspaces = next.filter((p): p is Workspace => p.type === "workspace");
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaces));
+      return next;
+    });
+  }, []);
+
+  const renameFolder = useCallback((projectIdx: number, folderIdx: number, name: string) => {
+    setProjects((prev) => {
+      const next = prev.map((p, i) => {
+        if (i !== projectIdx || p.type !== "workspace") return p;
+        const newFolders = p.folders.map((f, fi) => fi === folderIdx ? { ...f, name } : f);
+        return { ...p, folders: newFolders };
+      });
+      const workspaces = next.filter((p): p is Workspace => p.type === "workspace");
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaces));
+      return next;
+    });
+  }, []);
+
   return {
     projects,
     activeIndex,
@@ -195,8 +225,11 @@ export function useProjects() {
     activeOutputDir,
     addProject,
     addFolderToWorkspace,
+    updateFolder,
     removeProject,
     removeFolder,
     setActive,
+    renameProject,
+    renameFolder,
   };
 }

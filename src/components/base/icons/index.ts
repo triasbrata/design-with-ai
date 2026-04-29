@@ -29,6 +29,7 @@ export {
   PanelLeft,
   PanelRightOpen,
   Paperclip,
+  Pencil,
   Pin,
   Plus,
   Save,
