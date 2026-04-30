@@ -210,9 +210,9 @@ export async function scanForGoldenDirectories(
             (meta as any).meta?.totalScreens ??
             Object.keys((meta as any).screens || {}).length,
         });
-      } else {
-        await walk(subHandle, entryPath, depth + 1);
       }
+      // Always walk deeper — golden spec dirs can have nested golden specs
+      await walk(subHandle, entryPath, depth + 1);
     }
   }
 
