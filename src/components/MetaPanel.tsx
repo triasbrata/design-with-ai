@@ -56,7 +56,7 @@ export function MetaPanel({ meta, screen, activeState, onStateChange }: MetaPane
         <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-1">Key Elements</div>
         <ul className="list-none p-0 flex flex-wrap gap-[3px]">
           {meta.keyElements.map((el, i) => (
-            <li key={i} className="text-xs bg-primary_hover px-2 py-[2px] rounded-md text-[#5A5A5A]">{el}</li>
+            <li key={i} className="text-xs bg-primary_hover px-2 py-1 rounded-md text-secondary border border-[var(--brand-border-hairline)]">{el}</li>
           ))}
         </ul>
       </div>
