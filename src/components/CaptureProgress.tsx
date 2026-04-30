@@ -197,7 +197,7 @@ export function CaptureProgress({ screens, metadata, getScreenUrl, saveCapture, 
         }}
       >
         {resultsLog.map((r, i) => (
-          <div key={i} className={cn(r.ok ? "text-[var(--state-success-text)] text-[10px]" : "text-brand-solid text-[10px]")} style={{ padding: "1px 0" }}>
+          <div key={i} className={cn(r.ok ? "text-[var(--state-success-text)] text-xs" : "text-brand-solid text-xs")} style={{ padding: "1px 0" }}>
             {r.ok ? <Check size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> : <X size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} />}{" "}
             {r.filename}
             {r.error ? ` \u2014 ${r.error}` : ""}

@@ -102,7 +102,7 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
                       <td className="px-3.5 py-2 text-sm border-b border-[#F8F4EC]">{states.length}</td>
                       <td className="px-3.5 py-2 text-sm border-b border-[#F8F4EC]">
                         {states.map((s) => (
-                          <span key={s} className="text-[10px] px-2 py-[2px] rounded-lg bg-primary_hover text-[#5A5A5A] font-semibold whitespace-nowrap">
+                          <span key={s} className="text-xs px-2 py-[2px] rounded-lg bg-primary_hover text-[#5A5A5A] font-semibold whitespace-nowrap">
                             {s}
                           </span>
                         ))}

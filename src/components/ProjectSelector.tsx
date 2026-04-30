@@ -210,7 +210,7 @@ export function ProjectSelector({
       {/* Dropdown */}
       {open && (
         <div className="absolute top-full left-0 mt-1 min-w-[240px] bg-bg-surface border border-[var(--brand-border)] rounded-xl shadow-[0_8px_24px_var(--brand-shadow)] p-2 z-[var(--z-dropdown)]">
-          <div className="text-[10px] font-bold uppercase tracking-[0.5px] text-tertiary px-2 pb-2 pt-1">Workspaces &amp; Folders</div>
+          <div className="text-xs font-bold uppercase tracking-[0.5px] text-tertiary px-2 pb-2 pt-1">Workspaces &amp; Folders</div>
 
           {projects.map((p, pi) =>
             p.type === "workspace" ? (

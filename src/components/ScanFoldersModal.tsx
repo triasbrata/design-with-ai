@@ -131,9 +131,9 @@ export function ScanFoldersModal({ open, onClose, onAddFolders }: ScanFoldersMod
                   />
                   <div className="flex-1 min-w-0">
                     <span className="block text-sm font-semibold text-[var(--brand-text)]">{folder.name}</span>
-                    <span className="block text-[10px] text-[var(--brand-muted-light)] whitespace-nowrap overflow-hidden text-ellipsis">{folder.path}</span>
+                    <span className="block text-xs text-[var(--brand-muted-light)] whitespace-nowrap overflow-hidden text-ellipsis">{folder.path}</span>
                   </div>
-                  <span className="text-[10px] font-semibold text-tertiary bg-primary_hover px-2 py-[2px] rounded-lg whitespace-nowrap shrink-0">{folder.screenCount} screens</span>
+                  <span className="text-xs font-semibold text-tertiary bg-primary_hover px-2 py-[2px] rounded-lg whitespace-nowrap shrink-0">{folder.screenCount} screens</span>
                 </label>
               ))}
             </div>

@@ -20,7 +20,7 @@ export function StateTabs({ stateContext, states, activeState, onChange }: State
         <button
           type="button"
           className={cn(
-            "text-[10px] font-semibold px-[10px] py-[3px] rounded-[10px] border border-[var(--brand-border-hairline)] bg-white text-tertiary cursor-pointer transition-all duration-150",
+            "text-xs font-semibold px-[10px] py-[3px] rounded-[10px] border border-[var(--brand-border-hairline)] bg-white text-tertiary cursor-pointer transition-all duration-150",
             activeState === 'default' ? "bg-brand-solid text-white border-brand-solid" : "hover:bg-primary_hover hover:text-secondary"
           )}
           onClick={() => onChange('default')}
@@ -32,7 +32,7 @@ export function StateTabs({ stateContext, states, activeState, onChange }: State
             type="button"
             key={s}
             className={cn(
-              "text-[10px] font-semibold px-[10px] py-[3px] rounded-[10px] border border-[var(--brand-border-hairline)] bg-white text-tertiary cursor-pointer transition-all duration-150",
+              "text-xs font-semibold px-[10px] py-[3px] rounded-[10px] border border-[var(--brand-border-hairline)] bg-white text-tertiary cursor-pointer transition-all duration-150",
               activeState === s ? "bg-brand-solid text-white border-brand-solid" : "hover:bg-primary_hover hover:text-secondary"
             )}
             onClick={() => onChange(s)}
@@ -44,7 +44,7 @@ export function StateTabs({ stateContext, states, activeState, onChange }: State
       <div className={cn(activeState === 'default' && "!hidden")}>
         {activeState !== 'default' && stateContext[activeState]?.goal && (
           <>
-            <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-1">
+            <div className="text-xs font-bold uppercase text-brand-solid tracking-[0.5px] mb-1">
               Goal
             </div>
             <p id="state-goal-text" className="text-xs text-[#6B5E4F] leading-relaxed">
