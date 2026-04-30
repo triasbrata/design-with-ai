@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useImperativeHandle, useRef } from "react";
 
 interface PhoneFrameProps {
   src: string;
@@ -40,5 +40,4 @@ export const PhoneFrame = forwardRef<{ getIframe: () => HTMLIFrameElement | null
         />
       </div>
     );
-  },
-);
+  });

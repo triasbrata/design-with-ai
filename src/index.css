@@ -2883,3 +2883,51 @@ body {
   color: var(--brand-text);
   border-color: var(--brand-muted-light);
 }
+
+/* ── Marker Overlay ── */
+.marker-rect { pointer-events: auto; }
+.marker-label {
+  position: absolute; top: -20px; left: -1px;
+  font-size: 10px; font-weight: 600; color: #fff;
+  padding: 1px 6px; border-radius: 3px;
+  white-space: nowrap; max-width: 150px;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.marker-close {
+  position: absolute; top: -20px; right: -1px;
+  width: 16px; height: 16px; border: none;
+  border-radius: 50%; background: var(--brand-text);
+  color: #fff; font-size: 10px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.marker-tool-btn {
+  position: absolute; bottom: 8px; left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 14px; border-radius: 10px;
+  border: 1px solid var(--brand-border);
+  background: var(--brand-surface);
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px; font-weight: 700; cursor: pointer;
+  z-index: 20; color: var(--brand-muted);
+}
+.marker-tool-btn:hover { background: var(--brand-chip); }
+.marker-tool-btn.active {
+  background: var(--brand-accent); color: #fff;
+  border-color: var(--brand-accent);
+}
+
+/* Marker chips in drawer */
+.marker-chips { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+.marker-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: 8px;
+  background: var(--brand-chip); font-size: 11px;
+}
+.marker-chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.marker-chip-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.marker-chip-path { font-size: 9px; color: var(--brand-muted); }
+.marker-chip-remove {
+  border: none; background: none; cursor: pointer;
+  color: var(--brand-muted-light); font-size: 14px; padding: 0 2px;
+}
+.marker-chip-remove:hover { color: var(--brand-accent); }
