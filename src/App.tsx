@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import html2canvas from "html2canvas";
 import { useScreens } from "./hooks/useScreens";
 import { useDeviceScale } from "./hooks/useDeviceScale";
 import { useProjects } from "./hooks/useProjects";
@@ -14,6 +15,7 @@ import { ChatDrawer } from "./components/ChatDrawer";
 import { HelpModal } from "./components/HelpModal";
 import { ScanFoldersModal } from "./components/ScanFoldersModal";
 import { Toast } from "./components/Toast";
+import { FolderOpen } from "./components/base/icons";
 import { screenName, DEVICE_PRESETS, DEVICE_CYCLE } from "./constants";
 import type { DeviceMode } from "./constants";
 import type { CaptureResult, ClientProject, MarkerRect, MarkerContext, Metadata } from "./types";
@@ -30,12 +32,6 @@ import {
   dataUrlToBlob,
 } from "./hooks/useFileSystem";
 
-
-declare global {
-  interface Window {
-    html2canvas: (element: HTMLElement, options?: Record<string, unknown>) => Promise<HTMLCanvasElement>;
-  }
-}
 
 export default function App() {
   const {
@@ -413,13 +409,8 @@ export default function App() {
       : `phone_${currentScreen}_${activeState}.png`;
 
     try {
-      if (typeof window.html2canvas !== "function") {
-        show("html2canvas not loaded", false);
-        return;
-      }
-
       const preset = DEVICE_PRESETS[deviceMode];
-      const canvas = await window.html2canvas(iframe.contentDocument.body, {
+      const canvas = await html2canvas(iframe.contentDocument.body, {
         width: preset.width,
         height: preset.height,
         scale: 2,
@@ -654,6 +645,7 @@ export default function App() {
                         Click below to re-authorize.
                       </p>
                       <button
+                        type="button"
                         onClick={handleReauthorizeFs}
                         style={{
                           padding: "8px 20px",
@@ -678,9 +670,28 @@ export default function App() {
                       Loading screens from file system...
                     </p>
                   ) : (
-                    <p style={{ color: "var(--brand-muted)", fontSize: 14 }}>
-                      No screens found. Press \ to open workspace drawer and add a project.
-                    </p>
+                    <>
+                      <FolderOpen size={48} style={{ color: "var(--brand-muted)", opacity: 0.5 }} />
+                      <p style={{ color: "var(--brand-muted)", fontSize: 14 }}>
+                        No screens found. Press \ to open workspace drawer and add a project.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setLeftDrawerOpen(true)}
+                        style={{
+                          padding: "8px 20px",
+                          background: "var(--brand-accent)",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 6,
+                          cursor: "pointer",
+                          fontSize: 13,
+                          fontWeight: 500,
+                        }}
+                      >
+                        Open Workspace
+                      </button>
+                    </>
                   )}
                 </div>
               ) : isSummary ? (

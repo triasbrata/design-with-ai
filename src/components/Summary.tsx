@@ -55,9 +55,9 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
             <div className="lbl">States</div>
           </div>
           <div className="summary-stat">
-            <code className="num" style={{ fontSize: "16px" }}>
+            <span className="num">
               phone_{"{screen}"}.png
-            </code>
+            </span>
             <div className="lbl">Naming Convention</div>
           </div>
         </div>

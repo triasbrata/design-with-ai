@@ -83,7 +83,7 @@ export function ScanFoldersModal({ open, onClose, onAddFolders }: ScanFoldersMod
             <Search size={16} />
             Scan for projects
           </h3>
-          <button className="ld-close-btn" onClick={onClose} title="Close">
+          <button type="button" className="ld-close-btn" onClick={onClose} title="Close">
             <X size={14} />
           </button>
         </div>
@@ -106,10 +106,10 @@ export function ScanFoldersModal({ open, onClose, onAddFolders }: ScanFoldersMod
         {!loading && !error && folders.length > 0 && (
           <>
             <div className="sf-select-actions">
-              <button className="sf-select-btn" onClick={selectAll}>
+              <button type="button" className="sf-select-btn" onClick={selectAll}>
                 Select All
               </button>
-              <button className="sf-select-btn" onClick={deselectAll}>
+              <button type="button" className="sf-select-btn" onClick={deselectAll}>
                 Deselect All
               </button>
             </div>
@@ -137,10 +137,11 @@ export function ScanFoldersModal({ open, onClose, onAddFolders }: ScanFoldersMod
         )}
 
         <div className="sf-actions">
-          <button className="cm-btn cm-btn-cancel" onClick={onClose}>
+          <button type="button" className="cm-btn cm-btn-cancel" onClick={onClose}>
             Cancel
           </button>
           <button
+            type="button"
             className="cm-btn cm-btn-confirm"
             onClick={handleAdd}
             disabled={selected.size === 0}

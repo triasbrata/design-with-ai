@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import html2canvas from "html2canvas";
 import type { CaptureResult, Metadata } from "../types";
 import { DEVICE_PRESETS } from "../constants";
 import type { DeviceMode } from "../constants";
@@ -16,7 +17,6 @@ interface CaptureProgressProps {
 
 declare global {
   interface Window {
-    html2canvas: (element: HTMLElement, options?: Record<string, unknown>) => Promise<HTMLCanvasElement>;
     _captureStop?: boolean;
   }
 }
@@ -120,7 +120,7 @@ export function CaptureProgress({ screens, metadata, getScreenUrl, saveCapture, 
               throw new Error("iframe body not available");
             }
 
-            const canvas = await window.html2canvas(iframe.contentDocument.body, {
+            const canvas = await html2canvas(iframe.contentDocument.body, {
               width: preset.width,
               height: preset.height,
               scale: 2,

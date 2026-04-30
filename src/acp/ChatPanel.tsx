@@ -561,13 +561,14 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
               />
             </div>
           ) : (
-            <button className="chat-name-btn" onClick={() => setEditingName(true)}>
+            <button type="button" className="chat-name-btn" onClick={() => setEditingName(true)}>
               {chatName}
             </button>
           )}
         </div>
         <div className="chat-header-actions">
           <button
+            type="button"
             className="chat-header-btn"
             title="History"
             onClick={() => setSessionPanelOpen((prev) => !prev)}
@@ -591,7 +592,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
             )}
           </span>
           {onResetMarker && (
-            <button className="chat-marker-banner-close" onClick={onResetMarker} title="Clear marker">
+            <button type="button" className="chat-marker-banner-close" onClick={onResetMarker} title="Clear marker">
               <X size={14} />
             </button>
           )}
@@ -644,6 +645,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
             {/* Approval Mode */}
             <div className="chat-chip-wrapper">
               <button
+                type="button"
                 className="chat-chip"
                 onClick={(e) => openDropdown('approval', e)}
                 data-dropdown-trigger="approval"
@@ -657,6 +659,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
             {/* Model Selector */}
             <div className="chat-chip-wrapper">
               <button
+                type="button"
                 className="chat-chip"
                 onClick={(e) => openDropdown('model', e)}
                 data-dropdown-trigger="model"
@@ -670,6 +673,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
             {/* Reasoning Effort */}
             <div className="chat-chip-wrapper">
               <button
+                type="button"
                 className="chat-chip"
                 onClick={(e) => openDropdown('reasoning', e)}
                 data-dropdown-trigger="reasoning"
@@ -682,10 +686,11 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
           </div>
 
           <div className="chat-control-right">
-            <button className="chat-icon-btn" title="Attach files">
+            <button type="button" className="chat-icon-btn" title="Attach files">
               <Paperclip size={20} />
             </button>
             <button
+              type="button"
               className="chat-send-btn"
               onClick={() => send(input)}
               disabled={!input.trim() || loading}
@@ -706,6 +711,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
         >
           {APPROVAL_OPTIONS.map((opt) => (
             <button
+              type="button"
               key={opt.value}
               className={`chat-approval-item${approvalMode === opt.value ? ' selected' : ''}`}
               onClick={() => {
@@ -753,6 +759,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
               />
               {modelSearch && (
                 <button
+                  type="button"
                   className="chat-model-search-clear"
                   onClick={() => setModelSearch('')}
                   tabIndex={-1}
@@ -793,6 +800,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
                 </div>
                 {filtered.map((m) => (
                   <button
+                    type="button"
                     key={m.id}
                     className={`chat-model-item${model === m.id ? ' selected' : ''}`}
                     onClick={() => {
@@ -822,6 +830,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
         >
           {REASONING_OPTIONS.map((opt) => (
             <button
+              type="button"
               key={opt.value}
               className={`chat-reasoning-item${reasoningEffort === opt.value ? ' selected' : ''}`}
               onClick={() => {

@@ -6,7 +6,7 @@ interface ChatDrawerProps {
   onToggle: () => void;
   pinned: boolean;
   onPinToggle: () => void;
-  children?: ReactNode;
+  children: ReactNode;
 }
 
 export function ChatDrawer({ open, onToggle, pinned, onPinToggle, children }: ChatDrawerProps) {
@@ -26,30 +26,26 @@ export function ChatDrawer({ open, onToggle, pinned, onPinToggle, children }: Ch
   return (
     <>
       <div className="cd-trigger">
-        <button className="burger-btn" onClick={onToggle} aria-label="Toggle chat">
+        <button className="burger-btn" onClick={onToggle} type="button" aria-expanded={open} aria-label="Toggle chat">
           <MessageCircle size={18} />
         </button>
       </div>
-      <aside ref={drawerRef} className={`chat-drawer${open ? " open" : ""}`}>
+      <aside ref={drawerRef} className={`chat-drawer${open ? " open" : ""}`} aria-hidden={!open}>
         <div className="chat-drawer-inner">
           <div className="rd-drawer-header">
             <button
+              type="button"
               className={`ld-pin-btn${pinned ? " pinned" : ""}`}
               onClick={onPinToggle}
               title={pinned ? "Switch to floating overlay" : "Pin (push mode)"}
             >
               <Pin size={14} />
             </button>
-            <button className="ld-close-btn" onClick={onToggle} title="Close drawer">
+            <button type="button" className="ld-close-btn" onClick={onToggle} title="Close drawer">
               <X size={14} />
             </button>
           </div>
-          {children || (
-            <>
-              <h3>AI Chat</h3>
-              <p className="sub">AI Chat panel — coming soon</p>
-            </>
-          )}
+          {children}
         </div>
       </aside>
     </>

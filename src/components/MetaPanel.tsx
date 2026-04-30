@@ -39,6 +39,12 @@ export function MetaPanel({ meta, screen, activeState, onStateChange }: MetaPane
         <p id="meta-desc">{description}</p>
       </div>
 
+      {activeCtx?.goal && (
+        <div className="state-goal">
+          <p>{activeCtx.goal}</p>
+        </div>
+      )}
+
       <div className="meta-section">
         <div className="meta-label">Purpose</div>
         <p id="meta-purpose">{purpose}</p>

@@ -196,6 +196,7 @@ export function ProjectSelector({
 
       {/* Trigger */}
       <button
+        type="button"
         className="ps-trigger"
         onClick={() => setOpen((p) => !p)}
         title="Switch project / folder"
@@ -219,6 +220,7 @@ export function ProjectSelector({
                   <span className="ps-ws-name">{p.name}</span>
                   {projects.length > 1 && (
                     <button
+                      type="button"
                       className="ps-item-remove"
                       onClick={() => onRemoveProject(pi)}
                       title="Remove workspace"
@@ -233,6 +235,7 @@ export function ProjectSelector({
                   const isActive = pi === activeIndex && fi === p.activeFolder;
                   return (
                     <button
+                      type="button"
                       key={`folder-${fi}`}
                       className={`ps-item${isActive ? " active" : ""}`}
                       onClick={() => {
@@ -257,6 +260,7 @@ export function ProjectSelector({
                       </span>
                       {p.folders.length > 1 && (
                         <button
+                          type="button"
                           className="ps-item-remove"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -273,6 +277,7 @@ export function ProjectSelector({
                 })}
 
                 <button
+                  type="button"
                   className="ps-add-btn ps-add-btn-sub"
                   onClick={() => {
                     openAddFolder(pi);
@@ -285,6 +290,7 @@ export function ProjectSelector({
             ) : (
               /* ── Client project (flat item) ── */
               <button
+                type="button"
                 key={`client-${pi}`}
                 className={`ps-item${pi === activeIndex ? " active" : ""}`}
                 onClick={() => {
@@ -300,6 +306,7 @@ export function ProjectSelector({
                 {pi === activeIndex && <Check size={14} className="ps-item-check" />}
                 {projects.length > 1 && (
                   <button
+                    type="button"
                     className="ps-item-remove"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -319,6 +326,7 @@ export function ProjectSelector({
 
           {/* New Workspace */}
           <button
+            type="button"
             className="ps-add-btn"
             onClick={() => {
               setOpen(false);
@@ -332,6 +340,7 @@ export function ProjectSelector({
 
           {/* Browse Folder */}
           <button
+            type="button"
             className="ps-add-btn"
             onClick={() => {
               setOpen(false);

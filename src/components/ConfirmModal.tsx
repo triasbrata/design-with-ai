@@ -38,14 +38,15 @@ export function ConfirmModal({
 
   return (
     <div className="cm-overlay" onClick={onCancel}>
-      <div className="cm-card" onClick={(e) => e.stopPropagation()}>
+      <div className="cm-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="cm-title">{title}</div>
         <div className="cm-message">{message}</div>
         <div className="cm-actions">
-          <button className="cm-btn cm-btn-cancel" onClick={onCancel}>
+          <button type="button" className="cm-btn cm-btn-cancel" onClick={onCancel}>
             {cancelLabel}
           </button>
           <button
+            type="button"
             ref={confirmRef}
             className={`cm-btn cm-btn-confirm${variant === "danger" ? " danger" : ""}`}
             onClick={onConfirm}

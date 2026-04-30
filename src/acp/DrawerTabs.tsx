@@ -62,6 +62,7 @@ function TabButton({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       style={{
         flex: 1,

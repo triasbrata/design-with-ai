@@ -17,6 +17,7 @@ export function StateTabs({ stateContext, states, activeState, onChange }: State
     <>
       <div className="state-tabs">
         <button
+          type="button"
           className={`state-tab${activeState === 'default' ? ' active' : ''}`}
           onClick={() => onChange('default')}
         >
@@ -24,6 +25,7 @@ export function StateTabs({ stateContext, states, activeState, onChange }: State
         </button>
         {availableStates.map((s) => (
           <button
+            type="button"
             key={s}
             className={`state-tab${activeState === s ? ' active' : ''}`}
             onClick={() => onChange(s)}

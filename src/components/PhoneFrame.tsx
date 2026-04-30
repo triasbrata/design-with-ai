@@ -17,6 +17,14 @@ export const PhoneFrame = forwardRef<{ getIframe: () => HTMLIFrameElement | null
 
     return (
       <div className="frame-wrapper" style={{ width: `${width}px`, height: `${height}px` }}>
+        {/*
+          sandbox="allow-scripts allow-same-origin" is required:
+          - allow-scripts: enables the spec HTML to run its baseline contract JS
+          - allow-same-origin: needed for postMessage communication between
+            the parent viewer and the spec HTML (setState contract).
+            Without allow-same-origin, the iframe's contentWindow is null,
+            breaking the entire state-switching mechanism.
+        */}
         <iframe
           ref={iframeRef}
           src={src}

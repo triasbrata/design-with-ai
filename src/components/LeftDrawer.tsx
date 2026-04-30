@@ -327,21 +327,22 @@ export function LeftDrawer({
   return (
     <>
       <div className="ld-trigger">
-        <button className="burger-btn" onClick={onToggle} aria-label="Toggle workspace">
+        <button type="button" className="burger-btn" onClick={onToggle} aria-expanded={open} aria-label="Toggle workspace">
           <Menu size={18} />
         </button>
       </div>
-      <aside ref={drawerRef} className={open ? `left-drawer${pinned ? " push" : " floating"} open` : "left-drawer"}>
+      <aside ref={drawerRef} className={open ? `left-drawer${pinned ? " push" : " floating"} open` : "left-drawer"} aria-hidden={!open}>
         <div className="left-drawer-inner">
           <div className="ld-drawer-header">
             <button
+              type="button"
               className={`ld-pin-btn${pinned ? " pinned" : ""}`}
               onClick={onPinToggle}
               title={pinned ? "Switch to floating overlay" : "Pin (push mode)"}
             >
               <Pin size={14} />
             </button>
-            <button className="ld-close-btn" onClick={onToggle} title="Close drawer">
+            <button type="button" className="ld-close-btn" onClick={onToggle} title="Close drawer">
               <X size={14} />
             </button>
           </div>
@@ -360,21 +361,22 @@ export function LeftDrawer({
                       if (e.key === "Escape") handleCancelCreate();
                     }}
                   />
-                  <button className="ld-inline-confirm" onClick={handleSubmitCreate}>
+                  <button type="button" className="ld-inline-confirm" onClick={handleSubmitCreate}>
                     <Check size={14} />
                   </button>
-                  <button className="ld-inline-cancel" onClick={handleCancelCreate}>
+                  <button type="button" className="ld-inline-cancel" onClick={handleCancelCreate}>
                     <X size={14} />
                   </button>
                 </div>
               ) : (
-                <button className="ld-add-workspace" onClick={() => setShowCreateForm(true)}>
+                <button type="button" className="ld-add-workspace" onClick={() => setShowCreateForm(true)}>
                   <Plus size={14} />
                   Add Workspace
                 </button>
               )}
               {onScanProjects && !showCreateForm && (
                 <button
+                  type="button"
                   className="ld-add-workspace"
                   onClick={onScanProjects}
                   style={{ marginTop: 4 }}
@@ -393,6 +395,7 @@ export function LeftDrawer({
               return (
                 <div className="ld-section" key={`ws-${pi}`}>
                   <button
+                    type="button"
                     className="ld-section-header"
                     onClick={() => toggle(pi)}
                     onContextMenu={(e) => handleContextMenu(e, pi, "workspace")}
@@ -422,6 +425,7 @@ export function LeftDrawer({
                       >{truncateName(project.name)}</span>
                     )}
                     <button
+                      type="button"
                       className="ld-folder-add"
                       title="Add folder"
                       onMouseDown={(e) => e.stopPropagation()}
@@ -458,6 +462,7 @@ export function LeftDrawer({
                             />
                             {fsIsSupported() ? (
                               <button
+                                type="button"
                                 className="ld-folder-browse"
                                 onClick={handlePickFolderNative}
                                 title="Pick folder using native file picker (persistent, survives reload)"
@@ -466,6 +471,7 @@ export function LeftDrawer({
                               </button>
                             ) : (
                               <button
+                                type="button"
                                 className="ld-folder-browse"
                                 onClick={() => folderFileInputRef.current?.click()}
                               >
@@ -506,10 +512,11 @@ export function LeftDrawer({
                             </>
                           ) : null}
                           <div className="ld-folder-create-actions">
-                            <button className="ld-inline-cancel" onClick={handleCancelFolder}>
+                            <button type="button" className="ld-inline-cancel" onClick={handleCancelFolder}>
                               <X size={14} />
                             </button>
                             <button
+                              type="button"
                               className="ld-inline-confirm"
                               onClick={handleSubmitFolder}
                               {...(fsIsSupported() && !folderForm.inputHandleId ? { style: { opacity: 0.4 } as React.CSSProperties, title: "Pick a folder first" } : {})}
@@ -580,6 +587,7 @@ export function LeftDrawer({
                                 <span className={`ld-source-badge ${fileSourceType}`}>{fileSourceLabel}</span>
                               )}
                               <button
+                                type="button"
                                 className="ld-folder-delete"
                                 title="Delete folder"
                                 onMouseDown={(e) => e.stopPropagation()}
@@ -609,6 +617,7 @@ export function LeftDrawer({
                                       </div>
                                       {tierScreens.map((s) => (
                                         <button
+                                          type="button"
                                           key={s}
                                           className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
                                           onClick={() => {
@@ -645,6 +654,7 @@ export function LeftDrawer({
             return (
               <div className="ld-section" key={`client-${pi}`}>
                 <button
+                  type="button"
                   className="ld-section-header"
                   onClick={() => {
                     if (!isActiveWs) onSetActive(pi);
@@ -670,6 +680,7 @@ export function LeftDrawer({
                           </div>
                           {tierScreens.map((s) => (
                             <button
+                              type="button"
                               key={s}
                               className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
                               onClick={() => {
@@ -728,22 +739,22 @@ export function LeftDrawer({
         >
           {contextMenu.type === "workspace" ? (
             <>
-              <button className="ld-context-item" onClick={handleRenameFromMenu}>
+              <button type="button" className="ld-context-item" onClick={handleRenameFromMenu}>
                 Rename
               </button>
-              <button className="ld-context-item" onClick={handleAddFolderFromMenu}>
+              <button type="button" className="ld-context-item" onClick={handleAddFolderFromMenu}>
                 Add Folder
               </button>
-              <button className="ld-context-item danger" onClick={handleRemoveProjectFromMenu}>
+              <button type="button" className="ld-context-item danger" onClick={handleRemoveProjectFromMenu}>
                 Close Project
               </button>
             </>
           ) : (
             <>
-              <button className="ld-context-item" onClick={handleRenameFromMenu}>
+              <button type="button" className="ld-context-item" onClick={handleRenameFromMenu}>
                 Rename
               </button>
-              <button className="ld-context-item danger" onClick={handleRemoveFolderFromMenu}>
+              <button type="button" className="ld-context-item danger" onClick={handleRemoveFolderFromMenu}>
                 Delete Folder
               </button>
             </>

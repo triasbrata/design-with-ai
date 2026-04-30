@@ -1,0 +1,49 @@
+[     158ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:4200/node_modules/.vite/deps/chunk-CMSQVTYY.js?v=8ec620b5:21608
+[     233ms] [ERROR] Warning: validateDOMNesting(...): %s cannot appear as a descendant of <%s>.%s <button> button 
+    at button
+    at button
+    at div
+    at div
+    at aside
+    at LeftDrawer (http://localhost:4200/src/components/LeftDrawer.tsx:24:3)
+    at div
+    at App (http://localhost:4200/src/App.tsx:61:7) @ http://localhost:4200/node_modules/.vite/deps/chunk-CMSQVTYY.js?v=8ec620b5:520
+[     286ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/favicon.ico:0
+[     411ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/record_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     412ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/record_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     413ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/transaction_list_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     415ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/transaction_list_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     415ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/add_transaction_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     416ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/add_transaction_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     417ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/wizard_add_transaction_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     418ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/wizard_add_transaction_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     419ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/bills_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     420ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/bills_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     421ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/report_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     422ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/report_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     422ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/assets_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     423ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/assets_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     424ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/category_manager_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     426ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/category_manager_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     426ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/add_category_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     427ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/add_category_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     427ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/pocket_manager_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     428ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/pocket_manager_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     429ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/add_pocket_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     429ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/add_pocket_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     430ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/ledger_manager_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     431ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/add_ledger_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     432ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/settings_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     432ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/ledger_manager_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     434ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/theme_customizer_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     435ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/add_ledger_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     438ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/security_settings_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     438ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/settings_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     439ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/pin_setup_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     440ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/theme_customizer_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     441ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/floating_bottom_nav_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     441ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/security_settings_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     443ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/user_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     443ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/pin_setup_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     444ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/floating_bottom_nav_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0
+[     445ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4200/screens/user_screen_spec_spec.html?dir=..%2F..%2Fdocs%2Fmoneykitty%2Fdesign%2Fgolden%2F:0

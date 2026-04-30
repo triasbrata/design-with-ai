@@ -1,0 +1,78 @@
+- generic [ref=e3]:
+  - button "Toggle workspace" [ref=e5] [cursor=pointer]:
+    - img [ref=e6]
+  - complementary [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - button "Pin (push mode)" [ref=e10] [cursor=pointer]:
+          - img [ref=e11]
+        - button "Close drawer" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+      - button "Add Workspace" [ref=e17] [cursor=pointer]:
+        - img [ref=e18]
+        - text: Add Workspace
+      - button "Scan for projects" [ref=e19] [cursor=pointer]:
+        - img [ref=e20]
+        - text: Scan for projects
+      - generic [ref=e23]:
+        - button "MoneyKitty" [ref=e24]:
+          - img [ref=e25]
+          - text: MoneyKitty
+          - button "Add folder" [ref=e27] [cursor=pointer]:
+            - img [ref=e28]
+          - img [ref=e30]
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - img [ref=e36] [cursor=pointer]
+            - img [ref=e38]
+            - text: Main Screens
+            - generic [ref=e40]: Local Server
+            - button "Delete folder" [ref=e41] [cursor=pointer]:
+              - img [ref=e42]
+          - generic [ref=e47]: No screens found
+  - paragraph [ref=e51]: No screens found. Press \ to open workspace drawer and add a project.
+  - button "Toggle chat" [ref=e53] [cursor=pointer]:
+    - img [ref=e54]
+  - complementary [ref=e56]:
+    - generic [ref=e57]:
+      - generic [ref=e58]:
+        - button "Pin (push mode)" [ref=e59] [cursor=pointer]:
+          - img [ref=e60]
+        - button "Close drawer" [ref=e62] [cursor=pointer]:
+          - img [ref=e63]
+      - generic [ref=e66]:
+        - generic [ref=e67]:
+          - button "Chat with AI" [ref=e68] [cursor=pointer]
+          - button "Agent" [ref=e69] [cursor=pointer]
+        - generic [ref=e70]:
+          - generic [ref=e71]:
+            - button "New Chat" [ref=e73] [cursor=pointer]
+            - button "History" [ref=e75] [cursor=pointer]:
+              - img [ref=e76]
+          - generic [ref=e80]:
+            - img [ref=e82]
+            - generic [ref=e84]: Start a conversation
+            - generic [ref=e85]: Ask anything to get started
+          - generic [ref=e86]:
+            - generic [ref=e87]:
+              - textbox "Ask to make changes, @mention files, run /commands" [ref=e88]
+              - generic: ⌘J to focus
+            - generic [ref=e89]:
+              - generic [ref=e90]:
+                - button "Auto" [ref=e92] [cursor=pointer]:
+                  - img [ref=e93]
+                  - generic [ref=e97]: Auto
+                  - img [ref=e98]
+                - button "Opus 4.7" [ref=e101] [cursor=pointer]:
+                  - img [ref=e102]
+                  - generic [ref=e105]: Opus 4.7
+                  - img [ref=e106]
+                - button "Max" [ref=e109] [cursor=pointer]:
+                  - img [ref=e110]
+                  - generic [ref=e122]: Max
+                  - img [ref=e123]
+              - generic [ref=e125]:
+                - button "Attach files" [ref=e126] [cursor=pointer]:
+                  - img [ref=e127]
+                - button "Send" [disabled] [ref=e129]:
+                  - img [ref=e130]

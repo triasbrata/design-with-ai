@@ -95,24 +95,25 @@ export function BottomBar({
       <div className="pill pill-info">
         <NameDisplay projectName={projectName} name={name} />
         <span className="bar-spacer" />
-        <button className="bar-nav-btn" onClick={onPrev} disabled={index === 0}>
+        <button type="button" className="bar-nav-btn" onClick={onPrev} disabled={index === 0}>
           <ChevronLeft size={16} />
         </button>
         <span className="bar-pos">
           {index + 1} / {total}
         </span>
-        <button className="bar-nav-btn" onClick={onNext}>
+        <button type="button" className="bar-nav-btn" onClick={onNext}>
           <ChevronRight size={16} />
         </button>
       </div>
 
       {/* Tools pill — bottom-center */}
-      <div className="pill pill-tools">
+      <div className="pill pill-tools" role="toolbar">
         {tools.map((tool) => {
           if (tool.id === "device") {
             return (
               <div className="device-menu-wrapper" ref={deviceMenuRef} key="device">
                 <button
+                  type="button"
                   className="dock-tool active"
                   data-tooltip={tool.tooltip}
                   onClick={() => setDeviceMenuOpen((prev) => !prev)}
@@ -127,6 +128,7 @@ export function BottomBar({
                       const preset = DEVICE_PRESETS[mode];
                       return (
                         <button
+                          type="button"
                           key={mode}
                           className={`device-option${mode === deviceMode ? " active" : ""}`}
                           onClick={() => {
@@ -149,6 +151,7 @@ export function BottomBar({
           }
           return (
             <button
+              type="button"
               key={tool.id}
               className={`dock-tool${activeTool === tool.id ? " active" : ""}`}
               data-tooltip={tool.tooltip}
@@ -165,6 +168,7 @@ export function BottomBar({
       {/* Help pill — bottom-right */}
       <div className="pill pill-help">
         <button
+          type="button"
           className={`dock-tool${activeTool === "help" ? " active" : ""}`}
           data-tooltip="Keyboard shortcuts"
           onClick={() => {

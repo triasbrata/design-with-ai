@@ -98,6 +98,7 @@ export function SessionPanel({
                   </span>
                 )}
                 <button
+                  type="button"
                   className="sp-item-delete"
                   title="Delete session"
                   onClick={(e) => {
@@ -115,7 +116,7 @@ export function SessionPanel({
       </div>
 
       {/* New Chat button */}
-      <button className="sp-new-btn" onClick={onNew}>
+      <button type="button" className="sp-new-btn" onClick={onNew}>
         <Plus size={16} />
         <span>New Chat</span>
       </button>
