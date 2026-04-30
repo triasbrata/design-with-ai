@@ -25,6 +25,7 @@ export {
   Loader2,
   Menu,
   MessageCircle,
+  Minus,
   Monitor,
   PanelLeft,
   PanelRightOpen,
