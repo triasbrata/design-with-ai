@@ -3,6 +3,7 @@ import html2canvas from "html2canvas";
 import type { CaptureResult, Metadata } from "../types";
 import { DEVICE_PRESETS } from "../constants";
 import type { DeviceMode } from "../constants";
+import { cn } from "../lib/cn";
 import { Button } from "./base";
 import { X, Check, Loader2 } from "./base/icons";
 
@@ -196,7 +197,7 @@ export function CaptureProgress({ screens, metadata, getScreenUrl, saveCapture, 
         }}
       >
         {resultsLog.map((r, i) => (
-          <div key={i} className={r.ok ? "cap-result-ok" : "cap-result-err"}>
+          <div key={i} className={cn(r.ok ? "text-[var(--state-success-text)] text-[10px]" : "text-brand-solid text-[10px]")} style={{ padding: "1px 0" }}>
             {r.ok ? <Check size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> : <X size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} />}{" "}
             {r.filename}
             {r.error ? ` \u2014 ${r.error}` : ""}

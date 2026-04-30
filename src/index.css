@@ -640,48 +640,6 @@ body {
   color: var(--state-warn-text);
 }
 
-/* ── State Tabs ── */
-.state-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-  margin-bottom: 6px;
-}
-.state-tab {
-  font-family: 'Nunito', system-ui, sans-serif;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--brand-border-hairline);
-  background: #fff;
-  color: var(--brand-muted);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.state-tab:hover {
-  background: var(--brand-chip);
-  color: var(--brand-text);
-}
-.state-tab.active {
-  background: var(--brand-accent);
-  color: #fff;
-  border-color: var(--brand-accent);
-}
-
-.state-goal {
-  margin-top: 8px;
-  padding: 8px;
-  background: var(--state-goal-bg);
-  border-radius: 8px;
-  border-left: 3px solid var(--brand-accent);
-}
-.state-goal p {
-  font-size: 11px;
-  color: #6B5E4F;
-  line-height: 1.4;
-}
-
 /* ── Summary ── */
 .summary-stats {
   display: flex;
@@ -928,27 +886,6 @@ body {
 .device-option.active .device-shortcut {
   color: rgba(255,255,255,0.7);
 }
-/* ── Toast ── */
-.toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--brand-text);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 8px 20px;
-  border-radius: 10px;
-  opacity: 0;
-  transition: opacity 0.25s;
-  pointer-events: none;
-  z-index: var(--z-toast);
-}
-.toast.show { opacity: 1; }
-.toast.ok { background: var(--state-success-text); }
-.toast.err { background: var(--brand-accent); }
-
 /* ── Modal ── */
 .modal-overlay {
   position: fixed;
@@ -992,10 +929,6 @@ body {
   color: var(--brand-muted);
 }
 
-/* ── Capture Progress ── */
-.cap-result-ok { font-size: 10px; color: var(--state-success-text); padding: 1px 0; }
-.cap-result-err { font-size: 10px; color: var(--brand-accent); padding: 1px 0; }
-
 /* ── Footer nav ── */
 .footer-nav {
   display: flex;
@@ -1030,43 +963,7 @@ body {
   flex: 1;
 }
 
-/* ── Confirm Modal ── */
-.cm-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-confirm-modal);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(4px);
-}
-.cm-card {
-  background: var(--brand-surface);
-  border-radius: 14px;
-  padding: 24px;
-  max-width: 360px;
-  width: 90%;
-  box-shadow: 0 16px 48px var(--brand-shadow-heavy);
-}
-.cm-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--brand-text);
-  margin-bottom: 8px;
-}
-.cm-message {
-  font-size: 13px;
-  color: var(--brand-muted);
-  line-height: 1.5;
-  margin-bottom: 20px;
-  white-space: pre-wrap;
-}
-.cm-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
+/* ── Confirm Modal (kept for ScanFoldersModal ref) ── */
 .cm-btn {
   padding: 8px 16px;
   border-radius: 8px;
@@ -1076,24 +973,6 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
-}
-.cm-btn-cancel {
-  background: var(--brand-chip);
-  color: var(--brand-muted);
-}
-.cm-btn-cancel:hover {
-  background: var(--brand-border);
-}
-.cm-btn-confirm {
-  background: var(--brand-accent);
-  color: #fff;
-}
-.cm-btn-confirm:hover {
-  background: var(--brand-accent-hover);
-}
-.cm-btn-confirm.danger {
-  background: var(--brand-accent);
-  color: #fff;
 }
 
 /* ── Left Drawer Add Workspace ── */

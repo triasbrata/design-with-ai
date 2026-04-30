@@ -1,3 +1,4 @@
+import { cn } from "../lib/cn";
 import type { StateContext } from '../types';
 
 interface StateTabsProps {
@@ -15,10 +16,13 @@ export function StateTabs({ stateContext, states, activeState, onChange }: State
 
   return (
     <>
-      <div className="state-tabs">
+      <div className="flex flex-wrap gap-[3px] mb-1.5">
         <button
           type="button"
-          className={`state-tab${activeState === 'default' ? ' active' : ''}`}
+          className={cn(
+            "text-[10px] font-semibold px-[10px] py-[3px] rounded-[10px] border border-[var(--brand-border-hairline)] bg-white text-tertiary cursor-pointer transition-all duration-150",
+            activeState === 'default' ? "bg-brand-solid text-white border-brand-solid" : "hover:bg-primary_hover hover:text-secondary"
+          )}
           onClick={() => onChange('default')}
         >
           Overview
@@ -27,18 +31,25 @@ export function StateTabs({ stateContext, states, activeState, onChange }: State
           <button
             type="button"
             key={s}
-            className={`state-tab${activeState === s ? ' active' : ''}`}
+            className={cn(
+              "text-[10px] font-semibold px-[10px] py-[3px] rounded-[10px] border border-[var(--brand-border-hairline)] bg-white text-tertiary cursor-pointer transition-all duration-150",
+              activeState === s ? "bg-brand-solid text-white border-brand-solid" : "hover:bg-primary_hover hover:text-secondary"
+            )}
             onClick={() => onChange(s)}
           >
             {stateContext[s].label}
           </button>
         ))}
       </div>
-      <div id="state-goal" className={activeState === 'default' ? 'hidden' : ''}>
+      <div className={cn(activeState === 'default' && "!hidden")}>
         {activeState !== 'default' && stateContext[activeState]?.goal && (
           <>
-            <div className="meta-label">Goal</div>
-            <p id="state-goal-text">{stateContext[activeState].goal}</p>
+            <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-1">
+              Goal
+            </div>
+            <p id="state-goal-text" className="text-xs text-[#6B5E4F] leading-relaxed">
+              {stateContext[activeState].goal}
+            </p>
           </>
         )}
       </div>
