@@ -40,8 +40,8 @@ export function ChatDrawer({ open, onToggle, pinned, onPinToggle, children }: Ch
         style={{ width: open ? 'var(--sidebar-width)' : 0 }}
         aria-hidden={!open}
       >
-        <div className="w-[var(--sidebar-width)] h-full flex flex-col p-4">
-          <div className="flex justify-end px-3 pt-2 pb-1">
+        <div className="w-[var(--sidebar-width)] h-full flex flex-col">
+          <div className="flex justify-end px-4 pt-3 pb-1">
             <button
               type="button"
               className={cn(
