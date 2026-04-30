@@ -71,6 +71,7 @@ export function MarkerOverlay({ active, rect, screen, activeState, onMark, scale
 
   return (
     <div
+      data-caid="marker-overlay"
       ref={overlayRef}
       className={cn(
           "absolute inset-0 z-10",

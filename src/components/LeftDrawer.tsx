@@ -383,7 +383,7 @@ export function LeftDrawer({
   );
 
   return (
-    <>
+    <div data-caid="left-drawer">
       <div className="left-drawer-trigger">
         <button className="burger-btn" onClick={onToggle} aria-label="Toggle workspace">
           <Menu size={18} />
@@ -815,6 +815,6 @@ export function LeftDrawer({
         folders={scanResults || []}
         existingPaths={existingPaths}
       />
-    </>
+    </div>
   );
 }

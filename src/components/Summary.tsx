@@ -33,7 +33,7 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
   }
 
   return (
-    <div style={{ width: "100%" }}>
+    <div data-caid="summary" style={{ width: "100%" }}>
       <div className="flex items-center gap-2.5 px-14 py-2.5">
         <Button color="secondary" size="sm" onClick={onBack} iconLeading={<ArrowLeft size={18} />}>
           Back

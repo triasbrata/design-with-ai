@@ -15,7 +15,7 @@ export function StateTabs({ stateContext, states, activeState, onChange }: State
       : Object.keys(stateContext);
 
   return (
-    <>
+    <div data-caid="state-tabs">
       <div className="flex flex-wrap gap-2 mb-3">
         <button
           type="button"
@@ -44,6 +44,6 @@ export function StateTabs({ stateContext, states, activeState, onChange }: State
       <div className={cn("mt-2", activeState === 'default' && "!hidden")}>
         {/* goal moved to MetaPanel */}
       </div>
-    </>
+    </div>
   );
 }

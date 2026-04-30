@@ -77,7 +77,7 @@ export function Viewer({
   }, [activeState, screen, getScreenUrl]);
 
   return (
-    <>
+    <div data-caid="viewer">
       <div className={cn("flex gap-5 px-4 py-3 flex-1 items-start justify-center w-full", "max-[1100px]:flex-col max-[1100px]:items-center")}>
         <div
           className="relative overflow-hidden shrink-0 transition-[width,height] duration-200 ease-linear rounded-sm"
@@ -117,6 +117,6 @@ export function Viewer({
           onStateChange={(s) => onStateChange(screen, s)}
         />
       </div>
-    </>
+    </div>
   );
 }

@@ -37,7 +37,7 @@ export function ConfirmModal({
   if (!open) return null;
 
   return (
-    <div className="cm-overlay" onClick={onCancel}>
+    <div data-caid="confirm-modal" className="cm-overlay" onClick={onCancel}>
       <div className="cm-card" onClick={(e) => e.stopPropagation()}>
         <div className="cm-title">{title}</div>
         <div className="cm-message">{message}</div>

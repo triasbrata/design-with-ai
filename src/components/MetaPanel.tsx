@@ -19,7 +19,7 @@ export function MetaPanel({ meta, screen, activeState, onStateChange }: MetaPane
   const purpose = meta.purpose;
 
   return (
-    <div className="flex-1 min-w-[200px] max-w-[340px] bg-bg-surface rounded-2xl p-4 shadow-brand-sm self-start max-h-[calc(100vh-80px)] overflow-y-auto flex flex-col gap-4">
+    <div data-caid="meta-panel" className="flex-1 min-w-[200px] max-w-[340px] bg-bg-surface rounded-2xl p-4 shadow-brand-sm self-start max-h-[calc(100vh-80px)] overflow-y-auto flex flex-col gap-4">
       {hasStateContext && (
         <div>
           <div className="text-xs font-bold uppercase text-brand-solid tracking-[0.5px] mb-3">

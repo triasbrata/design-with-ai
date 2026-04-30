@@ -54,7 +54,7 @@ export function ScreenMenu({ screens, activeScreen, onSelect, open, onToggle }: 
   }
 
   return (
-    <div className="menu-wrapper" ref={menuRef}>
+    <div data-caid="screen-menu" className="menu-wrapper" ref={menuRef}>
       <button className="burger-btn" onClick={onToggle} aria-label="Screens menu">
         <Menu size={18} />
       </button>

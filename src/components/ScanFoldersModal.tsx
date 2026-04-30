@@ -76,7 +76,7 @@ export function ScanFoldersModal({ open, onClose, onAddFolders }: ScanFoldersMod
   if (!open) return null;
 
   return (
-    <div className="sf-overlay" onClick={onClose}>
+    <div data-caid="scan-folders-modal" className="sf-overlay" onClick={onClose}>
       <div className="sf-modal" onClick={(e) => e.stopPropagation()}>
         <div className="sf-header">
           <h3>

@@ -17,6 +17,7 @@ export const PhoneFrame = forwardRef<{ getIframe: () => HTMLIFrameElement | null
 
     return (
       <div
+        data-caid="phone-frame"
         className="shrink-0 rounded-[28px] shadow-brand-lg overflow-hidden bg-white"
         style={{ width: `${width}px`, height: `${height}px` }}
       >

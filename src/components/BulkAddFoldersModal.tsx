@@ -62,7 +62,7 @@ export function BulkAddFoldersModal({
   if (!open) return null;
 
   return (
-    <div className="sf-overlay" onClick={onClose}>
+    <div data-caid="bulk-add-folders-modal" className="sf-overlay" onClick={onClose}>
       <div className="sf-modal" onClick={(e) => e.stopPropagation()}>
         <div className="sf-header">
           <h3>Related Golden Specs</h3>

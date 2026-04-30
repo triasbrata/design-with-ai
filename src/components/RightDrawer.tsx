@@ -24,7 +24,7 @@ export function RightDrawer({ open, onToggle, pinned, onPinToggle, children }: R
   }, [open, onToggle, pinned]);
 
   return (
-    <>
+    <div data-caid="right-drawer">
       <div className="drawer-trigger">
         <button className="burger-btn" onClick={onToggle} aria-label="Toggle chat">
           <MessageCircle size={18} />
@@ -40,6 +40,6 @@ export function RightDrawer({ open, onToggle, pinned, onPinToggle, children }: R
           {children}
         </div>
       </aside>
-    </>
+    </div>
   );
 }

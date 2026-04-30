@@ -183,7 +183,7 @@ export function ProjectSelector({
       : activeProject?.name ?? "Project";
 
   return (
-    <div className="relative inline-block" ref={dropdownRef}>
+    <div data-caid="project-selector" className="relative inline-block" ref={dropdownRef}>
       {/* Hidden file input for native folder picker */}
       <input
         ref={fileInputRef}
