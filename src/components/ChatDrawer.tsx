@@ -27,7 +27,7 @@ export function ChatDrawer({ open, onToggle, pinned, onPinToggle, children }: Ch
   return (
     <>
       <div className="fixed top-3 right-3 z-[var(--z-drawer-trigger)]">
-        <button className="burger-btn" onClick={onToggle} type="button" aria-expanded={open} aria-label="Toggle chat">
+        <button className="w-8 h-8 rounded-lg border border-[var(--brand-border-hairline)] bg-[var(--brand-surface)] cursor-pointer flex items-center justify-center gap-[3px] shrink-0 p-0" onClick={onToggle} type="button" aria-expanded={open} aria-label="Toggle chat">
           <MessageCircle size={18} />
         </button>
       </div>
@@ -41,16 +41,19 @@ export function ChatDrawer({ open, onToggle, pinned, onPinToggle, children }: Ch
         aria-hidden={!open}
       >
         <div className="w-[var(--sidebar-width)] h-full flex flex-col p-4">
-          <div className="rd-drawer-header">
+          <div className="flex justify-end px-3 pt-2 pb-1">
             <button
               type="button"
-              className={`ld-pin-btn${pinned ? " pinned" : ""}`}
+              className={cn(
+                "flex items-center justify-center p-1 border-none rounded-[6px] bg-transparent text-tertiary cursor-pointer transition-[background,color] duration-150 hover:bg-primary_hover hover:text-brand-text",
+                pinned && "text-brand-solid bg-primary_hover"
+              )}
               onClick={onPinToggle}
               title={pinned ? "Switch to floating overlay" : "Pin (push mode)"}
             >
               <Pin size={14} />
             </button>
-            <button type="button" className="ld-close-btn" onClick={onToggle} title="Close drawer">
+            <button type="button" className="flex items-center justify-center p-1 border-none rounded-[6px] bg-transparent text-tertiary cursor-pointer transition-[background,color] duration-150 hover:bg-[var(--brand-accent-light)] hover:text-brand-solid" onClick={onToggle} title="Close drawer">
               <X size={14} />
             </button>
           </div>
