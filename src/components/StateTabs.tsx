@@ -16,11 +16,11 @@ export function StateTabs({ stateContext, states, activeState, onChange }: State
 
   return (
     <>
-      <div className="flex flex-wrap gap-[3px] mb-1.5">
+      <div className="flex flex-wrap gap-2 mb-3">
         <button
           type="button"
           className={cn(
-            "text-[10px] font-semibold px-[10px] py-[3px] rounded-[10px] border border-[var(--brand-border-hairline)] bg-white text-tertiary cursor-pointer transition-all duration-150",
+            "text-[10px] font-semibold px-[10px] py-1.5 rounded-[10px] border border-[var(--brand-border-hairline)] bg-white text-tertiary cursor-pointer transition-all duration-150",
             activeState === 'default' ? "bg-brand-solid text-white border-brand-solid" : "hover:bg-primary_hover hover:text-secondary"
           )}
           onClick={() => onChange('default')}
@@ -32,7 +32,7 @@ export function StateTabs({ stateContext, states, activeState, onChange }: State
             type="button"
             key={s}
             className={cn(
-              "text-[10px] font-semibold px-[10px] py-[3px] rounded-[10px] border border-[var(--brand-border-hairline)] bg-white text-tertiary cursor-pointer transition-all duration-150",
+              "text-[10px] font-semibold px-[10px] py-1.5 rounded-[10px] border border-[var(--brand-border-hairline)] bg-white text-tertiary cursor-pointer transition-all duration-150",
               activeState === s ? "bg-brand-solid text-white border-brand-solid" : "hover:bg-primary_hover hover:text-secondary"
             )}
             onClick={() => onChange(s)}
