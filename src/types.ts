@@ -44,6 +44,8 @@ export interface CaptureFolder {
   outputDir: string;
   inputHandleId?: string;
   outputHandleId?: string;
+  /** Relative path segments from root handle to golden dir (FS API mode) */
+  handlePath?: string[];
 }
 
 export interface Workspace {

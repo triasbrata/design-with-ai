@@ -22,6 +22,7 @@ import {
   createFileSource,
   preloadOpfsCache,
   loadHandle,
+  resolveHandle,
   readMetadata,
   listHtmlFiles,
   readFile,
@@ -82,21 +83,30 @@ export default function App() {
     (async () => {
       setHandlesLoading(true);
       try {
+        const handlePath = activeFolder?.handlePath;
         const bothSame =
           activeFolder?.inputHandleId &&
           activeFolder?.outputHandleId &&
           activeFolder.inputHandleId === activeFolder.outputHandleId;
 
         if (bothSame) {
-          const h = await loadHandle(activeFolder!.inputHandleId!);
-          if (!cancelled) {
-            setInputHandle(h);
-            setOutputHandle(h);
-          }
+          const root = await loadHandle(activeFolder!.inputHandleId!);
+          if (cancelled) return;
+          const h =
+            root && handlePath && handlePath.length > 0
+              ? await resolveHandle(root, handlePath).catch(() => null)
+              : root;
+          setInputHandle(h);
+          setOutputHandle(h);
         } else {
           if (activeFolder?.inputHandleId) {
-            const h = await loadHandle(activeFolder.inputHandleId);
-            if (!cancelled) setInputHandle(h);
+            const root = await loadHandle(activeFolder.inputHandleId);
+            if (cancelled) return;
+            const h =
+              root && handlePath && handlePath.length > 0
+                ? await resolveHandle(root, handlePath).catch(() => null)
+                : root;
+            setInputHandle(h);
           }
           if (activeFolder?.outputHandleId) {
             const h = await loadHandle(activeFolder.outputHandleId);
@@ -113,7 +123,7 @@ export default function App() {
     })();
 
     return () => { cancelled = true; };
-  }, [activeFolder?.inputHandleId, activeFolder?.outputHandleId]);
+  }, [activeFolder?.inputHandleId, activeFolder?.outputHandleId, activeFolder?.handlePath?.join('/')]);
 
   // Load metadata and pre-cache blob URLs from FS handle
   useEffect(() => {
@@ -560,6 +570,23 @@ export default function App() {
         ...(inputHandleId ? { inputHandleId } : {}),
         ...(outputHandleId ? { outputHandleId } : {}),
       });
+    },
+    [addFolderToWorkspace],
+  );
+
+  // Add multiple folders at once (from NativeScanModal bulk selection)
+  const handleAddBulkFolders = useCallback(
+    async (workspaceIdx: number, folders: { name: string; inputHandleId: string; outputHandleId: string; handlePath: string[] }[]) => {
+      for (const f of folders) {
+        addFolderToWorkspace(workspaceIdx, {
+          name: f.name,
+          inputDir: "",
+          outputDir: "",
+          inputHandleId: f.inputHandleId,
+          outputHandleId: f.outputHandleId,
+          handlePath: f.handlePath,
+        });
+      }
     },
     [addFolderToWorkspace],
   );

@@ -170,6 +170,88 @@ export async function readMetadata(
   }
 }
 
+/** Result from scanning a directory for golden spec subdirectories */
+export interface GoldenDirResult {
+  /** The directory name (last segment) */
+  name: string;
+  /** Path segments from the picked root to this directory */
+  relativePath: string[];
+  handle: FileSystemDirectoryHandle;
+  screenCount: number;
+}
+
+/**
+ * Scan subdirectories of a FileSystemDirectoryHandle for screen-metadata.json.
+ * Returns directories that contain golden specs, sorted by name.
+ * Skips hidden directories (starting with .) and node_modules.
+ */
+export async function scanForGoldenDirectories(
+  rootHandle: FileSystemDirectoryHandle,
+): Promise<GoldenDirResult[]> {
+  await ensureReadPermission(rootHandle);
+  const results: GoldenDirResult[] = [];
+
+  async function walk(dirHandle: FileSystemDirectoryHandle, pathPrefix: string[], depth: number) {
+    if (depth > 6) return;
+    const dh = toFSA(dirHandle);
+    for await (const [name, entry] of dh.entries()) {
+      if (entry.kind !== 'directory') continue;
+      if (name.startsWith('.') || name === 'node_modules') continue;
+
+      const subHandle = entry as FileSystemDirectoryHandle;
+      const meta = await readMetadata(subHandle);
+      const entryPath = [...pathPrefix, name];
+      if (meta) {
+        results.push({
+          name,
+          relativePath: entryPath,
+          handle: subHandle,
+          screenCount:
+            (meta as any).meta?.totalScreens ??
+            Object.keys((meta as any).screens || {}).length,
+        });
+      } else {
+        await walk(subHandle, entryPath, depth + 1);
+      }
+    }
+  }
+
+  // Check root first
+  const rootMeta = await readMetadata(rootHandle);
+  if (rootMeta) {
+    results.push({
+      name: rootHandle.name,
+      relativePath: [],
+      handle: rootHandle,
+      screenCount:
+        (rootMeta as any).meta?.totalScreens ??
+        Object.keys((rootMeta as any).screens || {}).length,
+    });
+  }
+
+  // Walk subdirectories recursively
+  await walk(rootHandle, [], 0);
+
+  return results;
+}
+
+/**
+ * Resolve a subdirectory handle by walking relative path segments
+ * from a root handle. Used to reconstruct child handles that can't
+ * be reliably stored in IndexedDB.
+ */
+export async function resolveHandle(
+  rootHandle: FileSystemDirectoryHandle,
+  pathSegments: string[],
+): Promise<FileSystemDirectoryHandle> {
+  await ensureReadPermission(rootHandle);
+  let current = rootHandle;
+  for (const segment of pathSegments) {
+    current = await current.getDirectoryHandle(segment);
+  }
+  return current;
+}
+
 // ── Helpers ──
 
 export function dataUrlToBlob(dataUrl: string): Blob {

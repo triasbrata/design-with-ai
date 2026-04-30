@@ -34,7 +34,7 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
 
   return (
     <div style={{ width: "100%" }}>
-      <div className="flex items-center gap-2.5 px-4 py-2.5">
+      <div className="flex items-center gap-2.5 px-14 py-2.5">
         <Button color="secondary" size="sm" onClick={onBack} iconLeading={<ArrowLeft size={18} />}>
           Back
         </Button>
@@ -44,7 +44,7 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
         </Button>
       </div>
 
-      <div className="px-4 pt-5 pb-16">
+      <div className="px-14 pt-5 pb-16">
         <div className="flex gap-6 mb-5 p-4 bg-bg-surface rounded-[14px] shadow-brand-sm">
           <div className="text-center flex-1">
             <div className="text-[28px] font-bold text-brand-solid">{screens.length}</div>
@@ -102,7 +102,7 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
                       <td className="px-3.5 py-2 text-sm border-b border-[#F8F4EC]">{states.length}</td>
                       <td className="px-3.5 py-2 text-sm border-b border-[#F8F4EC]">
                         {states.map((s) => (
-                          <span key={s} className="text-xs px-2 py-1 rounded-lg bg-primary_hover text-[#5A5A5A] font-semibold whitespace-nowrap inline-block mr-1 mb-1">
+                          <span key={s} className="text-xs px-2 py-1 rounded-lg bg-primary_hover text-secondary font-semibold whitespace-nowrap inline-block mr-1 mb-1">
                             {s}
                           </span>
                         ))}
@@ -120,7 +120,7 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
           </tbody>
         </table>
 
-        <p className="text-[9px] text-[var(--brand-muted-light)] text-center pb-2 mt-4">
+        <p className="text-xs text-tertiary text-center pb-2 mt-4">
           Use arrow keys or Tab to navigate screens. Press \ to toggle the sidebar.
         </p>
       </div>
