@@ -43,7 +43,7 @@ const dockToolBase = cn(
 );
 
 const pillBase = cn(
-  "fixed bottom-3 z-[var(--z-pills)] bg-bg-surface border border-[var(--brand-border)] rounded-[20px] shadow-[0_4px_16px_var(--brand-shadow-heavy)] min-h-12 flex items-center px-4 py-1.5",
+  "fixed bottom-3 z-[var(--z-pills)] bg-bg-surface border border-[var(--brand-border)] rounded-[20px] shadow-brand min-h-12 flex items-center px-4 py-1.5",
   "max-[900px]:px-2 max-[900px]:py-1.5 max-[900px]:min-h-10",
 );
 

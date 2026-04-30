@@ -48,6 +48,9 @@
   --brand-shadow: rgba(120, 88, 72, 0.15);
   --brand-shadow-light: rgba(120, 88, 72, 0.06);
   --brand-shadow-heavy: rgba(120, 88, 72, 0.10);
+  --shadow-brand-sm: 0 2px 8px rgba(120, 88, 72, 0.06);
+  --shadow-brand: 0 4px 16px rgba(120, 88, 72, 0.10);
+  --shadow-brand-lg: 0 8px 32px rgba(120, 88, 72, 0.15);
   --state-success-bg: #D4F5E4;
   --state-success-text: #2D6A4F;
   --state-warn-bg: #FFF1D6;
