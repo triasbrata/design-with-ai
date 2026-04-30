@@ -108,13 +108,13 @@ export function BottomBar({
       <div className={cn(pillBase, "left-4 gap-1.5 whitespace-nowrap max-[900px]:left-2")}>
         <NameDisplay projectName={projectName} name={name} />
         <span className="w-10" />
-        <button type="button" className="font-[family-name:var(--font-family)] w-6 h-6 rounded-md border-none bg-primary_hover text-[var(--brand-text)] text-xs cursor-pointer flex items-center justify-center transition-[background] duration-150 p-0 hover:bg-[var(--brand-border-hairline)] disabled:opacity-30 disabled:cursor-default" onClick={onPrev} disabled={index === 0}>
+        <button type="button" className="font-[family-name:var(--font-family)] w-6 h-6 rounded-md border-none bg-primary_hover text-[var(--brand-text)] text-xs cursor-pointer flex items-center justify-center transition-[background] duration-150 p-0 hover:bg-[var(--brand-border-hairline)] disabled:opacity-50 disabled:cursor-default" onClick={onPrev} disabled={index === 0}>
           <ChevronLeft size={16} />
         </button>
         <span className="text-xs text-tertiary">
           {index + 1} / {total}
         </span>
-        <button type="button" className="font-[family-name:var(--font-family)] w-6 h-6 rounded-md border-none bg-primary_hover text-[var(--brand-text)] text-xs cursor-pointer flex items-center justify-center transition-[background] duration-150 p-0 hover:bg-[var(--brand-border-hairline)] disabled:opacity-30 disabled:cursor-default" onClick={onNext}>
+        <button type="button" className="font-[family-name:var(--font-family)] w-6 h-6 rounded-md border-none bg-primary_hover text-[var(--brand-text)] text-xs cursor-pointer flex items-center justify-center transition-[background] duration-150 p-0 hover:bg-[var(--brand-border-hairline)] disabled:opacity-50 disabled:cursor-default" onClick={onNext}>
           <ChevronRight size={16} />
         </button>
       </div>
