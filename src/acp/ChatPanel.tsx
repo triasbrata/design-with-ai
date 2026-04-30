@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, type FormEvent, type KeyboardEvent } from 'react';
+import { cn } from '../lib/cn';
 import { marked } from 'marked';
 import {
   X, ChevronDown, Sparkles, BrainCircuit, Shield, ShieldCheck, ShieldOff,
@@ -531,15 +532,15 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
   const currentModel = MODELS.find((m) => m.id === model);
 
   return (
-    <div className="chat-panel">
+    <div className="flex flex-col h-full overflow-hidden bg-[var(--brand-bg)] text-brand-text font-[-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif]">
       {/* ── Header Bar ── */}
-      <div className="chat-header">
-        <div className="chat-header-left">
+      <div className="flex items-center justify-between h-12 px-4 border-b border-[var(--brand-border)] shrink-0 bg-bg-surface">
+        <div className="flex items-center gap-1.5">
           {editingName ? (
-            <div className="chat-name-edit">
+            <div className="flex items-center">
               <input
                 ref={nameInputRef}
-                className="chat-name-input"
+                className="border-none border-b border-[var(--brand-accent-muted)] rounded-none outline-none py-0.5 px-0.5 font-inherit text-[15px] font-medium text-brand-text bg-transparent w-[180px]"
                 value={chatName}
                 onChange={(e) => {
                   setChatName(e.target.value);
@@ -561,15 +562,15 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
               />
             </div>
           ) : (
-            <button type="button" className="chat-name-btn" onClick={() => setEditingName(true)}>
+            <button type="button" className="inline-flex items-center px-1.5 py-0.5 border-none bg-transparent text-brand-text cursor-pointer font-inherit text-[15px] font-medium rounded hover:bg-primary_hover transition-[background] duration-150" onClick={() => setEditingName(true)}>
               {chatName}
             </button>
           )}
         </div>
-        <div className="chat-header-actions">
+        <div className="flex items-center gap-1">
           <button
             type="button"
-            className="chat-header-btn"
+            className="flex items-center justify-center w-7 h-7 rounded-[6px] border-none bg-transparent text-tertiary cursor-pointer transition-[background] duration-150 hover:bg-primary_hover p-0"
             title="History"
             onClick={() => setSessionPanelOpen((prev) => !prev)}
           >
@@ -580,8 +581,8 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
 
       {/* ── Marker Context Banner ── */}
       {markerContext && (
-        <div className="chat-marker-banner">
-          <span className="chat-marker-banner-label">
+        <div className="flex items-center gap-2 px-3 py-1.5 mx-3 mt-2 rounded-lg bg-[var(--brand-accent-light)] text-brand-solid text-[13px] shrink-0">
+          <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
             {markerContext.element?.caiId ? (
               <>Marked: <strong>cai-id=&ldquo;{markerContext.element.caiId}&rdquo;</strong></>
             ) : (
@@ -592,7 +593,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
             )}
           </span>
           {onResetMarker && (
-            <button type="button" className="chat-marker-banner-close" onClick={onResetMarker} title="Clear marker">
+            <button type="button" className="flex items-center justify-center w-5 h-5 border-none rounded bg-transparent text-brand-solid cursor-pointer opacity-60 transition-[opacity,background] duration-150 hover:opacity-100 hover:bg-[rgba(196,83,83,0.12)] shrink-0 p-0" onClick={onResetMarker} title="Clear marker">
               <X size={14} />
             </button>
           )}
@@ -601,21 +602,27 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
 
       {/* ── Content: Empty State or Messages ── */}
       {!hasMessages ? (
-        <div className="chat-empty-state">
-          <div className="chat-empty-icon">
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6">
+          <div className="text-tertiary opacity-50">
             <MessageCircle size={48} />
           </div>
-          <div className="chat-empty-title">Start a conversation</div>
-          <div className="chat-empty-subtitle">Ask anything to get started</div>
+          <div className="text-lg font-semibold text-brand-text text-center">Start a conversation</div>
+          <div className="text-base text-tertiary text-center">Ask anything to get started</div>
         </div>
       ) : (
-        <div className="chat-messages-area">
-          <div ref={listRef} className="chat-messages">
+        <div className="flex-1 min-h-0 overflow-y-auto scroll-smooth">
+          <div ref={listRef} className="flex flex-col gap-1.5 p-3">
             {messages.map((m, i) => (
-              <div key={i} className={`chat-message-row ${m.role}`}>
-                <div className={`chat-message-bubble ${m.role}${m.error ? ' error' : ''}`}>
+              <div key={i} className={cn("flex w-full animate-[chat-fade-in_0.2s_ease-out]", m.role === 'user' ? "justify-end" : "justify-start")}>
+                <div className={cn(
+                  "max-w-[85%] px-3 py-2 rounded-[12px] text-[13px] leading-[1.5] break-words",
+                  m.role === 'user'
+                    ? "bg-[var(--brand-accent)] text-white border-b-[4px] border-b-[var(--brand-accent)] rounded-br-[4px]"
+                    : "bg-bg-surface text-brand-text border border-[var(--brand-border-hairline)] rounded-bl-[4px]",
+                  m.error && m.role === 'assistant' && "bg-[var(--brand-accent-light)] text-brand-solid border-transparent"
+                )}>
                   <span dangerouslySetInnerHTML={{ __html: marked.parse(m.text) as string }} />
-                  {m.streaming && <span className="chat-cursor">|</span>}
+                  {m.streaming && <span className="animate-[chat-pulse_1.2s_ease-in-out_infinite] text-brand-solid opacity-70 ml-[1px]">|</span>}
                 </div>
               </div>
             ))}
@@ -624,11 +631,11 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
       )}
 
       {/* ── Chat Composer ── */}
-      <div className="chat-composer">
-        <div className="chat-textarea-wrapper">
+      <div className="relative mx-4 mb-4 px-4 py-3 rounded-[16px] bg-bg-surface border border-[var(--brand-border)] shrink-0">
+        <div className="relative">
           <textarea
             ref={textareaRef}
-            className="chat-textarea"
+            className="w-full font-[-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif] text-[15px] text-brand-text bg-transparent border-none outline-none resize-none min-h-[24px] max-h-[200px] leading-[1.5] p-0 pr-20 m-0 placeholder:text-[var(--brand-muted-light)]"
             placeholder="Ask to make changes, @mention files, run /commands"
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -636,17 +643,17 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
             disabled={loading}
             rows={1}
           />
-          <span className="chat-textarea-shortcut">⌘J to focus</span>
+          <span className="absolute top-0 right-0 text-[13px] text-[var(--brand-muted-light)] pointer-events-none">&lfloor;J to focus</span>
         </div>
 
         {/* Control Bar */}
-        <div className="chat-control-bar">
-          <div className="chat-control-left">
+        <div className="flex justify-between items-center mt-2 gap-2">
+          <div className="flex gap-1.5 flex-nowrap overflow-x-auto min-w-0">
             {/* Approval Mode */}
-            <div className="chat-chip-wrapper">
+            <div className="relative">
               <button
                 type="button"
-                className="chat-chip"
+                className="inline-flex items-center gap-1 px-2 py-[3px] rounded-[6px] border-none bg-primary_hover text-tertiary font-inherit text-[13px] font-medium cursor-pointer whitespace-nowrap transition-[background,color] duration-150 hover:bg-[var(--brand-border)] hover:text-brand-text"
                 onClick={(e) => openDropdown('approval', e)}
                 data-dropdown-trigger="approval"
               >
@@ -657,41 +664,41 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
             </div>
 
             {/* Model Selector */}
-            <div className="chat-chip-wrapper">
+            <div className="relative">
               <button
                 type="button"
-                className="chat-chip"
+                className="inline-flex items-center gap-1 px-2 py-[3px] rounded-[6px] border-none bg-primary_hover text-tertiary font-inherit text-[13px] font-medium cursor-pointer whitespace-nowrap transition-[background,color] duration-150 hover:bg-[var(--brand-border)] hover:text-brand-text"
                 onClick={(e) => openDropdown('model', e)}
                 data-dropdown-trigger="model"
               >
-                <Sparkles size={14} className="chat-chip-sparkle" />
+                <Sparkles size={14} className="text-[#fb923c]" />
                 <span>{getModelName(model)}</span>
                 <ChevronDown size={12} />
               </button>
             </div>
 
             {/* Reasoning Effort */}
-            <div className="chat-chip-wrapper">
+            <div className="relative">
               <button
                 type="button"
-                className="chat-chip"
+                className="inline-flex items-center gap-1 px-2 py-[3px] rounded-[6px] border-none bg-primary_hover text-tertiary font-inherit text-[13px] font-medium cursor-pointer whitespace-nowrap transition-[background,color] duration-150 hover:bg-[var(--brand-border)] hover:text-brand-text"
                 onClick={(e) => openDropdown('reasoning', e)}
                 data-dropdown-trigger="reasoning"
               >
-                <BrainCircuit size={14} className="chat-chip-brain" />
+                <BrainCircuit size={14} className="text-[#6b7280]" />
                 <span>{getReasoningLabel(reasoningEffort)}</span>
                 <ChevronDown size={12} />
               </button>
             </div>
           </div>
 
-          <div className="chat-control-right">
-            <button type="button" className="chat-icon-btn" title="Attach files">
+          <div className="flex gap-2 items-center shrink-0">
+            <button type="button" className="flex items-center justify-center w-7 h-7 rounded-[6px] border-none bg-transparent text-tertiary cursor-pointer transition-[background] duration-150 hover:bg-primary_hover p-0" title="Attach files">
               <Paperclip size={20} />
             </button>
             <button
               type="button"
-              className="chat-send-btn"
+              className="flex items-center justify-center w-8 h-8 rounded-full border-none bg-brand-solid text-white cursor-pointer transition-[background,transform] duration-150 hover:bg-brand-solid_hover hover:scale-105 active:scale-95 disabled:bg-[var(--brand-accent-muted)] disabled:cursor-default disabled:scale-none p-0 shrink-0"
               onClick={() => send(input)}
               disabled={!input.trim() || loading}
               title="Send"
@@ -705,7 +712,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
       {/* ── Approval Mode Dropdown ── */}
       {activeDropdown === 'approval' && (
         <div
-          className="chat-dropdown chat-approval-dropdown"
+          className="fixed z-[var(--z-context-menu)] bg-bg-surface rounded-[12px] p-2 shadow-[0_8px_24px_var(--brand-shadow)] border border-[var(--brand-border)] w-[280px]"
           style={{ bottom: dropdownPos.bottom, left: dropdownPos.left }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -713,21 +720,24 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
             <button
               type="button"
               key={opt.value}
-              className={`chat-approval-item${approvalMode === opt.value ? ' selected' : ''}`}
+              className={cn(
+                "flex items-center gap-2.5 w-full px-2.5 py-2 border-none rounded-lg bg-transparent text-brand-text font-inherit text-sm font-medium cursor-pointer text-left transition-[background] duration-150 hover:bg-primary_hover",
+                approvalMode === opt.value && "bg-primary_hover"
+              )}
               onClick={() => {
                 setApprovalMode(opt.value);
                 setActiveDropdown(null);
               }}
             >
-              <span className="chat-approval-item-icon">
+              <span className="shrink-0 flex items-center text-tertiary">
                 <opt.icon size={18} />
               </span>
-              <span className="chat-approval-item-text">
-                <span className="chat-approval-item-label">{opt.label}</span>
-                <span className="chat-approval-item-desc">{opt.desc}</span>
+              <span className="flex-1 flex flex-col gap-0.5">
+                <span className="text-sm font-medium text-brand-text">{opt.label}</span>
+                <span className="text-xs text-tertiary font-normal leading-[1.3]">{opt.desc}</span>
               </span>
               {approvalMode === opt.value && (
-                <span className="chat-approval-item-check">
+                <span className="shrink-0 flex items-center text-brand-solid">
                   <Check size={16} />
                 </span>
               )}
@@ -739,19 +749,19 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
       {/* ── Model Selector Dropdown ── */}
       {activeDropdown === 'model' && (
         <div
-          className="chat-dropdown chat-model-dropdown"
+          className="fixed z-[var(--z-context-menu)] bg-bg-surface rounded-[12px] p-2 shadow-[0_8px_24px_var(--brand-shadow)] border border-[var(--brand-border)] w-[360px]"
           style={{ bottom: dropdownPos.bottom, left: dropdownPos.left }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Search Header */}
-          <div className="chat-model-search">
-            <div className="chat-model-search-input-wrapper">
-              <span className="chat-model-search-icon">
+          <div className="px-1 pb-2 border-b border-[var(--brand-border)] mb-1">
+            <div className="relative flex items-center">
+              <span className="absolute left-2.5 text-tertiary pointer-events-none flex items-center">
                 <Search size={16} />
               </span>
               <input
                 ref={searchInputRef}
-                className="chat-model-search-input"
+                className="w-full h-10 pl-9 pr-8 rounded-lg border border-[var(--brand-border)] bg-primary_hover text-brand-text font-inherit text-sm outline-none focus:border-[var(--brand-accent-muted)] placeholder:text-[var(--brand-muted-light)]"
                 type="text"
                 placeholder="Search models..."
                 value={modelSearch}
@@ -760,7 +770,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
               {modelSearch && (
                 <button
                   type="button"
-                  className="chat-model-search-clear"
+                  className="absolute right-1.5 flex items-center justify-center w-[22px] h-[22px] border-none rounded bg-transparent text-tertiary cursor-pointer p-0 hover:bg-primary_hover"
                   onClick={() => setModelSearch('')}
                   tabIndex={-1}
                 >
@@ -783,16 +793,16 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
 
             return (
               <div key={provider}>
-                <div className="chat-model-provider">
-                  <div className="chat-model-provider-header">
-                    <span className="chat-model-provider-name">{provider}</span>
-                    <span
-                      className={`chat-model-provider-status${
-                        providerModels[0].connected ? ' connected' : ' disconnected'
-                      }`}
-                    >
+                <div className="px-2 pt-1.5 pb-0.5">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-sm font-medium text-brand-text">{provider}</span>
+                    <span className={cn(
+                      "flex items-center gap-1 text-xs text-tertiary",
+                      providerModels[0].connected && "!text-[#16a34a]",
+                      !providerModels[0].connected && "opacity-60"
+                    )}>
                       {providerModels[0].connected ? 'Connected' : 'Not connected'}
-                      <span className="chat-model-provider-status-icon">
+                      <span className="flex items-center">
                         <Key size={14} />
                       </span>
                     </span>
@@ -802,17 +812,23 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
                   <button
                     type="button"
                     key={m.id}
-                    className={`chat-model-item${model === m.id ? ' selected' : ''}`}
+                    className={cn(
+                      "flex items-center gap-2.5 w-full px-2 py-1.5 border-none rounded-lg bg-transparent text-brand-text font-inherit text-sm cursor-pointer text-left transition-[background] duration-150 hover:bg-primary_hover",
+                      model === m.id && "!bg-brand-solid !text-white"
+                    )}
                     onClick={() => {
                       setModel(m.id);
                       setActiveDropdown(null);
                     }}
                     style={!m.connected ? { opacity: 0.6 } : undefined}
                   >
-                    <span className="chat-model-item-icon">
+                    <span className={cn(
+                      "shrink-0 flex items-center",
+                      model === m.id ? "text-white" : "text-[#fb923c]"
+                    )}>
                       <Sparkles size={16} />
                     </span>
-                    <span className="chat-model-item-name">{m.name}</span>
+                    <span className="flex-1">{m.name}</span>
                   </button>
                 ))}
               </div>
@@ -824,7 +840,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
       {/* ── Reasoning Effort Dropdown ── */}
       {activeDropdown === 'reasoning' && (
         <div
-          className="chat-dropdown chat-reasoning-dropdown"
+          className="fixed z-[var(--z-context-menu)] bg-bg-surface rounded-[12px] p-2 shadow-[0_8px_24px_var(--brand-shadow)] border border-[var(--brand-border)] w-[260px]"
           style={{ bottom: dropdownPos.bottom, left: dropdownPos.left }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -832,18 +848,21 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
             <button
               type="button"
               key={opt.value}
-              className={`chat-reasoning-item${reasoningEffort === opt.value ? ' selected' : ''}`}
+              className={cn(
+                "flex items-center gap-2.5 w-full px-3 py-2 border-none rounded-lg bg-transparent text-brand-text font-inherit text-sm cursor-pointer text-left transition-[background] duration-150 hover:bg-primary_hover",
+                reasoningEffort === opt.value && "bg-primary_hover"
+              )}
               onClick={() => {
                 setReasoningEffort(opt.value);
                 setActiveDropdown(null);
               }}
             >
-              <span className="chat-reasoning-item-text">
-                <span className="chat-reasoning-item-label">{opt.label}</span>
-                <span className="chat-reasoning-item-desc">{opt.desc}</span>
+              <span className="flex-1 flex flex-col gap-0.5">
+                <span className="text-sm font-medium">{opt.label}</span>
+                <span className="text-xs text-tertiary font-normal leading-[1.3]">{opt.desc}</span>
               </span>
               {reasoningEffort === opt.value && (
-                <span className="chat-reasoning-item-check">
+                <span className="shrink-0 flex items-center text-brand-solid">
                   <Check size={16} />
                 </span>
               )}
