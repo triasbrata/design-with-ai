@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import html2canvas from "html2canvas";
 import { useScreens } from "./hooks/useScreens";
 import { useDeviceScale } from "./hooks/useDeviceScale";
 import { useProjects } from "./hooks/useProjects";
@@ -11,14 +10,12 @@ import { Summary } from "./components/Summary";
 import { CaptureProgress } from "./components/CaptureProgress";
 import { BottomBar } from "./components/BottomBar";
 import { LeftDrawer } from "./components/LeftDrawer";
-import { ChatDrawer } from "./components/ChatDrawer";
+import { RightDrawer } from "./components/RightDrawer";
 import { HelpModal } from "./components/HelpModal";
-import { ScanFoldersModal } from "./components/ScanFoldersModal";
 import { Toast } from "./components/Toast";
-import { FolderOpen } from "./components/base/icons";
 import { screenName, DEVICE_PRESETS, DEVICE_CYCLE } from "./constants";
 import type { DeviceMode } from "./constants";
-import type { CaptureResult, ClientProject, MarkerRect, MarkerContext, Metadata } from "./types";
+import type { CaptureResult, CaptureFolder, ClientProject, MarkerRect, MarkerContext, Metadata } from "./types";
 import { extractMarkedContext } from "./acp/extractMarkerContext";
 import type { FileSource } from "./hooks/useFileSystem";
 import {
@@ -33,6 +30,12 @@ import {
 } from "./hooks/useFileSystem";
 
 
+declare global {
+  interface Window {
+    html2canvas: (element: HTMLElement, options?: Record<string, unknown>) => Promise<HTMLCanvasElement>;
+  }
+}
+
 export default function App() {
   const {
     projects,
@@ -43,6 +46,7 @@ export default function App() {
     activeOutputDir,
     addProject,
     addFolderToWorkspace,
+    addFoldersToWorkspace,
     removeProject,
     removeFolder,
     setActive,
@@ -294,12 +298,11 @@ export default function App() {
   } = useScreens(screensDir, preloadedMetadata);
 
   const [leftDrawerOpen, setLeftDrawerOpen] = useState(false);
-  const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
+  const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
   const [leftPinned, setLeftPinned] = useState(false);
   const [rightPinned, setRightPinned] = useState(false);
   const [activeState, setActiveState] = useState(queryState || "default");
   const isFirstRender = useRef(true);
-  const [scanFoldersOpen, setScanFoldersOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [dockTool, setDockTool] = useState("");
   const [capturing, setCapturing] = useState(false);
@@ -409,8 +412,13 @@ export default function App() {
       : `phone_${currentScreen}_${activeState}.png`;
 
     try {
+      if (typeof window.html2canvas !== "function") {
+        show("html2canvas not loaded", false);
+        return;
+      }
+
       const preset = DEVICE_PRESETS[deviceMode];
-      const canvas = await html2canvas(iframe.contentDocument.body, {
+      const canvas = await window.html2canvas(iframe.contentDocument.body, {
         width: preset.width,
         height: preset.height,
         scale: 2,
@@ -564,34 +572,14 @@ export default function App() {
     renameFolder(projectIdx, folderIdx, name);
   }, [renameFolder]);
 
-  // Handler for scanned folders from ScanFoldersModal
-  const handleAddScannedFolders = useCallback(
-    (folders: { name: string; path: string }[]) => {
+  // Handler for bulk adding folders to an existing workspace
+  const handleAddFolders = useCallback(
+    (workspaceIdx: number, folders: CaptureFolder[]) => {
       if (folders.length === 0) return;
-
-      // Derive workspace name from first folder's parent directory
-      const parts = folders[0].path.split("/");
-      let wsName = "Scanned Projects";
-      if (parts.length >= 2) {
-        const parentName = parts[parts.length - 2];
-        wsName = parentName.charAt(0).toUpperCase() + parentName.slice(1);
-      }
-
-      addProject({
-        type: "workspace",
-        name: wsName,
-        activeFolder: 0,
-        folders: folders.map((f) => ({
-          name: f.name,
-          inputDir: f.path,
-          outputDir: f.path,
-        })),
-      });
-
-      setScanFoldersOpen(false);
-      show(`Added ${folders.length} folder(s) to "${wsName}"`, true);
+      addFoldersToWorkspace(workspaceIdx, folders);
+      show(`Added ${folders.length} folder(s)`, true);
     },
-    [addProject, show],
+    [addFoldersToWorkspace, show],
   );
 
   return (
@@ -627,12 +615,12 @@ export default function App() {
             onRemoveFolder={removeFolder}
             onRenameWorkspace={handleRenameWorkspace}
             onRenameFolder={handleRenameFolder}
-            onScanProjects={() => setScanFoldersOpen(true)}
+            onAddFolders={handleAddFolders}
             fileSourceType={fileSource?.type ?? null}
             fileSourceLabel={fileSource?.label ?? ''}
           />
-          <div className="flex flex-1 min-w-0 overflow-hidden" ref={contentAreaRef}>
-            <div className="flex-1 min-w-0 flex flex-col items-center overflow-auto select-none pb-[60px]">
+          <div className="content-area" ref={contentAreaRef}>
+            <div className="main-content">
               {orderedScreens.length === 0 ? (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, flexDirection: "column", gap: 12 }}>
                   {fsPermissionError ? (
@@ -645,7 +633,6 @@ export default function App() {
                         Click below to re-authorize.
                       </p>
                       <button
-                        type="button"
                         onClick={handleReauthorizeFs}
                         style={{
                           padding: "8px 20px",
@@ -670,28 +657,9 @@ export default function App() {
                       Loading screens from file system...
                     </p>
                   ) : (
-                    <>
-                      <FolderOpen size={48} style={{ color: "var(--brand-muted)", opacity: 0.5 }} />
-                      <p style={{ color: "var(--brand-muted)", fontSize: 14 }}>
-                        No screens found. Press \ to open workspace drawer and add a project.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setLeftDrawerOpen(true)}
-                        style={{
-                          padding: "8px 20px",
-                          background: "var(--brand-accent)",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 6,
-                          cursor: "pointer",
-                          fontSize: 13,
-                          fontWeight: 500,
-                        }}
-                      >
-                        Open Workspace
-                      </button>
-                    </>
+                    <p style={{ color: "var(--brand-muted)", fontSize: 14 }}>
+                      No screens found. Press \ to open workspace drawer and add a project.
+                    </p>
                   )}
                 </div>
               ) : isSummary ? (
@@ -714,19 +682,19 @@ export default function App() {
                   onPrev={goPrev}
                   onNext={goNext}
                   onStateChange={handleStateChange}
-                  markerMode={markerMode}
-                  markerRect={markerRect}
-                  onMark={handleMark}
                   scale={scale}
                   logicalW={logicalW}
                   logicalH={logicalH}
+                  markerMode={markerMode}
+                  markerRect={markerRect}
+                  onMark={handleMark}
                 />
               )}
             </div>
           </div>
-          <ChatDrawer
-            open={chatDrawerOpen}
-            onToggle={() => setChatDrawerOpen((p) => !p)}
+          <RightDrawer
+            open={rightDrawerOpen}
+            onToggle={() => setRightDrawerOpen((p) => !p)}
             pinned={rightPinned}
             onPinToggle={() => setRightPinned((p) => !p)}
           >
@@ -736,7 +704,7 @@ export default function App() {
               markerContext={markerContext}
               onResetMarker={handleResetMarker}
             />
-          </ChatDrawer>
+          </RightDrawer>
           {!isSummary && total > 0 && (
             <BottomBar
               name={screenName(currentScreen)}
@@ -753,11 +721,6 @@ export default function App() {
               onDeviceModeChange={handleDeviceModeCycle}
             />
           )}
-          <ScanFoldersModal
-            open={scanFoldersOpen}
-            onClose={() => setScanFoldersOpen(false)}
-            onAddFolders={handleAddScannedFolders}
-          />
           <HelpModal show={helpOpen} onClose={() => setHelpOpen(false)} />
           <Toast message={toast.message} visible={toast.visible} ok={toast.ok} />
         </>

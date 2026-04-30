@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
-import { cn } from "../lib/cn";
-import { Menu, Plus, ChevronDown, ChevronRight, Folder, FolderOpen, Pin, Check, X, Trash2, Pencil, Search } from "./base/icons";
+import { Menu, Plus, ChevronDown, ChevronRight, Folder, FolderOpen, Pin, Check, X, Trash2, Pencil, Loader2 } from "./base/icons";
 import { screenName, truncateName, TIERS } from "../constants";
 import { ConfirmModal } from "./ConfirmModal";
-import type { Project, Metadata } from "../types";
+import { BulkAddFoldersModal } from "./BulkAddFoldersModal";
+import type { Project, CaptureFolder } from "../types";
 import { isSupported as fsIsSupported, pickDirectory, saveHandle, generateHandleId } from "../hooks/useFileSystem";
 
 interface LeftDrawerProps {
@@ -21,15 +21,12 @@ interface LeftDrawerProps {
   onAddWorkspace?: (name: string) => void;
   onAddFolder?: (workspaceIdx: number, name: string, inputDir: string, outputDir: string, inputHandleId?: string, outputHandleId?: string) => void;
   onRemoveProject?: (index: number) => void;
-  onSelectScreen?: (screen: string) => void;
-  onSelectWorkspace?: (idx: number, folderIdx?: number) => void;
   onRemoveFolder?: (projectIdx: number, folderIdx: number) => void;
   onRenameWorkspace?: (index: number, name: string) => void;
   onRenameFolder?: (projectIdx: number, folderIdx: number, name: string) => void;
-  onScanProjects?: () => void;
+  onAddFolders?: (workspaceIdx: number, folders: CaptureFolder[]) => void;
   fileSourceType?: string | null;
   fileSourceLabel?: string;
-  metadata?: Metadata | null;
 }
 
 interface ContextMenuState {
@@ -38,6 +35,12 @@ interface ContextMenuState {
   type: "workspace" | "folder";
   projectIdx: number;
   folderIdx?: number;
+}
+
+interface ScannedFolder {
+  name: string;
+  path: string;
+  screenCount: number;
 }
 
 interface RenameState {
@@ -62,15 +65,12 @@ export function LeftDrawer({
   onAddWorkspace,
   onAddFolder,
   onRemoveProject,
-  onSelectScreen,
-  onSelectWorkspace,
   onRemoveFolder,
   onRenameWorkspace,
   onRenameFolder,
-  onScanProjects,
+  onAddFolders,
   fileSourceType,
   fileSourceLabel,
-  metadata,
 }: LeftDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -93,6 +93,21 @@ export function LeftDrawer({
   } | null>(null);
   const folderFileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const [scanResults, setScanResults] = useState<ScannedFolder[] | null>(null);
+  const [scanningWsIdx, setScanningWsIdx] = useState<number | null>(null);
+
+  // Normalize workspace folder paths to match API response format (relative to REPO_ROOT)
+  const existingPaths = useMemo(() => {
+    const paths = new Set<string>();
+    projects.forEach((p) => {
+      if (p.type === "workspace") {
+        p.folders.forEach((f) => {
+          paths.add(f.inputDir.replace(/^(\.\.\/)+/, "").replace(/\/+$/, ""));
+        });
+      }
+    });
+    return paths;
+  }, [projects]);
 
   useEffect(() => {
     if (!open || pinned) return;
@@ -319,48 +334,82 @@ export function LeftDrawer({
       outputHandleId,
     );
     setFolderForm(null);
+
+    // Auto-scan for related golden spec folders (path-based only)
+    if (inputDir.trim() && !inputHandleId) {
+      setScanningWsIdx(workspaceIdx);
+      fetch(`/api/scan-folder?dir=${encodeURIComponent(inputDir.trim())}`)
+        .then((r) => {
+          if (!r.ok) throw new Error("Scan failed");
+          return r.json();
+        })
+        .then((data) => {
+          if (data.folders && data.folders.length > 1) {
+            setScanResults(data.folders);
+          }
+          setScanningWsIdx(null);
+        })
+        .catch(() => setScanningWsIdx(null));
+    }
   }, [folderForm, onAddFolder]);
 
   const handleCancelFolder = useCallback(() => {
     setFolderForm(null);
   }, []);
 
+  // Bulk add scanned folders to the workspace that was being scanned
+  const handleBulkAddFolders = useCallback(
+    (foldersToAdd: { name: string; path: string }[]) => {
+      if (scanningWsIdx === null) return;
+      const wsIdx = scanningWsIdx;
+      setScanResults(null);
+      if (onAddFolders) {
+        onAddFolders(
+          wsIdx,
+          foldersToAdd.map((f) => ({
+            name: f.name,
+            inputDir: f.path,
+            outputDir: f.path,
+          })),
+        );
+      } else {
+        // Fallback: add one by one
+        foldersToAdd.forEach((f) => {
+          onAddFolder?.(wsIdx, f.name, f.path, f.path);
+        });
+      }
+    },
+    [scanningWsIdx, onAddFolders, onAddFolder],
+  );
+
   return (
     <>
-      <div className="fixed top-3 left-3 z-[var(--z-drawer-trigger)]">
-        <button type="button" className="w-8 h-8 rounded-lg border border-[var(--brand-border-hairline)] bg-[var(--brand-surface)] cursor-pointer flex items-center justify-center gap-[3px] shrink-0 p-0" onClick={onToggle} aria-expanded={open} aria-label="Toggle workspace">
+      <div className="left-drawer-trigger">
+        <button className="burger-btn" onClick={onToggle} aria-label="Toggle workspace">
           <Menu size={18} />
         </button>
       </div>
-      <aside ref={drawerRef} className={cn(
-        "shrink-0 h-screen overflow-y-auto overflow-x-hidden bg-bg-surface transition-[width] duration-[250ms] ease-linear",
-        pinned ? "relative" : "fixed top-0 left-0 z-[var(--z-modal)]",
-        open ? "visible pointer-events-auto border-r border-[var(--brand-border)]" : "invisible pointer-events-none border-r border-transparent",
-      )} style={{ width: open ? 'var(--sidebar-width)' : 0 }} aria-hidden={!open}>
-        <div className="w-[var(--sidebar-width)] px-3 py-4">
-          <div className="flex justify-between items-center mb-1">
+      <aside ref={drawerRef} className={open ? `left-drawer${pinned ? " push" : " floating"} open` : "left-drawer"}>
+        <div className="left-drawer-inner">
+          <div className="ld-drawer-header">
             <button
-              type="button"
-              className={cn(
-                "flex items-center justify-center p-1 border-none rounded-[6px] bg-transparent text-tertiary cursor-pointer transition-[background,color] duration-150 hover:bg-primary_hover hover:text-brand-text",
-                pinned && "text-brand-solid bg-primary_hover"
-              )}
+              className={`ld-pin-btn${pinned ? " pinned" : ""}`}
               onClick={onPinToggle}
               title={pinned ? "Switch to floating overlay" : "Pin (push mode)"}
             >
               <Pin size={14} />
             </button>
-            <button type="button" className="flex items-center justify-center p-1 border-none rounded-[6px] bg-transparent text-tertiary cursor-pointer transition-[background,color] duration-150 hover:bg-[var(--brand-accent-light)] hover:text-brand-solid" onClick={onToggle} title="Close drawer">
+            <button className="ld-close-btn" onClick={onToggle} title="Close drawer">
               <X size={14} />
             </button>
           </div>
           {onAddWorkspace && (
             <>
               {showCreateForm ? (
-                <div className="flex items-center gap-1.5 px-2 py-1.5 mb-3 border border-brand-border rounded-lg bg-bg-surface">
+                <div className="ld-inline-create">
                   <input
                     ref={inputRef}
-                    className="flex-1 border-none outline-none font-inherit text-xs text-brand-text bg-transparent p-1 placeholder:text-[var(--brand-muted-light)]"
+                    className="ld-inline-input"
                     placeholder="Workspace name"
                     value={createName}
                     onChange={(e) => setCreateName(e.target.value)}
@@ -369,28 +418,17 @@ export function LeftDrawer({
                       if (e.key === "Escape") handleCancelCreate();
                     }}
                   />
-                  <button type="button" className="flex items-center justify-center w-6 h-6 border-none rounded bg-[#22c55e] text-white cursor-pointer shrink-0 hover:bg-[#16a34a]" onClick={handleSubmitCreate}>
+                  <button className="ld-inline-confirm" onClick={handleSubmitCreate}>
                     <Check size={14} />
                   </button>
-                  <button type="button" className="flex items-center justify-center w-6 h-6 border-none rounded bg-transparent text-tertiary cursor-pointer shrink-0 hover:bg-primary_hover" onClick={handleCancelCreate}>
+                  <button className="ld-inline-cancel" onClick={handleCancelCreate}>
                     <X size={14} />
                   </button>
                 </div>
               ) : (
-                <button type="button" className="flex items-center gap-1.5 w-full px-3 py-2 mb-3 border border-dashed border-brand-border rounded-lg bg-transparent text-tertiary font-inherit text-xs cursor-pointer transition-[background] duration-150 hover:bg-primary_hover hover:text-brand-text" onClick={() => setShowCreateForm(true)}>
+                <button className="ld-add-workspace" onClick={() => setShowCreateForm(true)}>
                   <Plus size={14} />
                   Add Workspace
-                </button>
-              )}
-              {onScanProjects && !showCreateForm && (
-                <button
-                  type="button"
-                  className="flex items-center gap-1.5 w-full px-3 py-2 mb-3 border border-dashed border-brand-border rounded-lg bg-transparent text-tertiary font-inherit text-xs cursor-pointer transition-[background] duration-150 hover:bg-primary_hover hover:text-brand-text"
-                  onClick={onScanProjects}
-                  style={{ marginTop: 4 }}
-                >
-                  <Search size={14} />
-                  Scan for projects
                 </button>
               )}
             </>
@@ -401,10 +439,9 @@ export function LeftDrawer({
 
             if (project.type === "workspace") {
               return (
-                <div key={`ws-${pi}`}>
+                <div className="ld-section" key={`ws-${pi}`}>
                   <button
-                    type="button"
-                    className="w-full flex items-center gap-1.5 px-1.5 py-[7px] border-none bg-transparent cursor-pointer rounded-lg font-inherit text-xs font-bold text-brand-text text-left transition-[background] duration-100 hover:bg-primary_hover"
+                    className="ld-section-header"
                     onClick={() => toggle(pi)}
                     onContextMenu={(e) => handleContextMenu(e, pi, "workspace")}
                     style={isActiveWs ? { fontWeight: 600 } : undefined}
@@ -412,9 +449,9 @@ export function LeftDrawer({
                     <Folder size={14} />
                     {renameState?.type === "workspace" && renameState.projectIdx === pi ? (
                       <>
-                        <Pencil size={12} className="text-tertiary shrink-0" />
+                        <Pencil size={12} className="ld-rename-icon" />
                         <input
-                          className="flex-1 border-none border-b border-[var(--brand-accent-muted)] rounded-none outline-none py-0.5 font-inherit text-xs text-brand-text bg-transparent"
+                          className="ld-rename-input"
                           autoFocus
                           value={renameState.currentName}
                           onChange={(e) => setRenameState((prev) => prev ? { ...prev, currentName: e.target.value } : null)}
@@ -427,14 +464,13 @@ export function LeftDrawer({
                       </>
                     ) : (
                       <span
-                        className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
+                        className="ld-section-title"
                         title={project.name.length > 30 ? project.name : undefined}
                         onDoubleClick={(e) => { e.stopPropagation(); handleDoubleClickWorkspace(pi, project.name); }}
                       >{truncateName(project.name)}</span>
                     )}
                     <button
-                      type="button"
-                      className="flex items-center justify-center w-[22px] h-[22px] border-none rounded bg-transparent text-tertiary cursor-pointer shrink-0 transition-[background,color] duration-150 hover:bg-primary_hover hover:text-brand-text"
+                      className="ld-folder-add"
                       title="Add folder"
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
@@ -444,18 +480,18 @@ export function LeftDrawer({
                     >
                       <Plus size={12} />
                     </button>
-                    <span className="w-[14px] shrink-0 flex items-center text-tertiary ml-auto">
+                    <span className="ld-chevron">
                       {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                     </span>
                   </button>
                   {isExpanded && (
-                    <div className="pl-6 mb-2">
+                    <div className="ld-section-body">
                       {folderForm && folderForm.workspaceIdx === pi && (
-                        <div className="flex flex-col gap-1 px-2 py-1.5 mb-1 border border-brand-border rounded-lg bg-bg-surface">
-                          <div className="flex gap-1 items-center">
+                        <div className="ld-folder-create">
+                          <div className="ld-folder-create-row">
                             <input
                               ref={folderInputRef}
-                              className="flex-1 border border-[var(--brand-border-hairline)] rounded outline-none font-inherit text-[11px] text-brand-text bg-[var(--brand-bg)] px-1.5 py-1 focus:border-[var(--brand-accent-muted)]"
+                              className="ld-folder-input"
                               placeholder="Folder name"
                               value={folderForm.name}
                               onChange={(e) =>
@@ -470,8 +506,7 @@ export function LeftDrawer({
                             />
                             {fsIsSupported() ? (
                               <button
-                                type="button"
-                                className="font-inherit text-xs font-semibold px-2 py-1 border border-brand-border rounded bg-bg-surface text-tertiary cursor-pointer whitespace-nowrap hover:bg-primary_hover hover:text-brand-text"
+                                className="ld-folder-browse"
                                 onClick={handlePickFolderNative}
                                 title="Pick folder using native file picker (persistent, survives reload)"
                               >
@@ -479,8 +514,7 @@ export function LeftDrawer({
                               </button>
                             ) : (
                               <button
-                                type="button"
-                                className="font-inherit text-xs font-semibold px-2 py-1 border border-brand-border rounded bg-bg-surface text-tertiary cursor-pointer whitespace-nowrap hover:bg-primary_hover hover:text-brand-text"
+                                className="ld-folder-browse"
                                 onClick={() => folderFileInputRef.current?.click()}
                               >
                                 Browse...
@@ -488,14 +522,14 @@ export function LeftDrawer({
                             )}
                           </div>
                           {fsIsSupported() && folderForm.inputHandleId ? (
-                            <div className="flex gap-1 items-center" style={{ color: "var(--brand-muted)", fontSize: 11, padding: "4px 0" }}>
+                            <div className="ld-folder-create-row" style={{ color: "var(--brand-muted)", fontSize: 11, padding: "4px 0" }}>
                               Using native file system access &mdash; no paths needed
                             </div>
                           ) : !fsIsSupported() ? (
                             <>
-                              <div className="flex gap-1 items-center">
+                              <div className="ld-folder-create-row">
                                 <input
-                                  className="flex-1 border border-[var(--brand-border-hairline)] rounded outline-none font-inherit text-[11px] text-brand-text bg-[var(--brand-bg)] px-1.5 py-1 focus:border-[var(--brand-accent-muted)]"
+                                  className="ld-folder-input"
                                   placeholder="Input directory"
                                   value={folderForm.inputDir}
                                   onChange={(e) =>
@@ -505,9 +539,9 @@ export function LeftDrawer({
                                   }
                                 />
                               </div>
-                              <div className="flex gap-1 items-center">
+                              <div className="ld-folder-create-row">
                                 <input
-                                  className="flex-1 border border-[var(--brand-border-hairline)] rounded outline-none font-inherit text-[11px] text-brand-text bg-[var(--brand-bg)] px-1.5 py-1 focus:border-[var(--brand-accent-muted)]"
+                                  className="ld-folder-input"
                                   placeholder="Same as input directory"
                                   value={folderForm.outputDir}
                                   onChange={(e) =>
@@ -519,19 +553,24 @@ export function LeftDrawer({
                               </div>
                             </>
                           ) : null}
-                          <div className="flex gap-1 justify-end">
-                            <button type="button" className="flex items-center justify-center w-6 h-6 border-none rounded bg-transparent text-tertiary cursor-pointer shrink-0 hover:bg-primary_hover" onClick={handleCancelFolder}>
+                          <div className="ld-folder-create-actions">
+                            <button className="ld-inline-cancel" onClick={handleCancelFolder}>
                               <X size={14} />
                             </button>
                             <button
-                              type="button"
-                              className="flex items-center justify-center w-6 h-6 border-none rounded bg-[#22c55e] text-white cursor-pointer shrink-0 hover:bg-[#16a34a]"
+                              className="ld-inline-confirm"
                               onClick={handleSubmitFolder}
                               {...(fsIsSupported() && !folderForm.inputHandleId ? { style: { opacity: 0.4 } as React.CSSProperties, title: "Pick a folder first" } : {})}
                             >
                               <Check size={14} />
                             </button>
                           </div>
+                        </div>
+                      )}
+                      {scanningWsIdx === pi && (
+                        <div className="ld-scanning">
+                          <Loader2 size={12} className="ld-spinner" />
+                          <span>Scanning for related specs...</span>
                         </div>
                       )}
                       {project.folders.length === 0 && (
@@ -545,9 +584,9 @@ export function LeftDrawer({
                         const isFolderExpanded = expandedFolders.has(folderKey);
                         return (
                           <div key={`f-${fi}`} style={{ paddingLeft: 4 }}>
-                            <div className="flex items-center gap-1.5 px-1.5 py-[5px] rounded-lg group" style={{ fontSize: 13 }}>
+                            <div className="ld-section-header" style={{ fontSize: 13 }}>
                               <span
-                                className="w-[14px] shrink-0 flex items-center text-tertiary ml-auto"
+                                className="ld-chevron"
                                 onClick={() => {
                                   setExpandedFolders((prev) => {
                                     const next = new Set(prev);
@@ -563,10 +602,10 @@ export function LeftDrawer({
                               <Folder size={12} />
                               {renameState?.type === "folder" && renameState.projectIdx === pi && renameState.folderIdx === fi ? (
                                 <>
-                                  <Pencil size={12} className="text-tertiary shrink-0" />
+                                  <Pencil size={12} className="ld-rename-icon" />
                                   <input
                                     ref={renameInputRef}
-                                    className="flex-1 border-none border-b border-[var(--brand-accent-muted)] rounded-none outline-none py-0.5 font-inherit text-xs text-brand-text bg-transparent"
+                                    className="ld-rename-input"
                                     autoFocus
                                     value={renameState.currentName}
                                     onChange={(e) => setRenameState((prev) => prev ? { ...prev, currentName: e.target.value } : null)}
@@ -579,7 +618,7 @@ export function LeftDrawer({
                                 </>
                               ) : (
                                 <span
-                                  className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
+                                  className="ld-section-title"
                                   title={folder.name.length > 30 ? folder.name : undefined}
                                   onClick={() => {
                                     if (!isActiveFolder) onSetActive(pi, fi);
@@ -592,19 +631,10 @@ export function LeftDrawer({
                                 </span>
                               )}
                               {isActiveFolder && fileSourceType && (
-                                <span
-                                  className="inline-block text-[9px] font-semibold px-1.5 py-[1px] rounded whitespace-nowrap shrink-0 leading-[1.5]"
-                                  style={{
-                                    background: fileSourceType === 'fs-api' ? '#D4F5E4' : fileSourceType === 'vite-middleware' ? '#DBEAFE' : fileSourceType === 'upload' ? '#FFF1D6' : 'var(--brand-chip)',
-                                    color: fileSourceType === 'fs-api' ? '#2D6A4F' : fileSourceType === 'vite-middleware' ? '#1E40AF' : fileSourceType === 'upload' ? '#8A6D3B' : 'var(--brand-muted)',
-                                  }}
-                                >
-                                  {fileSourceLabel}
-                                </span>
+                                <span className={`ld-source-badge ${fileSourceType}`}>{fileSourceLabel}</span>
                               )}
                               <button
-                                type="button"
-                                className="flex items-center justify-center w-5 h-5 border-none rounded bg-transparent text-[var(--brand-muted-light)] cursor-pointer shrink-0 opacity-0 transition-[opacity,background,color] duration-150 group-hover:opacity-100 hover:!bg-[var(--brand-accent-light)] hover:!text-brand-solid"
+                                className="ld-folder-delete"
                                 title="Delete folder"
                                 onMouseDown={(e) => e.stopPropagation()}
                                 onClick={(e) => {
@@ -627,18 +657,14 @@ export function LeftDrawer({
                                   );
                                   if (!tierScreens.length) return null;
                                   return (
-                                    <div className="mb-2" key={tier}>
-                                      <div className="text-[9px] font-bold uppercase text-brand-solid tracking-[0.5px] px-1.5 pt-[5px] pb-[3px]">
+                                    <div className="ld-tier-group" key={tier}>
+                                      <div className="ld-tier-label">
                                         {tier} — {info.label}
                                       </div>
                                       {tierScreens.map((s) => (
                                         <button
-                                          type="button"
                                           key={s}
-                                          className={cn(
-                                            "block w-full text-[11px] px-2 py-1 rounded-lg text-secondary no-underline cursor-pointer bg-none border-none text-left font-inherit transition-[background] duration-100 whitespace-nowrap overflow-hidden text-ellipsis hover:bg-[var(--brand-chip)]",
-                                            s === activeScreen && "bg-[var(--brand-accent-light)] text-brand-solid font-semibold",
-                                          )}
+                                          className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
                                           onClick={() => {
                                             onSelect(s);
                                             onToggle();
@@ -652,7 +678,7 @@ export function LeftDrawer({
                                   );
                                 })}
                                 {existing.size === 0 && (
-                                  <div className="flex justify-center p-6 text-tertiary" style={{ padding: 12 }}>
+                                  <div className="ld-loading" style={{ padding: 12 }}>
                                     <span style={{ color: "var(--brand-muted)", fontSize: 12 }}>
                                       No screens found
                                     </span>
@@ -671,10 +697,9 @@ export function LeftDrawer({
 
             // Client project — no folder level
             return (
-              <div key={`client-${pi}`}>
+              <div className="ld-section" key={`client-${pi}`}>
                 <button
-                  type="button"
-                  className="w-full flex items-center gap-1.5 px-1.5 py-[7px] border-none bg-transparent cursor-pointer rounded-lg font-inherit text-xs font-bold text-brand-text text-left transition-[background] duration-100 hover:bg-primary_hover"
+                  className="ld-section-header"
                   onClick={() => {
                     if (!isActiveWs) onSetActive(pi);
                     toggle(pi);
@@ -682,29 +707,25 @@ export function LeftDrawer({
                   style={isActiveWs ? { fontWeight: 600 } : undefined}
                 >
                   <FolderOpen size={14} />
-                  <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap" title={project.name.length > 30 ? project.name : undefined}>{truncateName(project.name)}</span>
-                  <span className="w-[14px] shrink-0 flex items-center text-tertiary ml-auto">
+                  <span className="ld-section-title" title={project.name.length > 30 ? project.name : undefined}>{truncateName(project.name)}</span>
+                  <span className="ld-chevron">
                     {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                   </span>
                 </button>
                 {isExpanded && (
-                  <div className="pl-6 mb-2" style={{ paddingLeft: 4 }}>
+                  <div className="ld-section-body" style={{ paddingLeft: 4 }}>
                     {Object.entries(TIERS).map(([tier, info]) => {
                       const tierScreens = info.screens.filter((s) => existing.has(s));
                       if (!tierScreens.length) return null;
                       return (
-                        <div className="mb-2" key={tier}>
-                          <div className="text-[9px] font-bold uppercase text-brand-solid tracking-[0.5px] px-1.5 pt-[5px] pb-[3px]">
+                        <div className="ld-tier-group" key={tier}>
+                          <div className="ld-tier-label">
                             {tier} — {info.label}
                           </div>
                           {tierScreens.map((s) => (
                             <button
-                              type="button"
                               key={s}
-                              className={cn(
-                                "block w-full text-[11px] px-2 py-1 rounded-lg text-secondary no-underline cursor-pointer bg-none border-none text-left font-inherit transition-[background] duration-100 whitespace-nowrap overflow-hidden text-ellipsis hover:bg-[var(--brand-chip)]",
-                                s === activeScreen && "bg-[var(--brand-accent-light)] text-brand-solid font-semibold",
-                              )}
+                              className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
                               onClick={() => {
                                 onSelect(s);
                                 onToggle();
@@ -727,20 +748,6 @@ export function LeftDrawer({
               </div>
             );
           })}
-
-          {/* Version info at bottom */}
-          {metadata && (
-            <div className="mt-4 px-1.5 py-2 border-t border-[var(--brand-border-hairline)]">
-              <div className="flex items-center justify-between text-xs text-tertiary font-medium leading-[1.8]">
-                <span>Version</span>
-                <span>{metadata.meta.version}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs text-tertiary font-medium leading-[1.8]">
-                <span>Updated</span>
-                <span>{metadata.meta.lastUpdated}</span>
-              </div>
-            </div>
-          )}
         </div>
         {/* Hidden file input for native folder picker */}
         <input
@@ -756,27 +763,27 @@ export function LeftDrawer({
       {contextMenu && (
         <div
           ref={contextMenuRef}
-          className="fixed z-[var(--z-context-menu)] min-w-[150px] bg-bg-surface border border-brand-border rounded-[10px] shadow-[0_4px_16px_var(--brand-shadow)] p-1"
+          className="ld-context-menu"
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
           {contextMenu.type === "workspace" ? (
             <>
-              <button type="button" className="flex items-center gap-2 w-full px-3 py-2 border-none rounded-[6px] bg-transparent text-brand-text font-inherit text-xs cursor-pointer text-left hover:bg-primary_hover" onClick={handleRenameFromMenu}>
+              <button className="ld-context-item" onClick={handleRenameFromMenu}>
                 Rename
               </button>
-              <button type="button" className="flex items-center gap-2 w-full px-3 py-2 border-none rounded-[6px] bg-transparent text-brand-text font-inherit text-xs cursor-pointer text-left hover:bg-primary_hover" onClick={handleAddFolderFromMenu}>
+              <button className="ld-context-item" onClick={handleAddFolderFromMenu}>
                 Add Folder
               </button>
-              <button type="button" className="flex items-center gap-2 w-full px-3 py-2 border-none rounded-[6px] bg-transparent text-brand-solid font-inherit text-xs cursor-pointer text-left hover:bg-[var(--brand-accent-light)]" onClick={handleRemoveProjectFromMenu}>
+              <button className="ld-context-item danger" onClick={handleRemoveProjectFromMenu}>
                 Close Project
               </button>
             </>
           ) : (
             <>
-              <button type="button" className="flex items-center gap-2 w-full px-3 py-2 border-none rounded-[6px] bg-transparent text-brand-text font-inherit text-xs cursor-pointer text-left hover:bg-primary_hover" onClick={handleRenameFromMenu}>
+              <button className="ld-context-item" onClick={handleRenameFromMenu}>
                 Rename
               </button>
-              <button type="button" className="flex items-center gap-2 w-full px-3 py-2 border-none rounded-[6px] bg-transparent text-brand-solid font-inherit text-xs cursor-pointer text-left hover:bg-[var(--brand-accent-light)]" onClick={handleRemoveFolderFromMenu}>
+              <button className="ld-context-item danger" onClick={handleRemoveFolderFromMenu}>
                 Delete Folder
               </button>
             </>
@@ -801,6 +808,13 @@ export function LeftDrawer({
           }}
         />
       )}
+      <BulkAddFoldersModal
+        open={scanResults !== null}
+        onClose={() => setScanResults(null)}
+        onAddFolders={handleBulkAddFolders}
+        folders={scanResults || []}
+        existingPaths={existingPaths}
+      />
     </>
   );
 }

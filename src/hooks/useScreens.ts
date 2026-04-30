@@ -13,8 +13,7 @@ export function useScreens(dir: string, preloadedMetadata?: Metadata | null) {
       setMetadata(preloadedMetadata);
       return;
     }
-    // Don't clear metadata here — keep showing previous screens until new data loads
-    // (prevents a jarring flash of "no screens" in the left drawer when switching folders)
+    setMetadata(null);
     if (!dir) return; // Skip fetch for empty dirs (FS handle mode or no dir configured)
     fetch(`/api/metadata?dir=${encodeURIComponent(dir)}`)
       .then((r) => r.json())

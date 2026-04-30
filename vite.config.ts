@@ -18,7 +18,7 @@ const GOLDEN_DIR = path.resolve(
 const REPO_ROOT = path.resolve(__dirname, "../..");
 
 /** Allowed base directories for multi-project dir resolution */
-const ALLOWED_BASES = [REPO_ROOT, path.resolve(__dirname, "../../docs"), path.resolve(__dirname, "../../packages")];
+const ALLOWED_BASES = [path.resolve(__dirname, "../../docs"), path.resolve(__dirname, "../../packages")];
 
 /**
  * Resolve a ?dir= query param to an absolute path.
@@ -154,6 +154,67 @@ function capturePlugin(): Plugin {
 
         res.setHeader("Content-Type", "application/json");
         res.end(JSON.stringify({ folders: results }));
+      });
+
+      // ── /api/scan-folder — scan a specific directory for screen-metadata.json files ──
+      server.middlewares.use("/api/scan-folder", (req, res) => {
+        try {
+          const url = new URL(req.url || "/", "http://localhost");
+          const dir = resolveDir(url.searchParams.get("dir"));
+
+          // Scan from the parent directory to find sibling golden folders
+          const parentDir = path.dirname(dir);
+          const scanFrom = ALLOWED_BASES.some((base) => parentDir.startsWith(base + path.sep))
+            ? parentDir
+            : dir;
+
+          const results: { name: string; path: string; screenCount: number }[] = [];
+          const scanDir = (scanPath: string) => {
+            try {
+              for (const entry of fs.readdirSync(scanPath, { withFileTypes: true })) {
+                if (
+                  entry.isDirectory() &&
+                  !entry.name.startsWith(".") &&
+                  entry.name !== "node_modules"
+                ) {
+                  scanDir(path.join(scanPath, entry.name));
+                }
+              }
+              const metaPath = path.join(scanPath, "screen-metadata.json");
+              if (fs.existsSync(metaPath)) {
+                try {
+                  const raw = fs.readFileSync(metaPath, "utf-8");
+                  const meta = JSON.parse(raw);
+                  const relPath = path.relative(REPO_ROOT, scanPath);
+                  const pathParts = relPath.split(path.sep);
+                  const projectIdx = pathParts.indexOf("golden") - 1;
+                  const projectName = projectIdx >= 0 ? pathParts[projectIdx] : pathParts[0];
+                  const displayName = projectName
+                    .replace(/[_-]/g, " ")
+                    .replace(/\b\w/g, (c) => c.toUpperCase());
+                  results.push({
+                    name: displayName,
+                    path: relPath,
+                    screenCount:
+                      meta.meta?.totalScreens ??
+                      Object.keys(meta.screens || {}).length,
+                  });
+                } catch {
+                  /* skip invalid json */
+                }
+              }
+            } catch {
+              /* skip permission errors */
+            }
+          };
+          scanDir(scanFrom);
+
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ folders: results }));
+        } catch (e: any) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ ok: false, error: e.message }));
+        }
       });
 
       // ── /screens/* — serve static files from specified dir ──

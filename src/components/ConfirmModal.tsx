@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { cn } from "../lib/cn";
 
 interface ConfirmModalProps {
   open: boolean;
@@ -38,33 +37,17 @@ export function ConfirmModal({
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[var(--z-confirm-modal)] flex items-center justify-center bg-black/30 backdrop-blur-sm"
-      onClick={onCancel}
-    >
-      <div
-        className="bg-bg-surface rounded-[14px] p-6 max-w-[360px] w-[90%] shadow-[0_16px_48px_var(--brand-shadow-heavy)]"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-      >
-        <div className="text-[15px] font-semibold text-[var(--brand-text)] mb-2">{title}</div>
-        <div className="text-sm text-tertiary leading-relaxed mb-5 whitespace-pre-wrap">{message}</div>
-        <div className="flex gap-2 justify-end">
-          <button
-            type="button"
-            className="px-4 py-2 rounded-lg border-none font-inherit text-sm font-semibold cursor-pointer bg-primary_hover text-tertiary transition-[background] duration-150 hover:bg-[var(--brand-border)]"
-            onClick={onCancel}
-          >
+    <div className="cm-overlay" onClick={onCancel}>
+      <div className="cm-card" onClick={(e) => e.stopPropagation()}>
+        <div className="cm-title">{title}</div>
+        <div className="cm-message">{message}</div>
+        <div className="cm-actions">
+          <button className="cm-btn cm-btn-cancel" onClick={onCancel}>
             {cancelLabel}
           </button>
           <button
-            type="button"
             ref={confirmRef}
-            className={cn(
-              "px-4 py-2 rounded-lg border-none font-inherit text-sm font-semibold cursor-pointer text-white transition-[background] duration-150",
-              variant === "danger" ? "bg-brand-solid hover:bg-brand-solid_hover" : "bg-brand-solid hover:bg-brand-solid_hover"
-            )}
+            className={`cm-btn cm-btn-confirm${variant === "danger" ? " danger" : ""}`}
             onClick={onConfirm}
           >
             {confirmLabel}

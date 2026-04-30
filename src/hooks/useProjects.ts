@@ -88,6 +88,26 @@ export function useProjects() {
     [],
   );
 
+  /** Add multiple folders to a workspace at once */
+  const addFoldersToWorkspace = useCallback(
+    (workspaceIdx: number, newFolders: CaptureFolder[]) => {
+      setProjects((prev) => {
+        const next = prev.map((p, i) => {
+          if (i === workspaceIdx && p.type === "workspace") {
+            return { ...p, folders: [...p.folders, ...newFolders] };
+          }
+          return p;
+        });
+        const workspaces = next.filter(
+          (p): p is Workspace => p.type === "workspace",
+        );
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaces));
+        return next;
+      });
+    },
+    [],
+  );
+
   /** Update a folder in a workspace (e.g. to set handle IDs after directory pick) */
   const updateFolder = useCallback(
     (projectIdx: number, folderIdx: number, updates: Partial<CaptureFolder>) => {
@@ -225,6 +245,7 @@ export function useProjects() {
     activeOutputDir,
     addProject,
     addFolderToWorkspace,
+    addFoldersToWorkspace,
     updateFolder,
     removeProject,
     removeFolder,
