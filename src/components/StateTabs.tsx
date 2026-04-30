@@ -44,7 +44,7 @@ export function StateTabs({ stateContext, states, activeState, onChange }: State
       <div className={cn(activeState === 'default' && "!hidden")}>
         {activeState !== 'default' && stateContext[activeState]?.goal && (
           <>
-            <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-1">
+            <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-3">
               Goal
             </div>
             <p id="state-goal-text" className="text-xs text-[#6B5E4F] leading-relaxed">

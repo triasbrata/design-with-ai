@@ -22,7 +22,7 @@ export function MetaPanel({ meta, screen, activeState, onStateChange }: MetaPane
     <div className="flex-1 min-w-[200px] max-w-[340px] bg-bg-surface rounded-2xl p-4 shadow-[0_2px_8px_var(--brand-shadow-light)] self-start max-h-[calc(100vh-80px)] overflow-y-auto flex flex-col gap-4">
       {hasStateContext && (
         <div>
-          <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-1">
+          <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-3">
             State Context <span style={{ fontWeight: 400, color: '#8A8075' }}>— click a state</span>
           </div>
           <div className="flex flex-col gap-2">
@@ -37,7 +37,7 @@ export function MetaPanel({ meta, screen, activeState, onStateChange }: MetaPane
       )}
 
       <div>
-        <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-1">Description</div>
+        <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-3">Description</div>
         <p id="meta-desc" className="text-sm leading-relaxed text-secondary">{description}</p>
       </div>
 
@@ -48,12 +48,12 @@ export function MetaPanel({ meta, screen, activeState, onStateChange }: MetaPane
       )}
 
       <div>
-        <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-1">Purpose</div>
+        <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-3">Purpose</div>
         <p id="meta-purpose" className="text-sm leading-relaxed text-secondary">{purpose}</p>
       </div>
 
       <div>
-        <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-1">Key Elements</div>
+        <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-3">Key Elements</div>
         <ul className="list-none p-0 flex flex-wrap gap-[3px]">
           {meta.keyElements.map((el, i) => (
             <li key={i} className="text-xs bg-primary_hover px-2 py-[2px] rounded-md text-[#5A5A5A]">{el}</li>
@@ -62,7 +62,7 @@ export function MetaPanel({ meta, screen, activeState, onStateChange }: MetaPane
       </div>
 
       <div>
-        <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-1">States</div>
+        <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-3">States</div>
         <div className="flex flex-wrap gap-[3px]">
           {meta.states.map((s) => (
             <span key={s} className="text-[10px] px-2 py-[2px] rounded-lg font-semibold bg-[var(--state-success-bg)] text-[var(--state-success-text)]">
@@ -73,7 +73,7 @@ export function MetaPanel({ meta, screen, activeState, onStateChange }: MetaPane
       </div>
 
       <div>
-        <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-1">Interactions</div>
+        <div className="text-[10px] font-bold uppercase text-brand-solid tracking-[0.5px] mb-3">Interactions</div>
         <div className="flex flex-wrap gap-[3px]">
           {meta.interactions.map((i, idx) => (
             <span key={idx} className="text-[10px] px-2 py-[2px] rounded-lg font-semibold bg-[var(--state-warn-bg)] text-[var(--state-warn-text)]">
