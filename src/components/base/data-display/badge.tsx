@@ -43,6 +43,7 @@ export function Badge({
 }: BadgeProps) {
   return (
     <span
+      data-caid="base/badge"
       className={cx(
         "inline-flex items-center gap-1 font-medium whitespace-nowrap",
         badgeStyles.sizes[size],

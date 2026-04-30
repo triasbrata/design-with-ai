@@ -172,7 +172,7 @@ export function CaptureProgress({ screens, metadata, getScreenUrl, saveCapture, 
   }
 
   return (
-    <div style={{ width: "100%" }}>
+    <div data-caid="capture-progress" style={{ width: "100%" }}>
       <div className="flex items-center gap-2.5 px-4 py-2.5">
         <Button color="secondary" size="sm" onClick={handleCancel} iconLeading={<X size={18} />}>
           Cancel

@@ -51,7 +51,7 @@ export function SessionPanel({
   const hasSessions = filtered.length > 0;
 
   return (
-    <div className="fixed right-4 top-14 w-[380px] max-h-[520px] rounded-[14px] bg-bg-surface border border-brand-border shadow-brand-lg z-[var(--z-context-menu)] p-4 overflow-hidden flex flex-col" ref={panelRef}>
+    <div data-caid="acp/session-panel" className="fixed right-4 top-14 w-[380px] max-h-[520px] rounded-[14px] bg-bg-surface border border-brand-border shadow-brand-lg z-[var(--z-context-menu)] p-4 overflow-hidden flex flex-col" ref={panelRef}>
       {/* Header */}
       <div className="flex items-center gap-2 text-sm font-semibold pb-3 text-brand-text shrink-0">
         <Monitor size={16} />

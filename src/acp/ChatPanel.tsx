@@ -532,7 +532,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
   const currentModel = MODELS.find((m) => m.id === model);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-[var(--brand-bg)] text-brand-text font-[-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif]">
+    <div data-caid="acp/chat-panel" className="flex flex-col h-full overflow-hidden bg-[var(--brand-bg)] text-brand-text font-[-apple-system,BlinkMacSystemFont,'Inter',system-ui,sans-serif]">
       {/* ── Header Bar ── */}
       <div className="flex items-center justify-between h-12 px-4 border-b border-[var(--brand-border)] shrink-0 bg-bg-surface">
         <div className="flex items-center gap-1.5">

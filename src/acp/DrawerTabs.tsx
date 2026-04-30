@@ -17,6 +17,7 @@ export function DrawerTabs({ connected, currentScreen, markerContext, onResetMar
 
   return (
     <div
+      data-caid="acp/drawer-tabs"
       style={{
         display: 'flex',
         flexDirection: 'column',

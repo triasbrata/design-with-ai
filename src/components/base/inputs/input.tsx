@@ -62,6 +62,7 @@ export function InputField({
 }: InputFieldProps) {
   return (
     <div
+      data-caid="base/input"
       className={cx(
         "flex w-full items-center gap-2 rounded-lg border border-secondary/10 bg-primary px-3 py-2 transition duration-100",
         "has-[:focus]:border-brand-solid has-[:focus]:ring-2 has-[:focus]:ring-brand-solid/20",

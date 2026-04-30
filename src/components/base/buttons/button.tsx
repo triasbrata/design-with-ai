@@ -208,6 +208,7 @@ export const Button = ({
     }
 
     return (
+        <div data-caid="base/button">
         <Component
             data-loading={loading ? true : undefined}
             data-icon-only={isIcon ? true : undefined}
@@ -261,5 +262,6 @@ export const Button = ({
             {isValidElement(IconTrailing) && IconTrailing}
             {isReactComponent(IconTrailing) && <IconTrailing data-icon="trailing" className={styles.common.icon} />}
         </Component>
+        </div>
     );
 };

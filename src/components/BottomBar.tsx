@@ -106,7 +106,7 @@ export function BottomBar({
   }
 
   return (
-    <>
+    <div data-caid="bottom-bar">
       {/* Info + nav pill — bottom-left */}
       <div className={cn(pillBase, "left-4 gap-1.5 whitespace-nowrap max-[900px]:left-2")}>
         <NameDisplay projectName={projectName} name={name} />
@@ -209,6 +209,6 @@ export function BottomBar({
           {activeTool === "help" ? " Help" : ""}
         </button>
       </div>
-    </>
+    </div>
   );
 }

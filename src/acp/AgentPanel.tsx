@@ -4,7 +4,7 @@ interface AgentPanelProps {
 
 export function AgentPanel({ connected }: AgentPanelProps) {
   return (
-    <div style={{ padding: '12px 0' }}>
+    <div data-caid="acp/agent-panel" style={{ padding: '12px 0' }}>
       <div
         style={{
           display: 'flex',

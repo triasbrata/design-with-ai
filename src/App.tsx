@@ -610,7 +610,7 @@ export default function App() {
   );
 
   return (
-    <div style={{ display: "flex", width: "100%", height: "100vh", overflow: "hidden" }}>
+    <div data-caid="app" style={{ display: "flex", width: "100%", height: "100vh", overflow: "hidden" }}>
       {capturing ? (
         <CaptureProgress
           screens={orderedScreens}

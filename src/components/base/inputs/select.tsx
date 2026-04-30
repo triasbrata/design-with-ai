@@ -23,17 +23,19 @@ import { cx } from "@/utils/cx";
  */
 export function Select<T extends object>(props: AriaSelectProps<T>) {
   return (
-    <AriaSelect
-      {...props}
-      className={(vals) =>
-        cx(
-          "group/select flex w-full flex-col gap-1.5",
-          typeof props.className === "function"
-            ? props.className(vals)
-            : props.className,
-        )
-      }
-    />
+    <div data-caid="base/select">
+      <AriaSelect
+        {...props}
+        className={(vals) =>
+          cx(
+            "group/select flex w-full flex-col gap-1.5",
+            typeof props.className === "function"
+              ? props.className(vals)
+              : props.className,
+          )
+        }
+      />
+    </div>
   );
 }
 
