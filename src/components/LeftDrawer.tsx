@@ -326,7 +326,7 @@ export function LeftDrawer({
 
   return (
     <>
-      <div className="left-drawer-trigger">
+      <div className="ld-trigger">
         <button className="burger-btn" onClick={onToggle} aria-label="Toggle workspace">
           <Menu size={18} />
         </button>

@@ -367,54 +367,6 @@ body {
   color: var(--brand-muted);
 }
 
-/* ── Right Drawer Trigger ── */
-.drawer-trigger {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  z-index: 16;
-}
-
-/* ── Right Drawer ── */
-.right-drawer {
-  flex-shrink: 0;
-  width: 0;
-  height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-  background: var(--brand-surface);
-  border-left: 1px solid transparent;
-  transition: width 0.25s ease;
-}
-.right-drawer.floating {
-  position: fixed;
-  top: 0;
-  right: 0;
-  z-index: 50;
-}
-.right-drawer.push {
-  position: relative;
-}
-.right-drawer.open {
-  width: var(--sidebar-width);
-  border-left-color: var(--brand-border);
-}
-.right-drawer-inner {
-  width: var(--sidebar-width);
-  height: 100%;
-  padding: 0;
-}
-.right-drawer h3 {
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-.right-drawer .sub {
-  font-size: 10px;
-  color: var(--brand-muted);
-  margin-bottom: 16px;
-}
-
 /* ── Right Drawer Tab Bar ── */
 .rd-tab-bar {
   display: flex;
@@ -552,6 +504,9 @@ body {
 }
 .chat-drawer-inner {
   width: var(--sidebar-width);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   padding: 16px 12px;
 }
 .chat-drawer h3 {
