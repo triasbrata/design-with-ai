@@ -521,16 +521,27 @@ export function LeftDrawer({
                               </button>
                             )}
                           </div>
-                          {fsIsSupported() && folderForm.inputHandleId ? (
+                          {folderForm.inputHandleId ? (
                             <div className="ld-folder-create-row" style={{ color: "var(--brand-muted)", fontSize: 11, padding: "4px 0" }}>
-                              Using native file system access &mdash; no paths needed
+                              Using native file system access &mdash; clear to use path instead
+                              <button
+                                className="ld-inline-cancel"
+                                style={{ marginLeft: 8, fontSize: 11 }}
+                                onClick={() =>
+                                  setFolderForm((prev) =>
+                                    prev ? { ...prev, inputHandleId: undefined, outputHandleId: undefined, inputDir: "", outputDir: "" } : null,
+                                  )
+                                }
+                              >
+                                <X size={10} />
+                              </button>
                             </div>
-                          ) : !fsIsSupported() ? (
+                          ) : (
                             <>
                               <div className="ld-folder-create-row">
                                 <input
                                   className="ld-folder-input"
-                                  placeholder="Input directory"
+                                  placeholder="Input directory (e.g. ../../docs/anav-v3/design/golden/)"
                                   value={folderForm.inputDir}
                                   onChange={(e) =>
                                     setFolderForm((prev) =>
@@ -542,7 +553,7 @@ export function LeftDrawer({
                               <div className="ld-folder-create-row">
                                 <input
                                   className="ld-folder-input"
-                                  placeholder="Same as input directory"
+                                  placeholder="Output directory (defaults to input)"
                                   value={folderForm.outputDir}
                                   onChange={(e) =>
                                     setFolderForm((prev) =>
@@ -552,7 +563,7 @@ export function LeftDrawer({
                                 />
                               </div>
                             </>
-                          ) : null}
+                          )}
                           <div className="ld-folder-create-actions">
                             <button className="ld-inline-cancel" onClick={handleCancelFolder}>
                               <X size={14} />
@@ -560,7 +571,14 @@ export function LeftDrawer({
                             <button
                               className="ld-inline-confirm"
                               onClick={handleSubmitFolder}
-                              {...(fsIsSupported() && !folderForm.inputHandleId ? { style: { opacity: 0.4 } as React.CSSProperties, title: "Pick a folder first" } : {})}
+                              disabled={!folderForm.name.trim() || (!folderForm.inputDir.trim() && !folderForm.inputHandleId)}
+                              title={
+                                !folderForm.name.trim()
+                                  ? "Enter a folder name"
+                                  : !folderForm.inputDir.trim() && !folderForm.inputHandleId
+                                    ? "Enter a path or pick a folder"
+                                    : ""
+                              }
                             >
                               <Check size={14} />
                             </button>

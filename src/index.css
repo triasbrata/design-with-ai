@@ -1242,6 +1242,11 @@ body {
 .ld-inline-confirm:hover {
   background: #16a34a;
 }
+.ld-inline-confirm:disabled {
+  background: #a8a8a8;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
 .ld-inline-cancel {
   display: flex;
   align-items: center;
