@@ -329,7 +329,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
     function handleMouseDown(e: MouseEvent) {
       const target = e.target as HTMLElement;
       // Ignore clicks inside dropdowns or on trigger buttons
-      if (target.closest('.chat-dropdown') || target.closest('[data-dropdown-trigger]')) return;
+      if (target.closest('[data-dropdown-content]') || target.closest('[data-dropdown-trigger]')) return;
       setActiveDropdown(null);
     }
 
@@ -713,6 +713,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
       {activeDropdown === 'approval' && (
         <div
           className="fixed z-[var(--z-context-menu)] bg-bg-surface rounded-[12px] p-2 shadow-[0_8px_24px_var(--brand-shadow)] border border-[var(--brand-border)] w-[280px]"
+          data-dropdown-content=""
           style={{ bottom: dropdownPos.bottom, left: dropdownPos.left }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -750,6 +751,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
       {activeDropdown === 'model' && (
         <div
           className="fixed z-[var(--z-context-menu)] bg-bg-surface rounded-[12px] p-2 shadow-[0_8px_24px_var(--brand-shadow)] border border-[var(--brand-border)] w-[360px]"
+          data-dropdown-content=""
           style={{ bottom: dropdownPos.bottom, left: dropdownPos.left }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -841,6 +843,7 @@ export function ChatPanel({ currentScreen, markerContext, onResetMarker }: ChatP
       {activeDropdown === 'reasoning' && (
         <div
           className="fixed z-[var(--z-context-menu)] bg-bg-surface rounded-[12px] p-2 shadow-[0_8px_24px_var(--brand-shadow)] border border-[var(--brand-border)] w-[260px]"
+          data-dropdown-content=""
           style={{ bottom: dropdownPos.bottom, left: dropdownPos.left }}
           onClick={(e) => e.stopPropagation()}
         >
