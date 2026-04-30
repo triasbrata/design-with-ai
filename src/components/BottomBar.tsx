@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "../lib/cn";
-import { Camera, ChevronLeft, ChevronRight, ClipboardList, BarChart3, HelpCircle, List, Smartphone, Square, Monitor, Tablet } from "./base/icons";
+import { Camera, ChevronLeft, ChevronRight, ClipboardList, HelpCircle, Smartphone, Square, Monitor, Tablet } from "./base/icons";
 import { DEVICE_PRESETS } from "../constants";
 import type { DeviceMode } from "../constants";
 
@@ -15,7 +15,6 @@ interface BottomBarProps {
   onPrev: () => void;
   onNext: () => void;
   onCapture: () => void;
-  onSummary: () => void;
   onHelp: () => void;
   onDeviceModeChange: (mode: DeviceMode) => void;
 }
@@ -65,7 +64,6 @@ export function BottomBar({
   onPrev,
   onNext,
   onCapture,
-  onSummary,
   onHelp,
   onDeviceModeChange,
 }: BottomBarProps) {
@@ -95,9 +93,7 @@ export function BottomBar({
     { id: "marker", icon: <Square size={20} />, label: "Marker", tooltip: "Draw rectangle marker on screen" },
     { id: "capture", icon: <Camera size={20} />, label: "Capture", tooltip: "Screenshot current screen", action: onCapture },
     { id: "device", icon: deviceIcon(deviceMode), label: deviceLabel, tooltip: `Device: ${deviceLabel}` },
-    { id: "states", icon: <List size={20} />, label: "States", tooltip: "Toggle state view" },
-    { id: "summary", icon: <ClipboardList size={20} />, label: "Summary", tooltip: "View all screens summary", action: onSummary },
-    { id: "export", icon: <BarChart3 size={20} />, label: "Export", tooltip: "Export screenshots" },
+    { id: "summary", icon: <ClipboardList size={20} />, label: "Summary", tooltip: "View all screens summary" },
   ];
 
   function handleClick(tool: ToolDef) {

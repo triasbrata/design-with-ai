@@ -749,10 +749,6 @@ export default function App() {
               onPrev={goPrev}
               onNext={goNext}
               onCapture={handleCapture}
-              onSummary={() => {
-                goNext();
-                setDockTool("");
-              }}
               onHelp={() => setHelpOpen(true)}
               onDeviceModeChange={handleDeviceModeCycle}
             />
