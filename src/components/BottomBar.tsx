@@ -32,7 +32,14 @@ function NameDisplay({ projectName, name }: { projectName?: string; name: string
   const full = projectName ? `${projectName} / ${name}` : name;
   const display = name.length > 20 ? name.slice(0, 20) + "..." : name;
 
-  return <span className="text-sm font-semibold" title={full}>{display}</span>;
+  return (
+    <span
+      className="text-sm font-semibold max-[900px]:max-w-[80px] max-[900px]:truncate max-[900px]:inline-block"
+      title={full}
+    >
+      {display}
+    </span>
+  );
 }
 
 const dockToolBase = cn(

@@ -54,18 +54,18 @@ export function MetaPanel({ meta, screen, activeState, onStateChange }: MetaPane
 
       <div>
         <div className="text-xs font-bold uppercase text-brand-solid tracking-[0.5px] mb-3">Key Elements</div>
-        <ul className="list-none p-0 flex flex-wrap gap-[3px]">
+        <ul className="list-none p-0 flex flex-wrap gap-1.5">
           {meta.keyElements.map((el, i) => (
-            <li key={i} className="text-xs bg-primary_hover px-2 py-1 rounded-md text-secondary border border-[var(--brand-border-hairline)]">{el}</li>
+            <li key={i} className="text-xs bg-primary_hover px-2.5 py-1 rounded-md text-secondary border border-[var(--brand-border-hairline)]">{el}</li>
           ))}
         </ul>
       </div>
 
       <div>
         <div className="text-xs font-bold uppercase text-brand-solid tracking-[0.5px] mb-3">States</div>
-        <div className="flex flex-wrap gap-[3px]">
+        <div className="flex flex-wrap gap-1.5">
           {meta.states.map((s) => (
-            <span key={s} className="text-xs px-2 py-[2px] rounded-lg font-semibold bg-[var(--state-success-bg)] text-[var(--state-success-text)]">
+            <span key={s} className="text-xs px-2.5 py-1 rounded-lg font-semibold bg-[var(--state-success-bg)] text-[var(--state-success-text)]">
               {s}
             </span>
           ))}
@@ -74,9 +74,9 @@ export function MetaPanel({ meta, screen, activeState, onStateChange }: MetaPane
 
       <div>
         <div className="text-xs font-bold uppercase text-brand-solid tracking-[0.5px] mb-3">Interactions</div>
-        <div className="flex flex-wrap gap-[3px]">
+        <div className="flex flex-wrap gap-1.5">
           {meta.interactions.map((i, idx) => (
-            <span key={idx} className="text-xs px-2 py-[2px] rounded-lg font-semibold bg-[var(--state-warn-bg)] text-[var(--state-warn-text)]">
+            <span key={idx} className="text-xs px-2.5 py-1 rounded-lg font-semibold bg-[var(--state-warn-bg)] text-[var(--state-warn-text)]">
               {i}
             </span>
           ))}

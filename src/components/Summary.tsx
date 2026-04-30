@@ -46,17 +46,17 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
 
       <div className="px-4 pt-5 pb-16">
         <div className="flex gap-6 mb-5 p-4 bg-bg-surface rounded-[14px] shadow-brand-sm">
-          <div className="text-center">
+          <div className="text-center flex-1">
             <div className="text-[28px] font-bold text-brand-solid">{screens.length}</div>
             <div className="text-xs text-tertiary">Screens</div>
           </div>
-          <div className="text-center">
+          <div className="text-center flex-1">
             <div className="text-[28px] font-bold text-brand-solid">{totalStates}</div>
             <div className="text-xs text-tertiary">States</div>
           </div>
-          <div className="text-center">
-            <span className="text-base font-mono font-medium truncate max-w-[200px] inline-block text-brand-solid">
-              phone_{"{screen}"}.png
+          <div className="text-center flex-1">
+            <span className="text-xs font-mono font-medium truncate max-w-full inline-block text-brand-solid">
+              phone_*.png
             </span>
             <div className="text-xs text-tertiary">Naming Convention</div>
           </div>
@@ -65,10 +65,10 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
         <table className="w-full border-collapse bg-bg-surface rounded-xl overflow-hidden">
           <thead>
             <tr className="text-left border-b border-[var(--brand-border)]">
-              <th className="px-3.5 py-2.5 text-xs text-tertiary">Screen</th>
-              <th className="px-3.5 py-2.5 text-xs text-tertiary">States</th>
-              <th className="px-3.5 py-2.5 text-xs text-tertiary">State Chips</th>
-              <th className="px-3.5 py-2.5 text-xs text-tertiary">Output Files</th>
+              <th className="px-3.5 py-2.5 text-xs text-tertiary w-[25%]">Screen</th>
+              <th className="px-3.5 py-2.5 text-xs text-tertiary w-[8%]">States</th>
+              <th className="px-3.5 py-2.5 text-xs text-tertiary w-[22%]">State Chips</th>
+              <th className="px-3.5 py-2.5 text-xs text-tertiary w-[45%]">Output Files</th>
             </tr>
           </thead>
           <tbody>
@@ -78,7 +78,7 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
 
               return [
                 <tr key={`tier-${tier}`}>
-                  <td colSpan={4} className="text-xs font-bold uppercase text-brand-solid tracking-[0.5px] pt-5 pb-1 px-3.5">
+                  <td colSpan={4} className="text-xs font-bold uppercase text-brand-solid tracking-[0.5px] pt-6 pb-2 px-3.5 bg-primary_hover">
                     {tier} &mdash; {info.label}
                   </td>
                 </tr>,
@@ -102,14 +102,14 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
                       <td className="px-3.5 py-2 text-sm border-b border-[#F8F4EC]">{states.length}</td>
                       <td className="px-3.5 py-2 text-sm border-b border-[#F8F4EC]">
                         {states.map((s) => (
-                          <span key={s} className="text-xs px-2 py-[2px] rounded-lg bg-primary_hover text-[#5A5A5A] font-semibold whitespace-nowrap">
+                          <span key={s} className="text-xs px-2 py-1 rounded-lg bg-primary_hover text-[#5A5A5A] font-semibold whitespace-nowrap inline-block mr-1 mb-1">
                             {s}
                           </span>
                         ))}
                       </td>
-                      <td className="px-3.5 py-2 text-sm border-b border-[#F8F4EC]">
+                      <td className="px-3.5 py-2 text-sm border-b border-[#F8F4EC] break-all">
                         {states.map((s) => (
-                          <code key={s} className="text-[9px] bg-[#F9F6EE] px-1.5 py-[1px] rounded text-tertiary">{getFilename(screen, s, states)}</code>
+                          <code key={s} className="text-[9px] bg-[#F9F6EE] px-1.5 py-[1px] rounded text-tertiary mr-1 mb-1 inline-block">{getFilename(screen, s, states)}</code>
                         ))}
                       </td>
                     </tr>

@@ -41,17 +41,8 @@ export function StateTabs({ stateContext, states, activeState, onChange }: State
           </button>
         ))}
       </div>
-      <div className={cn(activeState === 'default' && "!hidden")}>
-        {activeState !== 'default' && stateContext[activeState]?.goal && (
-          <>
-            <div className="text-xs font-bold uppercase text-brand-solid tracking-[0.5px] mb-3">
-              Goal
-            </div>
-            <p id="state-goal-text" className="text-xs text-[#6B5E4F] leading-relaxed">
-              {stateContext[activeState].goal}
-            </p>
-          </>
-        )}
+      <div className={cn("mt-2", activeState === 'default' && "!hidden")}>
+        {/* goal moved to MetaPanel */}
       </div>
     </>
   );
