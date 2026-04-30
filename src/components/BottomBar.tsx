@@ -136,7 +136,7 @@ export function BottomBar({
                   {` ${tool.label}`}
                 </button>
                 {deviceMenuOpen && (
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-bg-surface border border-[var(--brand-border)] rounded-xl shadow-[0_4px_16px_var(--brand-shadow)] p-1 min-w-[200px] z-[var(--z-dropdown)]">
+                  <div className="absolute bottom-full right-0 mb-2 bg-bg-surface border border-[var(--brand-border)] rounded-xl shadow-[0_4px_16px_var(--brand-shadow)] p-1 min-w-[200px] max-w-[calc(100vw-32px)] z-[var(--z-dropdown)]">
                     {(Object.keys(DEVICE_PRESETS) as DeviceMode[]).map((mode) => {
                       const preset = DEVICE_PRESETS[mode];
                       return (
