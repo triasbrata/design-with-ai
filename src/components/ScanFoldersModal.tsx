@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { cn } from "../lib/cn";
 import { Search, Check, X, Loader2 } from "./base/icons";
 
 interface ScannedFolder {
@@ -76,73 +77,80 @@ export function ScanFoldersModal({ open, onClose, onAddFolders }: ScanFoldersMod
   if (!open) return null;
 
   return (
-    <div className="sf-overlay" onClick={onClose}>
-      <div className="sf-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="sf-header">
-          <h3>
+    <div className="fixed inset-0 z-[var(--z-confirm-modal)] flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-bg-surface rounded-[14px] p-6 max-w-[420px] w-[90%] shadow-[0_16px_48px_var(--brand-shadow-heavy)] max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[15px] font-semibold text-[var(--brand-text)] flex items-center gap-2">
             <Search size={16} />
             Scan for projects
           </h3>
-          <button type="button" className="ld-close-btn" onClick={onClose} title="Close">
+          <button type="button" className="flex items-center justify-center p-1 border-none rounded-md bg-transparent text-[var(--brand-muted)] cursor-pointer transition-[background] duration-150 hover:bg-[var(--brand-accent-light)] hover:text-brand-solid" onClick={onClose} title="Close">
             <X size={14} />
           </button>
         </div>
 
         {loading && (
-          <div className="sf-loading">
-            <Loader2 size={20} className="sf-spinner" />
+          <div className="flex items-center justify-center gap-2 py-8 text-tertiary text-sm">
+            <Loader2 size={20} className="animate-[sf-spin_1s_linear_infinite]" />
             <span>Scanning folders...</span>
           </div>
         )}
 
-        {error && <div className="sf-error">{error}</div>}
+        {error && <div className="p-3 bg-[var(--brand-accent-light)] text-brand-solid rounded-lg text-xs mb-3">{error}</div>}
 
         {!loading && !error && folders.length === 0 && (
-          <div className="sf-empty">
+          <div className="py-8 text-center text-tertiary text-sm">
             No golden spec folders found in the repository.
           </div>
         )}
 
         {!loading && !error && folders.length > 0 && (
           <>
-            <div className="sf-select-actions">
-              <button type="button" className="sf-select-btn" onClick={selectAll}>
+            <div className="flex gap-1.5 mb-2">
+              <button type="button" className="font-inherit text-xs font-semibold px-2.5 py-1 border border-[var(--brand-border)] rounded-md bg-bg-surface text-tertiary cursor-pointer transition-all duration-150 hover:bg-primary_hover hover:text-[var(--brand-text)]" onClick={selectAll}>
                 Select All
               </button>
-              <button type="button" className="sf-select-btn" onClick={deselectAll}>
+              <button type="button" className="font-inherit text-xs font-semibold px-2.5 py-1 border border-[var(--brand-border)] rounded-md bg-bg-surface text-tertiary cursor-pointer transition-all duration-150 hover:bg-primary_hover hover:text-[var(--brand-text)]" onClick={deselectAll}>
                 Deselect All
               </button>
             </div>
-            <div className="sf-list">
+            <div className="overflow-y-auto max-h-[260px] mb-3 flex flex-col gap-1">
               {folders.map((folder, i) => (
                 <label
                   key={folder.path}
-                  className={`sf-item${selected.has(i) ? " selected" : ""}`}
+                  className={cn(
+                    "flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-[background] duration-150",
+                    selected.has(i) ? "bg-[var(--brand-accent-light)]" : "hover:bg-primary_hover"
+                  )}
                 >
                   <input
                     type="checkbox"
-                    className="sf-checkbox"
+                    className="size-4 accent-brand-solid shrink-0 cursor-pointer"
                     checked={selected.has(i)}
                     onChange={() => toggle(i)}
                   />
-                  <div className="sf-item-content">
-                    <span className="sf-name">{folder.name}</span>
-                    <span className="sf-path">{folder.path}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="block text-sm font-semibold text-[var(--brand-text)]">{folder.name}</span>
+                    <span className="block text-[10px] text-[var(--brand-muted-light)] whitespace-nowrap overflow-hidden text-ellipsis">{folder.path}</span>
                   </div>
-                  <span className="sf-count">{folder.screenCount} screens</span>
+                  <span className="text-[10px] font-semibold text-tertiary bg-primary_hover px-2 py-[2px] rounded-lg whitespace-nowrap shrink-0">{folder.screenCount} screens</span>
                 </label>
               ))}
             </div>
           </>
         )}
 
-        <div className="sf-actions">
-          <button type="button" className="cm-btn cm-btn-cancel" onClick={onClose}>
+        <div className="flex gap-2 justify-end">
+          <button
+            type="button"
+            className="px-4 py-2 rounded-lg border-none font-inherit text-sm font-semibold cursor-pointer bg-primary_hover text-tertiary transition-[background] duration-150 hover:bg-[var(--brand-border)]"
+            onClick={onClose}
+          >
             Cancel
           </button>
           <button
             type="button"
-            className="cm-btn cm-btn-confirm"
+            className="px-4 py-2 rounded-lg border-none font-inherit text-sm font-semibold cursor-pointer bg-brand-solid text-white transition-[background] duration-150 hover:bg-brand-solid_hover disabled:opacity-50 disabled:cursor-default"
             onClick={handleAdd}
             disabled={selected.size === 0}
           >
