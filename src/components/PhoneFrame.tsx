@@ -16,7 +16,10 @@ export const PhoneFrame = forwardRef<{ getIframe: () => HTMLIFrameElement | null
     }));
 
     return (
-      <div className="frame-wrapper" style={{ width: `${width}px`, height: `${height}px` }}>
+      <div
+        className="shrink-0 rounded-[28px] shadow-[0_8px_32px_var(--brand-shadow)] overflow-hidden bg-white"
+        style={{ width: `${width}px`, height: `${height}px` }}
+      >
         {/*
           sandbox="allow-scripts allow-same-origin" is required:
           - allow-scripts: enables the spec HTML to run its baseline contract JS

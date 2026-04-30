@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { cn } from "../lib/cn";
 import type { Project, Metadata, CaptureFolder } from "../types";
 import type { ClientFileEntry } from "../types";
 import { Button } from "./base";
@@ -182,7 +183,7 @@ export function ProjectSelector({
       : activeProject?.name ?? "Project";
 
   return (
-    <div className="ps-wrapper" ref={dropdownRef}>
+    <div className="relative inline-block" ref={dropdownRef}>
       {/* Hidden file input for native folder picker */}
       <input
         ref={fileInputRef}
@@ -197,31 +198,31 @@ export function ProjectSelector({
       {/* Trigger */}
       <button
         type="button"
-        className="ps-trigger"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-[var(--brand-border)] rounded-[10px] bg-bg-surface text-[var(--brand-text)] text-sm font-semibold cursor-pointer transition-[background] duration-150 hover:bg-primary_hover"
         onClick={() => setOpen((p) => !p)}
         title="Switch project / folder"
       >
         <Folder size={14} />
-        <span className="ps-trigger-name">{triggerLabel}</span>
-        <ChevronDown size={12} className={`ps-chevron${open ? " open" : ""}`} />
+        <span className="max-w-[180px] overflow-hidden text-ellipsis whitespace-nowrap">{triggerLabel}</span>
+        <ChevronDown size={12} className={cn("transition-transform duration-200", open && "rotate-180")} />
       </button>
 
       {/* Dropdown */}
       {open && (
-        <div className="ps-dropdown">
-          <div className="ps-header">Workspaces &amp; Folders</div>
+        <div className="absolute top-full left-0 mt-1 min-w-[240px] bg-bg-surface border border-[var(--brand-border)] rounded-xl shadow-[0_8px_24px_var(--brand-shadow)] p-2 z-[var(--z-dropdown)]">
+          <div className="text-[10px] font-bold uppercase tracking-[0.5px] text-tertiary px-2 pb-2 pt-1">Workspaces &amp; Folders</div>
 
           {projects.map((p, pi) =>
             p.type === "workspace" ? (
               /* ── Workspace group ── */
-              <div key={`ws-${pi}`} className="ps-ws-group">
-                <div className="ps-ws-header">
-                  <Folder size={14} className="ps-ws-icon" />
-                  <span className="ps-ws-name">{p.name}</span>
+              <div key={`ws-${pi}`} className="mb-1">
+                <div className="flex items-center gap-1.5 px-2 pt-1.5 pb-0.5 text-xs font-bold text-tertiary uppercase tracking-[0.3px]">
+                  <Folder size={14} className="shrink-0 text-brand-solid" />
+                  <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{p.name}</span>
                   {projects.length > 1 && (
                     <button
                       type="button"
-                      className="ps-item-remove"
+                      className="shrink-0 w-[22px] h-[22px] border-none rounded-md bg-transparent text-[var(--brand-muted-light)] cursor-pointer flex items-center justify-center p-0 transition-all duration-100 hover:bg-brand-solid hover:text-white"
                       onClick={() => onRemoveProject(pi)}
                       title="Remove workspace"
                       aria-label={`Remove ${p.name}`}
@@ -237,31 +238,34 @@ export function ProjectSelector({
                     <button
                       type="button"
                       key={`folder-${fi}`}
-                      className={`ps-item${isActive ? " active" : ""}`}
+                      className={cn(
+                        "flex items-center gap-2 w-full px-2 py-1.5 rounded-lg border-none bg-transparent text-sm text-[var(--brand-text)] cursor-pointer text-left transition-[background] duration-100",
+                        isActive ? "bg-[var(--brand-accent-light)] text-brand-solid font-semibold" : "hover:bg-primary_hover"
+                      )}
                       onClick={() => {
                         onSelect(pi, fi);
                         setOpen(false);
                       }}
                     >
-                      <span className="ps-item-indent" />
+                      <span className="w-4 shrink-0" />
                       {isActive ? (
-                        <Check size={14} className="ps-item-check" />
+                        <Check size={14} className="shrink-0 text-brand-solid" />
                       ) : (
-                        <ChevronRight size={12} className="ps-item-icon" />
+                        <ChevronRight size={12} className="shrink-0 text-tertiary" />
                       )}
-                      <span className="ps-item-name">
+                      <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
                         {f.name}
-                        <span className="ps-item-paths">
-                          <FileInput size={10} />
+                        <span className="text-[9px] font-normal text-[var(--brand-muted-light)] mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-[3px]">
+                          <FileInput size={10} className="shrink-0 opacity-60" />
                           {f.inputDir}
-                          <Save size={10} />
+                          <Save size={10} className="shrink-0 opacity-60" />
                           {f.outputDir}
                         </span>
                       </span>
                       {p.folders.length > 1 && (
                         <button
                           type="button"
-                          className="ps-item-remove"
+                          className="shrink-0 w-[22px] h-[22px] border-none rounded-md bg-transparent text-[var(--brand-muted-light)] cursor-pointer flex items-center justify-center p-0 transition-all duration-100 hover:bg-brand-solid hover:text-white"
                           onClick={(e) => {
                             e.stopPropagation();
                             onRemoveFolder(pi, fi);
@@ -278,7 +282,7 @@ export function ProjectSelector({
 
                 <button
                   type="button"
-                  className="ps-add-btn ps-add-btn-sub"
+                  className="my-0.5 mb-1 ml-6 px-2 py-1 text-xs border border-solid border-[var(--brand-border-hairline)] rounded-md text-tertiary bg-transparent cursor-pointer flex items-center gap-1 transition-all duration-150 hover:bg-primary_hover hover:text-[var(--brand-text)]"
                   onClick={() => {
                     openAddFolder(pi);
                   }}
@@ -292,22 +296,25 @@ export function ProjectSelector({
               <button
                 type="button"
                 key={`client-${pi}`}
-                className={`ps-item${pi === activeIndex ? " active" : ""}`}
+                className={cn(
+                  "flex items-center gap-2 w-full px-2 py-1.5 rounded-lg border-none bg-transparent text-sm text-[var(--brand-text)] cursor-pointer text-left transition-[background] duration-100",
+                  pi === activeIndex ? "bg-[var(--brand-accent-light)] text-brand-solid font-semibold" : "hover:bg-primary_hover"
+                )}
                 onClick={() => {
                   onSelect(pi);
                   setOpen(false);
                 }}
               >
-                <FolderOpen size={14} className="ps-item-icon" />
-                <span className="ps-item-name">
+                <FolderOpen size={14} className={cn("shrink-0", pi === activeIndex ? "text-brand-solid" : "text-tertiary")} />
+                <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
                   {p.name}
-                  <span className="ps-item-badge">local</span>
+                  <span className="inline-block text-[8px] font-bold uppercase tracking-[0.3px] px-1 py-[1px] ml-1.5 rounded bg-primary_hover text-tertiary align-middle">local</span>
                 </span>
-                {pi === activeIndex && <Check size={14} className="ps-item-check" />}
+                {pi === activeIndex && <Check size={14} className="shrink-0 text-brand-solid" />}
                 {projects.length > 1 && (
                   <button
                     type="button"
-                    className="ps-item-remove"
+                    className="shrink-0 w-[22px] h-[22px] border-none rounded-md bg-transparent text-[var(--brand-muted-light)] cursor-pointer flex items-center justify-center p-0 transition-all duration-100 hover:bg-brand-solid hover:text-white"
                     onClick={(e) => {
                       e.stopPropagation();
                       onRemoveProject(pi);
@@ -322,12 +329,12 @@ export function ProjectSelector({
             ),
           )}
 
-          <div className="ps-divider" />
+          <div className="h-px bg-[var(--brand-border-hairline)] my-1.5" />
 
           {/* New Workspace */}
           <button
             type="button"
-            className="ps-add-btn"
+            className="flex items-center gap-2 w-full p-2 border border-dashed border-[var(--brand-border)] rounded-lg bg-transparent text-xs font-semibold text-tertiary cursor-pointer transition-all duration-150 hover:bg-primary_hover hover:text-[var(--brand-text)] hover:border-[var(--brand-muted-light)] disabled:opacity-60 disabled:cursor-not-allowed"
             onClick={() => {
               setOpen(false);
               resetWsForm();
@@ -341,7 +348,7 @@ export function ProjectSelector({
           {/* Browse Folder */}
           <button
             type="button"
-            className="ps-add-btn"
+            className="flex items-center gap-2 w-full p-2 border border-dashed border-[var(--brand-border)] rounded-lg bg-transparent text-xs font-semibold text-tertiary cursor-pointer transition-all duration-150 hover:bg-primary_hover hover:text-[var(--brand-text)] hover:border-[var(--brand-muted-light)] disabled:opacity-60 disabled:cursor-not-allowed"
             onClick={() => {
               setOpen(false);
               fileInputRef.current?.click();
@@ -357,16 +364,16 @@ export function ProjectSelector({
       {/* ── New Workspace Modal ── */}
       {showWorkspaceModal &&
         createPortal(
-          <div className="ps-overlay" onClick={() => setShowWorkspaceModal(false)}>
-            <div className="ps-modal" onClick={(e) => e.stopPropagation()}>
-              <h3>New Workspace</h3>
-              <p className="ps-modal-sub">
+          <div className="fixed inset-0 bg-black/30 z-[var(--z-dropdown)] flex items-center justify-center" onClick={() => setShowWorkspaceModal(false)}>
+            <div className="bg-bg-surface rounded-2xl p-6 max-w-[380px] w-[90%] shadow-[0_8px_32px_rgba(0,0,0,0.15)]" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-base font-bold mb-1">New Workspace</h3>
+              <p className="text-xs text-tertiary mb-4">
                 Create a workspace with an initial screen folder.
               </p>
 
-              <label className="ps-field-label">Workspace Name</label>
+              <label className="block text-xs font-semibold text-[var(--brand-text)] mb-1 mt-3 first:mt-0">Workspace Name</label>
               <input
-                className="ps-input"
+                className="w-full px-3 py-2 border border-[var(--brand-border)] rounded-lg text-sm text-[var(--brand-text)] bg-white outline-none transition-[border-color] duration-150 focus:border-brand-solid focus:shadow-[0_0_0_2px_var(--brand-accent-light)]"
                 type="text"
                 placeholder="e.g. MoneyKitty"
                 value={wsName}
@@ -374,36 +381,36 @@ export function ProjectSelector({
                 autoFocus
               />
 
-              <label className="ps-field-label">Folder Name</label>
+              <label className="block text-xs font-semibold text-[var(--brand-text)] mb-1 mt-3 first:mt-0">Folder Name</label>
               <input
-                className="ps-input"
+                className="w-full px-3 py-2 border border-[var(--brand-border)] rounded-lg text-sm text-[var(--brand-text)] bg-white outline-none transition-[border-color] duration-150 focus:border-brand-solid focus:shadow-[0_0_0_2px_var(--brand-accent-light)]"
                 type="text"
                 placeholder="e.g. Main Screens"
                 value={folderName}
                 onChange={(e) => setFolderName(e.target.value)}
               />
 
-              <label className="ps-field-label">Input Directory (golden specs)</label>
+              <label className="block text-xs font-semibold text-[var(--brand-text)] mb-1 mt-3 first:mt-0">Input Directory (golden specs)</label>
               <input
-                className="ps-input"
+                className="w-full px-3 py-2 border border-[var(--brand-border)] rounded-lg text-sm text-[var(--brand-text)] bg-white outline-none transition-[border-color] duration-150 focus:border-brand-solid focus:shadow-[0_0_0_2px_var(--brand-accent-light)]"
                 type="text"
                 placeholder="e.g. ../../docs/moneykitty/design/golden/"
                 value={inputDir}
                 onChange={(e) => setInputDir(e.target.value)}
               />
 
-              <label className="ps-field-label">
+              <label className="block text-xs font-semibold text-[var(--brand-text)] mb-1 mt-3 first:mt-0">
                 Output Directory (captured PNGs)
               </label>
               <input
-                className="ps-input"
+                className="w-full px-3 py-2 border border-[var(--brand-border)] rounded-lg text-sm text-[var(--brand-text)] bg-white outline-none transition-[border-color] duration-150 focus:border-brand-solid focus:shadow-[0_0_0_2px_var(--brand-accent-light)]"
                 type="text"
                 placeholder="Leave empty to use input directory"
                 value={outputDir}
                 onChange={(e) => setOutputDir(e.target.value)}
               />
 
-              <div className="ps-modal-actions">
+              <div className="flex justify-end gap-2 mt-5">
                 <Button
                   color="secondary"
                   size="sm"
@@ -428,16 +435,16 @@ export function ProjectSelector({
       {/* ── Add Folder Modal ── */}
       {showFolderModal &&
         createPortal(
-          <div className="ps-overlay" onClick={() => setShowFolderModal(false)}>
-            <div className="ps-modal" onClick={(e) => e.stopPropagation()}>
-              <h3>Add Folder</h3>
-              <p className="ps-modal-sub">
+          <div className="fixed inset-0 bg-black/30 z-[var(--z-dropdown)] flex items-center justify-center" onClick={() => setShowFolderModal(false)}>
+            <div className="bg-bg-surface rounded-2xl p-6 max-w-[380px] w-[90%] shadow-[0_8px_32px_rgba(0,0,0,0.15)]" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-base font-bold mb-1">Add Folder</h3>
+              <p className="text-xs text-tertiary mb-4">
                 Add a screen folder to the workspace.
               </p>
 
-              <label className="ps-field-label">Folder Name</label>
+              <label className="block text-xs font-semibold text-[var(--brand-text)] mb-1 mt-3 first:mt-0">Folder Name</label>
               <input
-                className="ps-input"
+                className="w-full px-3 py-2 border border-[var(--brand-border)] rounded-lg text-sm text-[var(--brand-text)] bg-white outline-none transition-[border-color] duration-150 focus:border-brand-solid focus:shadow-[0_0_0_2px_var(--brand-accent-light)]"
                 type="text"
                 placeholder="e.g. Onboarding Screens"
                 value={afName}
@@ -445,27 +452,27 @@ export function ProjectSelector({
                 autoFocus
               />
 
-              <label className="ps-field-label">Input Directory (golden specs)</label>
+              <label className="block text-xs font-semibold text-[var(--brand-text)] mb-1 mt-3 first:mt-0">Input Directory (golden specs)</label>
               <input
-                className="ps-input"
+                className="w-full px-3 py-2 border border-[var(--brand-border)] rounded-lg text-sm text-[var(--brand-text)] bg-white outline-none transition-[border-color] duration-150 focus:border-brand-solid focus:shadow-[0_0_0_2px_var(--brand-accent-light)]"
                 type="text"
                 placeholder="e.g. ../../docs/moneykitty/design/golden/onboarding/"
                 value={afInputDir}
                 onChange={(e) => setAfInputDir(e.target.value)}
               />
 
-              <label className="ps-field-label">
+              <label className="block text-xs font-semibold text-[var(--brand-text)] mb-1 mt-3 first:mt-0">
                 Output Directory (captured PNGs)
               </label>
               <input
-                className="ps-input"
+                className="w-full px-3 py-2 border border-[var(--brand-border)] rounded-lg text-sm text-[var(--brand-text)] bg-white outline-none transition-[border-color] duration-150 focus:border-brand-solid focus:shadow-[0_0_0_2px_var(--brand-accent-light)]"
                 type="text"
                 placeholder="Leave empty to use input directory"
                 value={afOutputDir}
                 onChange={(e) => setAfOutputDir(e.target.value)}
               />
 
-              <div className="ps-modal-actions">
+              <div className="flex justify-end gap-2 mt-5">
                 <Button
                   color="secondary"
                   size="sm"

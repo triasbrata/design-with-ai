@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+import { cn } from '../lib/cn';
 import { PhoneFrame } from './PhoneFrame';
 import { MarkerOverlay } from './MarkerOverlay';
 import type { MarkPayload } from './MarkerOverlay';
@@ -77,9 +78,9 @@ export function Viewer({
 
   return (
     <>
-      <div className="main-layout">
+      <div className={cn("flex gap-5 px-4 py-3 flex-1 items-start justify-center w-full", "max-[1100px]:flex-col max-[1100px]:items-center")}>
         <div
-          className="phone-container"
+          className="relative overflow-hidden shrink-0 transition-[width,height] duration-200 ease-linear rounded-sm"
           style={{ width: `${visualW}px`, height: `${visualH}px` }}
         >
           <div style={{
