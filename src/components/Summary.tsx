@@ -55,7 +55,7 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
             <div className="text-xs text-tertiary">States</div>
           </div>
           <div className="text-center">
-            <span className="text-[28px] font-bold text-brand-solid">
+            <span className="text-base font-mono font-medium truncate max-w-[200px] inline-block text-brand-solid">
               phone_{"{screen}"}.png
             </span>
             <div className="text-xs text-tertiary">Naming Convention</div>
@@ -102,7 +102,7 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
                       <td className="px-3.5 py-2 text-sm border-b border-[#F8F4EC]">{states.length}</td>
                       <td className="px-3.5 py-2 text-sm border-b border-[#F8F4EC]">
                         {states.map((s) => (
-                          <span key={s} className="text-[10px] px-2 py-[2px] rounded-lg bg-primary_hover text-[#5A5A5A] font-semibold whitespace-nowrap">
+                          <span key={s} className="text-xs px-2 py-[2px] rounded-lg bg-primary_hover text-[#5A5A5A] font-semibold whitespace-nowrap">
                             {s}
                           </span>
                         ))}

@@ -471,7 +471,7 @@ export function LeftDrawer({
                             {fsIsSupported() ? (
                               <button
                                 type="button"
-                                className="font-inherit text-[10px] font-semibold px-2 py-1 border border-brand-border rounded bg-bg-surface text-tertiary cursor-pointer whitespace-nowrap hover:bg-primary_hover hover:text-brand-text"
+                                className="font-inherit text-xs font-semibold px-2 py-1 border border-brand-border rounded bg-bg-surface text-tertiary cursor-pointer whitespace-nowrap hover:bg-primary_hover hover:text-brand-text"
                                 onClick={handlePickFolderNative}
                                 title="Pick folder using native file picker (persistent, survives reload)"
                               >
@@ -480,7 +480,7 @@ export function LeftDrawer({
                             ) : (
                               <button
                                 type="button"
-                                className="font-inherit text-[10px] font-semibold px-2 py-1 border border-brand-border rounded bg-bg-surface text-tertiary cursor-pointer whitespace-nowrap hover:bg-primary_hover hover:text-brand-text"
+                                className="font-inherit text-xs font-semibold px-2 py-1 border border-brand-border rounded bg-bg-surface text-tertiary cursor-pointer whitespace-nowrap hover:bg-primary_hover hover:text-brand-text"
                                 onClick={() => folderFileInputRef.current?.click()}
                               >
                                 Browse...
@@ -731,11 +731,11 @@ export function LeftDrawer({
           {/* Version info at bottom */}
           {metadata && (
             <div className="mt-4 px-1.5 py-2 border-t border-[var(--brand-border-hairline)]">
-              <div className="flex items-center justify-between text-[10px] text-tertiary font-medium leading-[1.8]">
+              <div className="flex items-center justify-between text-xs text-tertiary font-medium leading-[1.8]">
                 <span>Version</span>
                 <span>{metadata.meta.version}</span>
               </div>
-              <div className="flex items-center justify-between text-[10px] text-tertiary font-medium leading-[1.8]">
+              <div className="flex items-center justify-between text-xs text-tertiary font-medium leading-[1.8]">
                 <span>Updated</span>
                 <span>{metadata.meta.lastUpdated}</span>
               </div>
