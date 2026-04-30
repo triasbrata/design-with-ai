@@ -44,7 +44,7 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
         </Button>
       </div>
 
-      <div style={{ padding: "20px 16px" }}>
+      <div className="px-4 pt-5 pb-16">
         <div className="flex gap-6 mb-5 p-4 bg-bg-surface rounded-[14px] shadow-[0_2px_8px_var(--brand-shadow-light)]">
           <div className="text-center">
             <div className="text-[28px] font-bold text-brand-solid">{screens.length}</div>
