@@ -45,30 +45,30 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
       </div>
 
       <div style={{ padding: "20px 16px" }}>
-        <div className="summary-stats">
-          <div className="summary-stat">
-            <div className="num">{screens.length}</div>
-            <div className="lbl">Screens</div>
+        <div className="flex gap-6 mb-5 p-4 bg-bg-surface rounded-[14px] shadow-[0_2px_8px_var(--brand-shadow-light)]">
+          <div className="text-center">
+            <div className="text-[28px] font-bold text-brand-solid">{screens.length}</div>
+            <div className="text-xs text-tertiary">Screens</div>
           </div>
-          <div className="summary-stat">
-            <div className="num">{totalStates}</div>
-            <div className="lbl">States</div>
+          <div className="text-center">
+            <div className="text-[28px] font-bold text-brand-solid">{totalStates}</div>
+            <div className="text-xs text-tertiary">States</div>
           </div>
-          <div className="summary-stat">
-            <span className="num">
+          <div className="text-center">
+            <span className="text-[28px] font-bold text-brand-solid">
               phone_{"{screen}"}.png
             </span>
-            <div className="lbl">Naming Convention</div>
+            <div className="text-xs text-tertiary">Naming Convention</div>
           </div>
         </div>
 
-        <table className="summary-table">
+        <table className="w-full border-collapse bg-bg-surface rounded-xl overflow-hidden">
           <thead>
-            <tr>
-              <th>Screen</th>
-              <th>States</th>
-              <th>State Chips</th>
-              <th>Output Files</th>
+            <tr className="text-left border-b border-[var(--brand-border)]">
+              <th className="px-3.5 py-2.5 text-xs text-tertiary">Screen</th>
+              <th className="px-3.5 py-2.5 text-xs text-tertiary">States</th>
+              <th className="px-3.5 py-2.5 text-xs text-tertiary">State Chips</th>
+              <th className="px-3.5 py-2.5 text-xs text-tertiary">Output Files</th>
             </tr>
           </thead>
           <tbody>
@@ -77,8 +77,8 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
               if (!tierScreens.length) return [];
 
               return [
-                <tr className="tier-header" key={`tier-${tier}`}>
-                  <td colSpan={4}>
+                <tr key={`tier-${tier}`}>
+                  <td colSpan={4} className="text-xs font-bold uppercase text-brand-solid tracking-[0.5px] pt-5 pb-1 px-3.5">
                     {tier} &mdash; {info.label}
                   </td>
                 </tr>,
@@ -87,9 +87,10 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
 
                   return (
                     <tr key={screen}>
-                      <td>
+                      <td className="px-3.5 py-2 text-sm border-b border-[#F8F4EC]">
                         <a
                           href="#"
+                          className="text-brand-solid no-underline hover:underline"
                           onClick={(e) => {
                             e.preventDefault();
                             onSelect(screen);
@@ -98,17 +99,17 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
                           {screenName(screen)}
                         </a>
                       </td>
-                      <td>{states.length}</td>
-                      <td>
+                      <td className="px-3.5 py-2 text-sm border-b border-[#F8F4EC]">{states.length}</td>
+                      <td className="px-3.5 py-2 text-sm border-b border-[#F8F4EC]">
                         {states.map((s) => (
-                          <span className="sum-chip" key={s}>
+                          <span key={s} className="text-[10px] px-2 py-[2px] rounded-lg bg-primary_hover text-[#5A5A5A] font-semibold whitespace-nowrap">
                             {s}
                           </span>
                         ))}
                       </td>
-                      <td className="sum-files">
+                      <td className="px-3.5 py-2 text-sm border-b border-[#F8F4EC]">
                         {states.map((s) => (
-                          <code key={s}>{getFilename(screen, s, states)}</code>
+                          <code key={s} className="text-[9px] bg-[#F9F6EE] px-1.5 py-[1px] rounded text-tertiary">{getFilename(screen, s, states)}</code>
                         ))}
                       </td>
                     </tr>
@@ -119,7 +120,7 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
           </tbody>
         </table>
 
-        <p className="shortcut-hint" style={{ marginTop: "16px" }}>
+        <p className="text-[9px] text-[var(--brand-muted-light)] text-center pb-2 mt-4">
           Use arrow keys or Tab to navigate screens. Press \ to toggle the sidebar.
         </p>
       </div>

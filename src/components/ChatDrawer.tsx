@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
+import { cn } from "../lib/cn";
 import { MessageCircle, X, Pin } from "./base/icons";
 
 interface ChatDrawerProps {
@@ -25,13 +26,21 @@ export function ChatDrawer({ open, onToggle, pinned, onPinToggle, children }: Ch
 
   return (
     <>
-      <div className="cd-trigger">
+      <div className="fixed top-3 right-3 z-[var(--z-drawer-trigger)]">
         <button className="burger-btn" onClick={onToggle} type="button" aria-expanded={open} aria-label="Toggle chat">
           <MessageCircle size={18} />
         </button>
       </div>
-      <aside ref={drawerRef} className={`chat-drawer${open ? " open" : ""}`} aria-hidden={!open}>
-        <div className="chat-drawer-inner">
+      <aside
+        ref={drawerRef}
+        className={cn(
+          "fixed top-0 right-0 z-[var(--z-drawer)] h-screen overflow-y-auto overflow-x-hidden bg-bg-surface border-l border-transparent transition-[width] duration-[250ms] ease-linear invisible pointer-events-none",
+          open && "visible pointer-events-auto border-[var(--brand-border)]"
+        )}
+        style={{ width: open ? 'var(--sidebar-width)' : 0 }}
+        aria-hidden={!open}
+      >
+        <div className="w-[var(--sidebar-width)] h-full flex flex-col p-4">
           <div className="rd-drawer-header">
             <button
               type="button"
