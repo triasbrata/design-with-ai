@@ -55,7 +55,7 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
             <div className="text-xs text-tertiary">States</div>
           </div>
           <div className="text-center">
-            <span className="text-[28px] font-bold text-brand-solid">
+            <span className="text-base font-mono font-medium truncate max-w-[200px] inline-block text-brand-solid">
               phone_{"{screen}"}.png
             </span>
             <div className="text-xs text-tertiary">Naming Convention</div>
