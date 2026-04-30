@@ -34,11 +34,11 @@ export function Summary({ screens, metadata, onSelect, onBack, onCaptureAll }: S
 
   return (
     <div style={{ width: "100%" }}>
-      <div className="toolbar">
+      <div className="flex items-center gap-2.5 px-4 py-2.5">
         <Button color="secondary" size="sm" onClick={onBack} iconLeading={<ArrowLeft size={18} />}>
           Back
         </Button>
-        <span className="name">Summary &mdash; All Screens</span>
+        <span className="text-sm font-semibold flex-1">Summary &mdash; All Screens</span>
         <Button color="primary" size="sm" onClick={onCaptureAll} iconLeading={<Camera size={18} />}>
           Create Baseline ({totalStates} images)
         </Button>

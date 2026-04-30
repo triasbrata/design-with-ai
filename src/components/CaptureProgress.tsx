@@ -173,12 +173,12 @@ export function CaptureProgress({ screens, metadata, getScreenUrl, saveCapture, 
 
   return (
     <div style={{ width: "100%" }}>
-      <div className="toolbar">
+      <div className="flex items-center gap-2.5 px-4 py-2.5">
         <Button color="secondary" size="sm" onClick={handleCancel} iconLeading={<X size={18} />}>
           Cancel
         </Button>
-        <span className="name">Creating Baseline...</span>
-        <span className="pos">{progress}</span>
+        <span className="text-sm font-semibold flex-1">Creating Baseline...</span>
+        <span className="text-[11px] text-tertiary">{progress}</span>
       </div>
       <div
         style={{

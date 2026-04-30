@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { cn } from '../lib/cn';
 import type { MarkerRect } from '../types';
 
 export interface MarkPayload {
@@ -71,7 +72,10 @@ export function MarkerOverlay({ active, rect, screen, activeState, onMark, scale
   return (
     <div
       ref={overlayRef}
-      className={`marker-overlay${active ? ' active' : ''}`}
+      className={cn(
+          "absolute inset-0 z-10",
+          active ? "cursor-crosshair" : "pointer-events-none"
+        )}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={finishDraw}
@@ -79,7 +83,7 @@ export function MarkerOverlay({ active, rect, screen, activeState, onMark, scale
     >
       {showRect && (
         <div
-          className="marker-rect"
+          className="absolute border-2 border-dashed border-[var(--brand-accent)] bg-[rgba(196,83,83,0.08)] pointer-events-none"
           style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height }}
         />
       )}
@@ -87,7 +91,7 @@ export function MarkerOverlay({ active, rect, screen, activeState, onMark, scale
       {drawingRect && (
         <>
           <div
-            className="marker-rect drawing"
+            className="absolute border-2 border-dashed border-[var(--brand-accent)] bg-[rgba(196,83,83,0.12)] pointer-events-none"
             style={{
               left: drawingRect.left,
               top: drawingRect.top,
@@ -96,7 +100,7 @@ export function MarkerOverlay({ active, rect, screen, activeState, onMark, scale
             }}
           />
           <div
-            className="marker-size-label"
+            className="absolute text-[11px] font-semibold text-white bg-[var(--brand-accent)] px-[6px] py-[1px] rounded whitespace-nowrap pointer-events-none leading-[1.4]"
             style={{ left: drawingRect.left, top: drawingRect.top - 22 }}
           >
             {Math.round(drawingRect.width)} &times; {Math.round(drawingRect.height)}
