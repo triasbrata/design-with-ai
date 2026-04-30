@@ -631,8 +631,8 @@ export default function App() {
             fileSourceType={fileSource?.type ?? null}
             fileSourceLabel={fileSource?.label ?? ''}
           />
-          <div className="content-area" ref={contentAreaRef}>
-            <div className="main-content">
+          <div className="flex flex-1 min-w-0 overflow-hidden" ref={contentAreaRef}>
+            <div className="flex-1 min-w-0 flex flex-col items-center overflow-auto select-none pb-[60px]">
               {orderedScreens.length === 0 ? (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, flexDirection: "column", gap: 12 }}>
                   {fsPermissionError ? (

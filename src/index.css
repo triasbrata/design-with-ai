@@ -97,29 +97,9 @@ body {
 }
 
 
-/* ── Main Content ── */
-.main-content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  overflow: auto;
-  user-select: none;
-  padding-bottom: 60px;
-}
-
 @keyframes sf-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-}
-
-/* ── Content Area (structural) ── */
-.content-area {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
 }
 
 @keyframes chat-pulse {
