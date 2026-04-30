@@ -10,7 +10,7 @@ interface HelpModalProps {
 export function HelpModal({ show, onClose }: HelpModalProps) {
   return (
     <div className={cn("fixed inset-0 bg-black/30 z-[var(--z-modal)] hidden items-center justify-center", show && "flex")} onClick={onClose}>
-      <div className="bg-bg-surface rounded-[16px] p-6 max-w-[340px] w-[90%] shadow-[0_8px_32px_rgba(0,0,0,0.15)]" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-bg-surface rounded-[16px] p-6 max-w-[340px] w-[90%] shadow-[0_8px_32px_rgba(0,0,0,0.15)]" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <Button
           color="link-gray"
           size="sm"
