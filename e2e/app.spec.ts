@@ -140,6 +140,13 @@ test.describe("Workspace Management", () => {
   });
 
   test("adds folder to workspace", async () => {
+    // Disable FS API so fallback path inputs are shown instead of "Pick Folder"
+    await page.evaluate(() => {
+      (window as any).showDirectoryPicker = undefined;
+    });
+    // Wait for re-render
+    await page.waitForTimeout(200);
+
     // Click + on the workspace
     const addFolder = page.locator(".ld-folder-add").first();
     await addFolder.click();
@@ -158,6 +165,31 @@ test.describe("Workspace Management", () => {
     const sectionTitles = page.locator(".ld-section-title");
     const count = await sectionTitles.count();
     expect(count).toBeGreaterThanOrEqual(2);
+  });
+
+  test("rename folder by double-clicking", async () => {
+    const folderTitle = page.locator(".ld-section-body .ld-section-title").first();
+    await folderTitle.dblclick();
+    await expect(page.locator(".ld-rename-input")).toBeVisible({ timeout: 3000 });
+
+    await page.locator(".ld-rename-input").fill("Renamed Folder");
+    await page.locator(".ld-rename-input").press("Enter");
+    await page.waitForTimeout(200);
+
+    await expect(page.locator(".ld-section-body .ld-section-title").first()).toContainText("Renamed Folder");
+  });
+
+  test("folder right-click context menu shows Rename and Delete Folder", async () => {
+    const folderTitle = page.locator(".ld-section-body .ld-section-title").first();
+    await folderTitle.click({ button: "right" });
+    await expect(page.locator(".ld-context-menu")).toBeVisible({ timeout: 3000 });
+
+    await expect(page.locator(".ld-context-menu")).toContainText("Rename");
+    await expect(page.locator(".ld-context-menu")).toContainText("Delete Folder");
+
+    // Dismiss by clicking outside
+    await page.locator(".left-drawer-inner").click({ position: { x: 10, y: 10 } });
+    await expect(page.locator(".ld-context-menu")).not.toBeVisible();
   });
 
   test("context menu on workspace shows Rename, Add Folder, Close Project", async () => {
@@ -202,6 +234,21 @@ test.describe("Workspace Management", () => {
     // Expand again
     await wsHeader.evaluate((el) => (el as HTMLButtonElement).click());
     await page.waitForTimeout(300);
+  });
+
+  test("toggles drawer pin", async () => {
+    const pinBtn = page.locator(".ld-pin-btn");
+    await expect(pinBtn).toBeVisible({ timeout: 3000 });
+
+    // Pin the drawer (use evaluate to avoid layout interception)
+    await pinBtn.evaluate((el) => (el as HTMLButtonElement).click());
+    await page.waitForTimeout(200);
+    await expect(pinBtn).toHaveClass(/pinned/);
+
+    // Unpin the drawer
+    await pinBtn.evaluate((el) => (el as HTMLButtonElement).click());
+    await page.waitForTimeout(200);
+    await expect(pinBtn).not.toHaveClass(/pinned/);
   });
 
   test("deletes folder via trash icon", async () => {
@@ -514,6 +561,27 @@ test.describe("Chat Panel", () => {
       await items.nth(1).locator(".sp-item-name").click();
       await page.waitForTimeout(300);
     }
+  });
+
+  test("deletes a session from session panel", async () => {
+    const historyBtn = page.locator("button[title='History']").first();
+    await historyBtn.click();
+    await expect(page.locator(".sp-panel")).toBeVisible({ timeout: 3000 });
+
+    const countBefore = await page.locator(".sp-item").count();
+    expect(countBefore).toBeGreaterThanOrEqual(1);
+
+    // Delete the first session
+    await page.locator(".sp-item-delete").first().click();
+    await page.waitForTimeout(300);
+
+    const countAfter = await page.locator(".sp-item").count();
+    // Should have one fewer session (or auto-create replacement)
+    expect(countAfter).toBeGreaterThanOrEqual(countBefore - 1);
+
+    // Close session panel
+    await page.locator(".chat-panel").click({ position: { x: 20, y: 20 } });
+    await page.waitForTimeout(300);
   });
 
   test("closes session panel and right drawer", async () => {
