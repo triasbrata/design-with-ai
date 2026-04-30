@@ -114,17 +114,13 @@ body {
   to { transform: rotate(360deg); }
 }
 
-/* ── Navigation Buttons ── */
-
+/* ── Content Area (structural) ── */
 .content-area {
   display: flex;
   flex: 1;
   min-width: 0;
   overflow: hidden;
 }
-
-
-
 
 @keyframes chat-pulse {
   0%, 100% { opacity: 0.2; }
