@@ -1,13 +1,11 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../lib/cn";
-import type { Project, Metadata, CaptureFolder } from "../types";
-import type { ClientFileEntry } from "../types";
+import type { Project, CaptureFolder } from "../types";
 import { Button } from "./base";
 import {
   Check,
   Folder,
-  FolderOpen,
   Plus,
   Trash2,
   ChevronDown,
@@ -39,8 +37,6 @@ export function ProjectSelector({
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [folderWorkspaceIdx, setFolderWorkspaceIdx] = useState(0);
-  const [browsing, setBrowsing] = useState(false);
-
   // New workspace form
   const [wsName, setWsName] = useState("");
   const [folderName, setFolderName] = useState("");
@@ -53,7 +49,6 @@ export function ProjectSelector({
   const [afOutputDir, setAfOutputDir] = useState("");
 
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -120,81 +115,19 @@ export function ProjectSelector({
     setShowFolderModal(true);
   }
 
-  // Handle folder selection via webkitdirectory input
-  const handleBrowse = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files;
-      if (!files || files.length === 0) return;
-
-      setBrowsing(true);
-
-      try {
-        const fileArray = Array.from(files);
-
-        const metaFile = fileArray.find((f) => f.name === "screen-metadata.json");
-        if (!metaFile) {
-          console.warn("No screen-metadata.json found in selected folder");
-          setBrowsing(false);
-          return;
-        }
-
-        const metaText = await metaFile.text();
-        const metadata: Metadata = JSON.parse(metaText);
-
-        const entries: ClientFileEntry[] = [];
-        const htmlFiles = fileArray.filter((f) => f.name.endsWith(".html"));
-        for (const file of htmlFiles) {
-          const blobUrl = URL.createObjectURL(file);
-          entries.push({ name: file.name, blobUrl });
-        }
-
-        const firstFile = fileArray[0];
-        const folderName = firstFile.webkitRelativePath.split("/")[0];
-        const projectName = folderName
-          .replace(/[_-]/g, " ")
-          .replace(/\b\w/g, (c) => c.toUpperCase());
-
-        onAddProject({
-          type: "client",
-          name: projectName,
-          files: entries,
-          metadata,
-        });
-      } catch (err) {
-        console.error("Failed to load folder:", err);
-      } finally {
-        setBrowsing(false);
-        e.target.value = "";
-      }
-    },
-    [onAddProject],
-  );
-
   // Build trigger label
   const activeProject = projects[activeIndex];
-  const triggerLabel =
-    activeProject?.type === "workspace"
-      ? (() => {
-          const folder = activeProject.folders[activeProject.activeFolder];
-          return folder
-            ? `${activeProject.name} / ${folder.name}`
-            : activeProject.name;
-        })()
-      : activeProject?.name ?? "Project";
+  const triggerLabel = activeProject
+    ? (() => {
+        const folder = activeProject.folders[activeProject.activeFolder];
+        return folder
+          ? `${activeProject.name} / ${folder.name}`
+          : activeProject.name;
+      })()
+    : "Project";
 
   return (
     <div data-caid="project-selector" className="relative inline-block" ref={dropdownRef}>
-      {/* Hidden file input for native folder picker */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        style={{ display: "none" }}
-        // @ts-ignore
-        webkitdirectory=""
-        directory=""
-        onChange={handleBrowse}
-      />
-
       {/* Trigger */}
       <button
         type="button"
@@ -213,7 +146,6 @@ export function ProjectSelector({
           <div className="text-xs font-bold uppercase tracking-[0.5px] text-tertiary px-2 pb-2 pt-1">Workspaces &amp; Folders</div>
 
           {projects.map((p, pi) =>
-            p.type === "workspace" ? (
               /* ── Workspace group ── */
               <div key={`ws-${pi}`} className="mb-1">
                 <div className="flex items-center gap-1.5 px-2 pt-1.5 pb-0.5 text-xs font-bold text-tertiary uppercase tracking-[0.3px]">
@@ -291,42 +223,6 @@ export function ProjectSelector({
                   Add Folder
                 </button>
               </div>
-            ) : (
-              /* ── Client project (flat item) ── */
-              <button
-                type="button"
-                key={`client-${pi}`}
-                className={cn(
-                  "flex items-center gap-2 w-full px-2 py-1.5 rounded-lg border-none bg-transparent text-sm text-[var(--brand-text)] cursor-pointer text-left transition-[background] duration-100",
-                  pi === activeIndex ? "bg-[var(--brand-accent-light)] text-brand-solid font-semibold" : "hover:bg-primary_hover"
-                )}
-                onClick={() => {
-                  onSelect(pi);
-                  setOpen(false);
-                }}
-              >
-                <FolderOpen size={14} className={cn("shrink-0", pi === activeIndex ? "text-brand-solid" : "text-tertiary")} />
-                <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
-                  {p.name}
-                  <span className="inline-block text-[8px] font-bold uppercase tracking-[0.3px] px-1 py-[1px] ml-1.5 rounded bg-primary_hover text-tertiary align-middle">local</span>
-                </span>
-                {pi === activeIndex && <Check size={14} className="shrink-0 text-brand-solid" />}
-                {projects.length > 1 && (
-                  <button
-                    type="button"
-                    className="shrink-0 w-[22px] h-[22px] border-none rounded-md bg-transparent text-[var(--brand-muted-light)] cursor-pointer flex items-center justify-center p-0 transition-all duration-100 hover:bg-brand-solid hover:text-white"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemoveProject(pi);
-                    }}
-                    title="Remove project"
-                    aria-label={`Remove ${p.name}`}
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                )}
-              </button>
-            ),
           )}
 
           <div className="h-px bg-[var(--brand-border-hairline)] my-1.5" />
@@ -345,19 +241,6 @@ export function ProjectSelector({
             New Workspace
           </button>
 
-          {/* Browse Folder */}
-          <button
-            type="button"
-            className="flex items-center gap-2 w-full p-2 border border-dashed border-[var(--brand-border)] rounded-lg bg-transparent text-xs font-semibold text-tertiary cursor-pointer transition-all duration-150 hover:bg-primary_hover hover:text-[var(--brand-text)] hover:border-[var(--brand-muted-light)] disabled:opacity-60 disabled:cursor-not-allowed"
-            onClick={() => {
-              setOpen(false);
-              fileInputRef.current?.click();
-            }}
-            disabled={browsing}
-          >
-            <FolderOpen size={14} />
-            {browsing ? "Loading..." : "Browse Folder"}
-          </button>
         </div>
       )}
 

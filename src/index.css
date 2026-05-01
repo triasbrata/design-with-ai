@@ -1906,6 +1906,17 @@ body {
   opacity: 0.5;
   cursor: default;
 }
+.sf-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: var(--brand-muted);
+  background: var(--brand-accent-light);
+  border-radius: 6px;
+}
 
 /* ── Source Badge ── */
 .ld-source-badge {
@@ -1924,13 +1935,16 @@ body {
   background: #D4F5E4;
   color: #2D6A4F;
 }
-.ld-source-badge.vite-middleware {
-  background: #DBEAFE;
-  color: #1E40AF;
-}
-.ld-source-badge.upload {
-  background: #FFF1D6;
-  color: #8A6D3B;
+
+/* ── Folder path sub-text ── */
+.ld-folder-path {
+  font-size: 9px;
+  color: var(--brand-muted);
+  opacity: 0.65;
+  padding: 1px 0 2px 24px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── Hidden ── */

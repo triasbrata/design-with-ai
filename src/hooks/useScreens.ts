@@ -2,6 +2,22 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import type { Metadata } from "../types";
 import { TIERS } from "../constants";
 
+export function computeOrderedScreens(metadata: Metadata | null): string[] {
+  if (!metadata) return [];
+  const existing = Object.keys(metadata.screens);
+  const result: string[] = [];
+  for (const tier of Object.values(TIERS)) {
+    for (const s of tier.screens) {
+      if (existing.includes(s)) result.push(s);
+    }
+  }
+  const tiered = Object.values(TIERS).flatMap((t) => t.screens);
+  for (const s of existing) {
+    if (!tiered.includes(s)) result.push(s);
+  }
+  return result;
+}
+
 export function useScreens(dir: string, preloadedMetadata?: Metadata | null) {
   const [metadata, setMetadata] = useState<Metadata | null>(null);
   const [currentIndex, setCurrentIndex] = useState(-1);
@@ -28,22 +44,7 @@ export function useScreens(dir: string, preloadedMetadata?: Metadata | null) {
   }, [dir, preloadedMetadata]);
 
   // Compute ordered screen list from metadata
-  const orderedScreens = useMemo(() => {
-    if (!metadata) return [];
-    const existing = Object.keys(metadata.screens);
-    const result: string[] = [];
-    for (const tier of Object.values(TIERS)) {
-      for (const s of tier.screens) {
-        if (existing.includes(s)) result.push(s);
-      }
-    }
-    // Append any screens not in tiers
-    const tiered = Object.values(TIERS).flatMap((t) => t.screens);
-    for (const s of existing) {
-      if (!tiered.includes(s)) result.push(s);
-    }
-    return result;
-  }, [metadata]);
+  const orderedScreens = useMemo(() => computeOrderedScreens(metadata), [metadata]);
 
   const total = orderedScreens.length;
   const isSummary = currentIndex === -2;

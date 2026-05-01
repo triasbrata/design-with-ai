@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Menu, Plus, ChevronDown, ChevronRight, Folder, FolderOpen, Pin, Check, X, Trash2, Pencil, Loader2 } from "./base/icons";
 import { screenName, truncateName, TIERS } from "../constants";
 import { ConfirmModal } from "./ConfirmModal";
-import { BulkAddFoldersModal } from "./BulkAddFoldersModal";
+import { ScanResultsModal } from "./ScanResultsModal";
 import type { Project, CaptureFolder } from "../types";
-import { isSupported as fsIsSupported, pickDirectory, saveHandle, generateHandleId } from "../hooks/useFileSystem";
+import { isSupported as fsIsSupported, pickDirectory, saveHandle, generateHandleId, scanForGoldenDirectories } from "../hooks/useFileSystem";
+import type { GoldenDirResult } from "../hooks/useFileSystem";
 
 interface LeftDrawerProps {
   open: boolean;
@@ -15,6 +16,7 @@ interface LeftDrawerProps {
   activeIndex: number;
   activeFolderIdx: number;
   screens: string[];
+  perFolderScreens: Record<string, string[]>;
   activeScreen: string;
   onSelect: (screen: string) => void;
   onSetActive: (index: number, folderIdx?: number) => void;
@@ -37,12 +39,6 @@ interface ContextMenuState {
   folderIdx?: number;
 }
 
-interface ScannedFolder {
-  name: string;
-  path: string;
-  screenCount: number;
-}
-
 interface RenameState {
   type: "workspace" | "folder";
   projectIdx: number;
@@ -59,6 +55,7 @@ export function LeftDrawer({
   activeIndex,
   activeFolderIdx,
   screens,
+  perFolderScreens,
   activeScreen,
   onSelect,
   onSetActive,
@@ -83,31 +80,36 @@ export function LeftDrawer({
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ pi: number; fi: number; workspaceName: string; folderName: string } | null>(null);
   const [renameState, setRenameState] = useState<RenameState | null>(null);
-  const [folderForm, setFolderForm] = useState<{
+  const [showFolderForm, setShowFolderForm] = useState<number | null>(null);
+  const [pickState, setPickState] = useState<{
     workspaceIdx: number;
-    name: string;
-    inputDir: string;
-    outputDir: string;
-    inputHandleId?: string;
-    outputHandleId?: string;
+    scanning: boolean;
+    results: GoldenDirResult[] | null;
+    rootHandleId: string;
+    rootHandle: FileSystemDirectoryHandle | null;
+    skippedMalformed: number;
+    skippedPermission: number;
+    emptyHtmlCount: number;
+    error: string | null;
   } | null>(null);
-  const folderFileInputRef = useRef<HTMLInputElement>(null);
-  const folderInputRef = useRef<HTMLInputElement>(null);
-  const [scanResults, setScanResults] = useState<ScannedFolder[] | null>(null);
-  const [scanningWsIdx, setScanningWsIdx] = useState<number | null>(null);
 
-  // Normalize workspace folder paths to match API response format (relative to REPO_ROOT)
-  const existingPaths = useMemo(() => {
+  // Compute existing handle paths for dedup in ScanResultsModal
+  const existingHandlePaths = useMemo(() => {
     const paths = new Set<string>();
     projects.forEach((p) => {
       if (p.type === "workspace") {
         p.folders.forEach((f) => {
-          paths.add(f.inputDir.replace(/^(\.\.\/)+/, "").replace(/\/+$/, ""));
+          if (f.handlePath && f.inputHandleId) {
+            paths.add(`${f.inputHandleId}::${JSON.stringify(f.handlePath)}`);
+          }
         });
       }
     });
     return paths;
   }, [projects]);
+
+  // Global existing set for client projects (unchanged)
+  const globalExisting = useMemo(() => new Set(screens), [screens]);
 
   useEffect(() => {
     if (!open || pinned) return;
@@ -134,14 +136,6 @@ export function LeftDrawer({
     }
   }, [showCreateForm]);
 
-  // Auto-focus folder name input when folder form appears
-  useEffect(() => {
-    if (folderForm && folderInputRef.current) {
-      folderInputRef.current.focus();
-    }
-  }, [folderForm]);
-
-
   // Close context menu on outside click and escape
   useEffect(() => {
     if (!contextMenu) return;
@@ -158,7 +152,6 @@ export function LeftDrawer({
       }
     }
 
-    // Delay outside-click listener to avoid immediate close from the right-click itself
     const tick = setTimeout(() => {
       document.addEventListener("mousedown", handleClick);
       document.addEventListener("keydown", handleKey);
@@ -170,59 +163,6 @@ export function LeftDrawer({
       document.removeEventListener("keydown", handleKey);
     };
   }, [contextMenu]);
-
-  const handleBrowseFolder = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files;
-      if (!files || files.length === 0) return;
-      const firstFile = files[0];
-      const folderName = firstFile.webkitRelativePath.split("/")[0];
-      const parts = firstFile.webkitRelativePath.split("/");
-      const docsIdx = parts.findIndex((p) => p === "docs" || p === "golden");
-      let inputDir = "";
-      if (docsIdx >= 0) {
-        inputDir = "../../" + parts.slice(docsIdx).join("/").replace(/\/[^/]+$/, "/");
-      }
-      setFolderForm((prev) =>
-        prev
-          ? {
-              ...prev,
-              name: folderName,
-              inputDir: inputDir || "",
-              outputDir: inputDir || "",
-            }
-          : null,
-      );
-      e.target.value = "";
-    },
-    [],
-  );
-
-  /** Handle native directory picker via File System Access API */
-  const handlePickFolderNative = useCallback(async () => {
-    const dir = await pickDirectory();
-    if (!dir) return;
-    try {
-      const handleId = generateHandleId();
-      await saveHandle(handleId, dir.handle);
-      setFolderForm((prev) =>
-        prev
-          ? {
-              ...prev,
-              name: dir.name || prev.name,
-              inputHandleId: handleId,
-              outputHandleId: handleId,
-              inputDir: "",   // Clear path fields — handle takes precedence
-              outputDir: "",
-            }
-          : null,
-      );
-    } catch {
-      // Failed to save handle — silently ignore, user can retry
-    }
-  }, []);
-
-  const existing = useMemo(() => new Set(screens), [screens]);
 
   function toggle(idx: number) {
     setExpanded((prev) => {
@@ -254,7 +194,7 @@ export function LeftDrawer({
   const handleAddFolderFromMenu = useCallback(() => {
     const state = contextMenu;
     if (!state) return;
-    setFolderForm({ workspaceIdx: state.projectIdx, name: "", inputDir: "", outputDir: "" });
+    setShowFolderForm(state.projectIdx);
     setContextMenu(null);
   }, [contextMenu]);
 
@@ -319,68 +259,90 @@ export function LeftDrawer({
     setRenameState({ type: "folder", projectIdx: pi, folderIdx: fi, currentName: name });
   }, []);
 
-  const handleSubmitFolder = useCallback(() => {
-    if (!folderForm) return;
-    const { workspaceIdx, name, inputDir, outputDir, inputHandleId, outputHandleId } = folderForm;
-    if (!name.trim()) return;
-    // Require either a path or a file system handle
-    if (!inputDir.trim() && !inputHandleId) return;
-    onAddFolder?.(
+  /** Pick a folder via File System Access API, scan for golden spec dirs, show results modal */
+  const handlePickAndScan = useCallback(async (workspaceIdx: number) => {
+    const dir = await pickDirectory();
+    if (!dir) return;
+
+    setPickState({
       workspaceIdx,
-      name.trim(),
-      inputDir.trim(),
-      outputDir.trim() || inputDir.trim(),
-      inputHandleId,
-      outputHandleId,
-    );
-    setFolderForm(null);
+      scanning: true,
+      results: null,
+      rootHandleId: "",
+      rootHandle: dir.handle,
+      skippedMalformed: 0,
+      skippedPermission: 0,
+      emptyHtmlCount: 0,
+      error: null,
+    });
 
-    // Auto-scan for related golden spec folders (path-based only)
-    if (inputDir.trim() && !inputHandleId) {
-      setScanningWsIdx(workspaceIdx);
-      fetch(`/api/scan-folder?dir=${encodeURIComponent(inputDir.trim())}`)
-        .then((r) => {
-          if (!r.ok) throw new Error("Scan failed");
-          return r.json();
-        })
-        .then((data) => {
-          if (data.folders && data.folders.length > 1) {
-            setScanResults(data.folders);
-          }
-          setScanningWsIdx(null);
-        })
-        .catch(() => setScanningWsIdx(null));
+    try {
+      const handleId = generateHandleId();
+      await saveHandle(handleId, dir.handle);
+
+      const scanResult = await scanForGoldenDirectories(dir.handle);
+      // Post-filter: remove folders with 0 HTML files
+      const valid: GoldenDirResult[] = [];
+      let emptyHtml = 0;
+      for (const f of scanResult.folders) {
+        if (f.htmlFileCount > 0) valid.push(f);
+        else emptyHtml++;
+      }
+
+      setPickState({
+        workspaceIdx,
+        scanning: false,
+        results: valid,
+        rootHandleId: handleId,
+        rootHandle: dir.handle,
+        skippedMalformed: scanResult.malformedCount,
+        skippedPermission: scanResult.permissionDeniedCount,
+        emptyHtmlCount: emptyHtml,
+        error: null,
+      });
+    } catch (err) {
+      setPickState((prev) =>
+        prev
+          ? {
+              ...prev,
+              scanning: false,
+              error: err instanceof Error ? err.message : "Scan failed",
+            }
+          : null,
+      );
     }
-  }, [folderForm, onAddFolder]);
-
-  const handleCancelFolder = useCallback(() => {
-    setFolderForm(null);
   }, []);
 
-  // Bulk add scanned folders to the workspace that was being scanned
-  const handleBulkAddFolders = useCallback(
-    (foldersToAdd: { name: string; path: string }[]) => {
-      if (scanningWsIdx === null) return;
-      const wsIdx = scanningWsIdx;
-      setScanResults(null);
-      if (onAddFolders) {
-        onAddFolders(
-          wsIdx,
-          foldersToAdd.map((f) => ({
-            name: f.name,
-            inputDir: f.path,
-            outputDir: f.path,
-          })),
-        );
-      } else {
-        // Fallback: add one by one
-        foldersToAdd.forEach((f) => {
-          onAddFolder?.(wsIdx, f.name, f.path, f.path);
-        });
-      }
+  /** Add user-selected folders from scan results to workspace */
+  const handleAddFoldersFromScan = useCallback(
+    (selected: GoldenDirResult[]) => {
+      if (!pickState) return;
+      const wsIdx = pickState.workspaceIdx;
+      const handleId = pickState.rootHandleId;
+
+      const project = projects[wsIdx];
+      const existingCount =
+        project && project.type === "workspace" ? project.folders.length : 0;
+
+      const newFolders: CaptureFolder[] = selected.map((r) => ({
+        name: r.name,
+        inputDir: "",
+        outputDir: "",
+        inputHandleId: handleId,
+        outputHandleId: handleId,
+        handlePath: r.relativePath,
+      }));
+
+      onAddFolders?.(wsIdx, newFolders);
+      onSetActive?.(wsIdx, existingCount); // auto-activate first new folder
+      setPickState(null);
+      setShowFolderForm(null);
     },
-    [scanningWsIdx, onAddFolders, onAddFolder],
+    [pickState, projects, onAddFolders, onSetActive],
   );
+
+  /** Derive screen list and existing set for a specific folder */
+  function folderKey(pi: number, fi: number) { return `${pi}-${fi}`; }
 
   return (
     <div data-caid="left-drawer">
@@ -475,7 +437,7 @@ export function LeftDrawer({
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setFolderForm({ workspaceIdx: pi, name: "", inputDir: "", outputDir: "" });
+                        setShowFolderForm(pi);
                       }}
                     >
                       <Plus size={12} />
@@ -486,120 +448,54 @@ export function LeftDrawer({
                   </button>
                   {isExpanded && (
                     <div className="ld-section-body">
-                      {folderForm && folderForm.workspaceIdx === pi && (
+                      {showFolderForm === pi && (
                         <div className="ld-folder-create">
                           <div className="ld-folder-create-row">
-                            <input
-                              ref={folderInputRef}
-                              className="ld-folder-input"
-                              placeholder="Folder name"
-                              value={folderForm.name}
-                              onChange={(e) =>
-                                setFolderForm((prev) =>
-                                  prev ? { ...prev, name: e.target.value } : null,
-                                )
-                              }
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSubmitFolder();
-                                if (e.key === "Escape") handleCancelFolder();
-                              }}
-                            />
                             {fsIsSupported() ? (
                               <button
                                 className="ld-folder-browse"
-                                onClick={handlePickFolderNative}
+                                onClick={() => handlePickAndScan(pi)}
+                                disabled={pickState?.scanning ?? false}
                                 title="Pick folder using native file picker (persistent, survives reload)"
                               >
-                                Pick Folder
+                                {pickState?.scanning ? "Scanning..." : "Pick Folder"}
                               </button>
                             ) : (
-                              <button
-                                className="ld-folder-browse"
-                                onClick={() => folderFileInputRef.current?.click()}
+                              <span
+                                style={{
+                                  fontSize: 11,
+                                  color: "var(--brand-muted)",
+                                  padding: "4px 0",
+                                }}
                               >
-                                Browse...
-                              </button>
+                                File System Access API not supported in this browser
+                              </span>
                             )}
-                          </div>
-                          {folderForm.inputHandleId ? (
-                            <div className="ld-folder-create-row" style={{ color: "var(--brand-muted)", fontSize: 11, padding: "4px 0" }}>
-                              Using native file system access &mdash; clear to use path instead
-                              <button
-                                className="ld-inline-cancel"
-                                style={{ marginLeft: 8, fontSize: 11 }}
-                                onClick={() =>
-                                  setFolderForm((prev) =>
-                                    prev ? { ...prev, inputHandleId: undefined, outputHandleId: undefined, inputDir: "", outputDir: "" } : null,
-                                  )
-                                }
-                              >
-                                <X size={10} />
-                              </button>
                             </div>
-                          ) : (
-                            <>
-                              <div className="ld-folder-create-row">
-                                <input
-                                  className="ld-folder-input"
-                                  placeholder="Input directory (e.g. ../../docs/anav-v3/design/golden/)"
-                                  value={folderForm.inputDir}
-                                  onChange={(e) =>
-                                    setFolderForm((prev) =>
-                                      prev ? { ...prev, inputDir: e.target.value } : null,
-                                    )
-                                  }
-                                />
-                              </div>
-                              <div className="ld-folder-create-row">
-                                <input
-                                  className="ld-folder-input"
-                                  placeholder="Output directory (defaults to input)"
-                                  value={folderForm.outputDir}
-                                  onChange={(e) =>
-                                    setFolderForm((prev) =>
-                                      prev ? { ...prev, outputDir: e.target.value } : null,
-                                    )
-                                  }
-                                />
-                              </div>
-                            </>
-                          )}
-                          <div className="ld-folder-create-actions">
-                            <button className="ld-inline-cancel" onClick={handleCancelFolder}>
-                              <X size={14} />
-                            </button>
-                            <button
-                              className="ld-inline-confirm"
-                              onClick={handleSubmitFolder}
-                              disabled={!folderForm.name.trim() || (!folderForm.inputDir.trim() && !folderForm.inputHandleId)}
-                              title={
-                                !folderForm.name.trim()
-                                  ? "Enter a folder name"
-                                  : !folderForm.inputDir.trim() && !folderForm.inputHandleId
-                                    ? "Enter a path or pick a folder"
-                                    : ""
-                              }
-                            >
-                              <Check size={14} />
-                            </button>
                           </div>
-                        </div>
-                      )}
-                      {scanningWsIdx === pi && (
+                        )}
+                        {pickState?.scanning && pickState.workspaceIdx === pi && (
                         <div className="ld-scanning">
                           <Loader2 size={12} className="ld-spinner" />
-                          <span>Scanning for related specs...</span>
+                          <span>Scanning folders...</span>
                         </div>
                       )}
-                      {project.folders.length === 0 && (
+                      {project.folders.length === 0 && !pickState?.scanning && (
                         <div style={{ padding: "8px 4px", color: "var(--brand-muted)", fontSize: 11 }}>
                           No folders — click + to add one
                         </div>
                       )}
                       {project.folders.map((folder, fi) => {
                         const isActiveFolder = isActiveWs && fi === activeFolderIdx;
-                        const folderKey = `${pi}-${fi}`;
-                        const isFolderExpanded = expandedFolders.has(folderKey);
+                        const fk = folderKey(pi, fi);
+                        const isFolderExpanded = expandedFolders.has(fk);
+
+                        // Per-folder screen list from eager cache; fall back to global for active folder if cache not yet populated or empty (e.g. failed eager load)
+                        const cached = perFolderScreens[fk];
+                        const folderScreenList = (cached != null && cached.length > 0) ? cached : (isActiveFolder ? screens : undefined);
+                        const fsLoading = (cached == null) && (folder.inputHandleId || folder.inputDir);
+                        const existing = new Set(folderScreenList ?? []);
+
                         return (
                           <div key={`f-${fi}`} style={{ paddingLeft: 4 }}>
                             <div className="ld-section-header" style={{ fontSize: 13 }}>
@@ -608,8 +504,8 @@ export function LeftDrawer({
                                 onClick={() => {
                                   setExpandedFolders((prev) => {
                                     const next = new Set(prev);
-                                    if (next.has(folderKey)) next.delete(folderKey);
-                                    else next.add(folderKey);
+                                    if (next.has(fk)) next.delete(fk);
+                                    else next.add(fk);
                                     return next;
                                   });
                                 }}
@@ -667,39 +563,75 @@ export function LeftDrawer({
                                 <Trash2 size={11} />
                               </button>
                             </div>
+                            {/* Path sub-text */}
+                            <div className="ld-folder-path">
+                              {folder.handlePath && folder.handlePath.length > 0
+                                ? folder.handlePath.join(" / ")
+                                : folder.inputDir || ""}
+                            </div>
                             {(isActiveFolder || isFolderExpanded) && (
                               <div style={{ paddingLeft: 8 }}>
-                                {Object.entries(TIERS).map(([tier, info]) => {
-                                  const tierScreens = info.screens.filter((s) =>
-                                    existing.has(s),
-                                  );
-                                  if (!tierScreens.length) return null;
-                                  return (
-                                    <div className="ld-tier-group" key={tier}>
-                                      <div className="ld-tier-label">
-                                        {tier} — {info.label}
-                                      </div>
-                                      {tierScreens.map((s) => (
-                                        <button
-                                          key={s}
-                                          className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
-                                          onClick={() => {
-                                            onSelect(s);
-                                            onToggle();
-                                          }}
-                                          title={screenName(s)}
-                                        >
-                                          {truncateName(screenName(s))}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  );
-                                })}
-                                {existing.size === 0 && (
-                                  <div className="ld-loading" style={{ padding: 12 }}>
-                                    <span style={{ color: "var(--brand-muted)", fontSize: 12 }}>
-                                      No screens found
-                                    </span>
+                                {fsLoading && !folderScreenList ? (
+                                  <div style={{ padding: "8px 4px", color: "var(--brand-muted)", fontSize: 11, display: "flex", alignItems: "center", gap: 6 }}>
+                                    <Loader2 size={11} className="ld-spinner" />
+                                    Loading screens...
+                                  </div>
+                                ) : folderScreenList && folderScreenList.length > 0 ? (
+                                  (() => {
+                                    const tieredAll = Object.values(TIERS).flatMap((t) => t.screens);
+                                    const orphanScreens = folderScreenList.filter((s) => !tieredAll.includes(s));
+                                    return (
+                                      <>
+                                        {Object.entries(TIERS).map(([tier, info]) => {
+                                          const tierScreens = info.screens.filter((s) =>
+                                            existing.has(s),
+                                          );
+                                          if (!tierScreens.length) return null;
+                                          return (
+                                            <div className="ld-tier-group" key={tier}>
+                                              <div className="ld-tier-label">
+                                                {tier} — {info.label}
+                                              </div>
+                                              {tierScreens.map((s) => (
+                                                <button
+                                                  key={s}
+                                                  className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
+                                                  onClick={() => {
+                                                    onSelect(s);
+                                                    onToggle();
+                                                  }}
+                                                  title={screenName(s)}
+                                                >
+                                                  {truncateName(screenName(s))}
+                                                </button>
+                                              ))}
+                                            </div>
+                                          );
+                                        })}
+                                        {orphanScreens.length > 0 && (
+                                          <div className="ld-tier-group" key="orphan">
+                                            <div className="ld-tier-label">Other</div>
+                                            {orphanScreens.map((s) => (
+                                              <button
+                                                key={s}
+                                                className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
+                                                onClick={() => {
+                                                  onSelect(s);
+                                                  onToggle();
+                                                }}
+                                                title={screenName(s)}
+                                              >
+                                                {truncateName(screenName(s))}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  })()
+                                ) : (
+                                  <div style={{ padding: 12, color: "var(--brand-muted)", fontSize: 12 }}>
+                                    No screens found
                                   </div>
                                 )}
                               </div>
@@ -732,31 +664,57 @@ export function LeftDrawer({
                 </button>
                 {isExpanded && (
                   <div className="ld-section-body" style={{ paddingLeft: 4 }}>
-                    {Object.entries(TIERS).map(([tier, info]) => {
-                      const tierScreens = info.screens.filter((s) => existing.has(s));
-                      if (!tierScreens.length) return null;
+                    {(() => {
+                      const tieredAll = Object.values(TIERS).flatMap((t) => t.screens);
+                      const orphanScreens = [...globalExisting].filter((s) => !tieredAll.includes(s));
                       return (
-                        <div className="ld-tier-group" key={tier}>
-                          <div className="ld-tier-label">
-                            {tier} — {info.label}
-                          </div>
-                          {tierScreens.map((s) => (
-                            <button
-                              key={s}
-                              className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
-                              onClick={() => {
-                                onSelect(s);
-                                onToggle();
-                              }}
-                              title={screenName(s)}
-                            >
-                              {truncateName(screenName(s))}
-                            </button>
-                          ))}
-                        </div>
+                        <>
+                          {Object.entries(TIERS).map(([tier, info]) => {
+                            const tierScreens = info.screens.filter((s) => globalExisting.has(s));
+                            if (!tierScreens.length) return null;
+                            return (
+                              <div className="ld-tier-group" key={tier}>
+                                <div className="ld-tier-label">
+                                  {tier} — {info.label}
+                                </div>
+                                {tierScreens.map((s) => (
+                                  <button
+                                    key={s}
+                                    className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
+                                    onClick={() => {
+                                      onSelect(s);
+                                      onToggle();
+                                    }}
+                                    title={screenName(s)}
+                                  >
+                                    {truncateName(screenName(s))}
+                                  </button>
+                                ))}
+                              </div>
+                            );
+                          })}
+                          {orphanScreens.length > 0 && (
+                            <div className="ld-tier-group" key="orphan">
+                              <div className="ld-tier-label">Other</div>
+                              {orphanScreens.map((s) => (
+                                <button
+                                  key={s}
+                                  className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
+                                  onClick={() => {
+                                    onSelect(s);
+                                    onToggle();
+                                  }}
+                                  title={screenName(s)}
+                                >
+                                  {truncateName(screenName(s))}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </>
                       );
-                    })}
-                    {existing.size === 0 && (
+                    })()}
+                    {globalExisting.size === 0 && (
                       <div style={{ padding: 12, color: "var(--brand-muted)", fontSize: 12 }}>
                         No screens loaded
                       </div>
@@ -767,16 +725,6 @@ export function LeftDrawer({
             );
           })}
         </div>
-        {/* Hidden file input for native folder picker */}
-        <input
-          ref={folderFileInputRef}
-          type="file"
-          style={{ display: "none" }}
-          // @ts-ignore
-          webkitdirectory=""
-          directory=""
-          onChange={handleBrowseFolder}
-        />
       </aside>
       {contextMenu && (
         <div
@@ -826,13 +774,26 @@ export function LeftDrawer({
           }}
         />
       )}
-      <BulkAddFoldersModal
-        open={scanResults !== null}
-        onClose={() => setScanResults(null)}
-        onAddFolders={handleBulkAddFolders}
-        folders={scanResults || []}
-        existingPaths={existingPaths}
-      />
+      {pickState && (
+        <ScanResultsModal
+          open={true}
+          scanning={pickState.scanning}
+          onClose={() => setPickState(null)}
+          onAddFolders={handleAddFoldersFromScan}
+          onRetry={() => {
+            setPickState(null);
+            handlePickAndScan(pickState.workspaceIdx);
+          }}
+          folders={pickState.results || []}
+          existingHandlePaths={existingHandlePaths}
+          skippedMalformed={pickState.skippedMalformed}
+          skippedPermission={pickState.skippedPermission}
+          emptyHtmlCount={pickState.emptyHtmlCount}
+          error={pickState.error}
+          parentFolderName={pickState.rootHandle?.name}
+          rootHandleId={pickState.rootHandleId}
+        />
+      )}
     </div>
   );
 }

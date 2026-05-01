@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import type { Project, Workspace, ClientProject, CaptureFolder } from "../types";
+import type { Project, Workspace, CaptureFolder } from "../types";
 
 const STORAGE_KEY = "golden-review.workspaces.v2";
 const ACTIVE_KEY = "golden-review.active-project.v1";
@@ -59,12 +59,7 @@ export function useProjects() {
   const addProject = useCallback(
     (project: Project) => {
       const next = [...projects, project];
-      if (project.type === "workspace") {
-        persist(next);
-      } else {
-        // Client projects: in-memory only
-        setProjects(next);
-      }
+      persist(next);
     },
     [projects, persist],
   );
@@ -131,12 +126,6 @@ export function useProjects() {
 
   const removeProject = useCallback(
     (index: number) => {
-      // Revoke blob URLs for client projects
-      const removed = projects[index];
-      if (removed?.type === "client") {
-        removed.files.forEach((f) => URL.revokeObjectURL(f.blobUrl));
-      }
-
       const next = projects.filter((_, i) => i !== index);
       persist(next);
       setActiveIndex((prev) => {
