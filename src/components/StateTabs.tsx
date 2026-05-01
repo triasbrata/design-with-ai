@@ -1,4 +1,4 @@
-import { cn } from "../lib/cn";
+import { SectionHeaders } from "./application/section-headers/section-headers";
 import type { StateContext } from '../types';
 
 interface StateTabsProps {
@@ -14,36 +14,18 @@ export function StateTabs({ stateContext, states, activeState, onChange }: State
       ? states.filter((s) => s in stateContext)
       : Object.keys(stateContext);
 
+  const items = [
+    { id: "default", label: "Overview" },
+    ...availableStates.map((s) => ({ id: s, label: stateContext[s].label })),
+  ];
+
   return (
-    <div data-caid="state-tabs">
-      <div className="flex flex-wrap gap-2 mb-3">
-        <button
-          type="button"
-          className={cn(
-            "text-xs font-semibold px-[10px] py-1.5 rounded-[10px] border border-[var(--brand-border-hairline)] bg-white text-tertiary cursor-pointer transition-all duration-150",
-            activeState === 'default' ? "bg-brand-solid text-white border-brand-solid" : "hover:bg-primary_hover hover:text-secondary"
-          )}
-          onClick={() => onChange('default')}
-        >
-          Overview
-        </button>
-        {availableStates.map((s) => (
-          <button
-            type="button"
-            key={s}
-            className={cn(
-              "text-xs font-semibold px-[10px] py-1.5 rounded-[10px] border border-[var(--brand-border-hairline)] bg-white text-tertiary cursor-pointer transition-all duration-150",
-              activeState === s ? "bg-brand-solid text-white border-brand-solid" : "hover:bg-primary_hover hover:text-secondary"
-            )}
-            onClick={() => onChange(s)}
-          >
-            {stateContext[s].label}
-          </button>
-        ))}
-      </div>
-      <div className={cn("mt-2", activeState === 'default' && "!hidden")}>
-        {/* goal moved to MetaPanel */}
-      </div>
-    </div>
+    <SectionHeaders
+      items={items}
+      activeId={activeState}
+      onChange={onChange}
+      size="sm"
+      variant="pills"
+    />
   );
 }

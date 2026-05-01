@@ -588,7 +588,15 @@ export default function App() {
           />
           <div className="content-area" ref={contentAreaRef}>
             <div className="main-content">
-              {orderedScreens.length === 0 ? (
+              {isSummary ? (
+                <Summary
+                  screens={orderedScreens}
+                  metadata={metadata}
+                  onSelect={navigate}
+                  onBack={goPrev}
+                  onCaptureAll={handleCaptureAll}
+                />
+              ) : orderedScreens.length === 0 ? (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, flexDirection: "column", gap: 12 }}>
                   {handlesLoading || fsLoading ? (
                     <p style={{ color: "var(--brand-muted)", fontSize: 14 }}>
@@ -604,14 +612,6 @@ export default function App() {
                     </p>
                   )}
                 </div>
-              ) : isSummary ? (
-                <Summary
-                  screens={orderedScreens}
-                  metadata={metadata}
-                  onSelect={navigate}
-                  onBack={goPrev}
-                  onCaptureAll={handleCaptureAll}
-                />
               ) : (
                 <Viewer
                   screen={currentScreen}
