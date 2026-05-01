@@ -4,20 +4,51 @@ Tools untuk **design review viewer** + **golden baseline PNG capture**.
 HTML spec file di `docs/moneykitty/design/golden/` ditampilkan di phone-frame 390×844px,
 bisa di-toggle antara state (data/empty/loading/error), lalu di-screenshot otomatis.
 
-## Struktur File
+## Arsitektur Viewer
 
 ```
-tools/screenshot_device_html/
-├── index.html          # Design review viewer (SPA) — buka pakai `npm run review`
-├── screenshot-v2.ts    # CLI screenshot tool — 1 file → 1 PNG
-├── screenshot.ts       # Versi lama (v1), masih bisa dipakai
-├── gen_variants.mjs    # Auto-generate variant HTML dari state div
-├── batch_variants.sh   # Batch screenshot semua variant → PNG
-├── dev-server.ts       # Dev server (v1)
-├── vite.config.ts      # Vite config untuk `npm run review`
-├── BASELINE_SPEC.md    # Kontrak teknis untuk HTML golden spec
-└── package.json        # Dependencies: playwright, vite, vitest
+src/
+├── main.tsx / App.tsx        # Root: workspace mgmt, per-folder eager loading, keyboard shortcuts
+├── types.ts                  # ScreenMeta, StateContext, Metadata, Project, CaptureFolder
+├── constants.ts              # TIERS (screen ordering + tree grouping), DEVICE_PRESETS, screenName()
+├── index.css                 # Brand tokens (CSS variables) + semua style per komponen
+├── lib/cn.ts                 # Tailwind classname utility
+├── hooks/
+│   ├── useScreens.ts         # Fetch screen-metadata.json, computeOrderedScreens(), nav state
+│   ├── useProjects.ts        # Workspace/folder CRUD persisted ke localStorage
+│   ├── useFileSystem.ts      # File System Access API (IndexedDB + OPFS cache + FileSource)
+│   ├── useDeviceScale.ts     # Scale factor for viewport
+│   └── useToast.ts           # Toast notification state
+├── components/
+│   ├── LeftDrawer.tsx        # Workspace tree: per-folder tier-organized screen list + "Other"
+│   ├── Viewer.tsx            # Toolbar + PhoneFrame + MetaPanel
+│   ├── PhoneFrame.tsx        # Iframe wrapper (forwardRef, postMessage state switching)
+│   ├── MetaPanel.tsx         # Description, purpose, key elements, states
+│   ├── StateTabs.tsx         # State switching tab buttons
+│   ├── Summary.tsx           # All-screens summary table (tier-organized)
+│   ├── BottomBar.tsx         # Floating bottom toolbar: nav, tools, device picker, help
+│   └── ...
 ```
+
+### Data Flow
+
+```
+screen-metadata.json ──fetch──► useScreens ──computeOrderedScreens()──► orderedScreens[]
+       │                              │                                        │
+       │                      LeftDrawer (tree)                          Viewer (stage)
+       │                      ┌─────────────────┐                       ┌──────────────┐
+       │                      │ TIERS grouping   │                       │ PhoneFrame   │
+       │                      │ + "Other" section│                       │ + MetaPanel  │
+       │                      └─────────────────┘                       └──────────────┘
+       │
+       └── eager per-folder load (App.tsx useEffect) ──► perFolderScreens[workspaceIdx-folderIdx]
+```
+
+### Cara navigasi tree (LeftDrawer)
+
+1. **TIERS grouping:** Screen dikelompokkan berdasarkan tier (T1-T4) dari `constants.ts`. Hanya screen yang terdaftar di TIERS yang muncul di bawah label tier.
+2. **"Other" fallback:** Screen yang ada di `screen-metadata.json` tapi TIDAK terdaftar di TIERS manapun akan muncul di section **"Other"** di paling bawah.
+3. Ini berlaku untuk **setiap folder** — jadi tiap folder punya tree-nya sendiri sesuai isi `screen-metadata.json` masing-masing.
 
 ## 1. Membuat Golden HTML Spec Baru
 
@@ -308,16 +339,34 @@ Tambah entry baru di `screens`:
 | T3 | Settings & Security (Settings, Theme, Security, PIN) |
 | T4 | Navigation & Shell (FloatingBottomNav, User) |
 
-## 3. Daftarkan Screen ke index.html (viewer)
+## 3. Daftarkan Screen ke `src/constants.ts` (viewer tree)
 
-Edit `tools/screenshot_device_html/index.html` — tambahkan nama file ke array `TIERS`:
+Edit `tools/screenshot_device_html/src/constants.ts` — tambahkan nama file ke objek `TIERS`:
 
-```js
-const TIERS = {
-  T1: { label:'Main User Flows', screens:['record_screen_spec','transaction_list_screen_spec','nama_screen_spec', ...] },
+```ts
+export const TIERS: Record<string, TierInfo> = {
+  T1: {
+    label: 'Main User Flows',
+    screens: [
+      'record_screen_spec',
+      'transaction_list_screen_spec',
+      'nama_screen_spec',  // <-- tambahkan disini
+      // ...
+    ],
+  },
   // ...
 };
 ```
+
+> **WAJIB:** Setiap screen baru yang dibuat HARUS didaftarkan ke `TIERS` di `src/constants.ts` — BUKAN di `index.html`.
+>
+> Screen yang TIDAK didaftarkan di TIERS tetap bisa dirender di main viewer (navigasi arrow kiri/kanan), tapi di **workspace tree (LeftDrawer)** akan muncul di section **"Other"** di bawah semua tier, bukan di tier yang sesuai. Untuk pengalaman navigasi yang rapi, daftarkan selalu ke TIERS yang tepat.
+
+### Multi-project / Multi-golden-dir
+
+Satu instalasi viewer bisa handle **banyak folder golden** dari proyek berbeda (misal `moneykitty/design/golden/` dan `initial-balance/design/golden/`). Tambahkan folder via drawer kiri (`\`).
+
+`src/constants.ts` adalah **global** — berlaku untuk semua folder. Jika ada screen dari proyek lain yang tidak ada di TIERS, screen tersebut akan muncul di section **"Other"** di tree.
 
 ## 4. Jalankan Design Review Viewer
 
@@ -408,8 +457,9 @@ Script ini akan loop semua 29 variant HTML dan generate PNG via `screenshot-v2.t
 2. Daftarkan di screen-metadata.json
    → tambah entry di "screens"
 
-3. Daftarkan di index.html TIERS
-   → tambah nama file ke array TIERS
+3. Daftarkan di src/constants.ts TIERS
+   → tambah nama file ke array TIERS di tier yang sesuai
+   → **WAJIB** — tanpa ini, screen hanya muncul di section "Other" di tree
 
 4. Review di viewer
    npm run review

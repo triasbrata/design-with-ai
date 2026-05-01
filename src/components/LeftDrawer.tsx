@@ -490,9 +490,10 @@ export function LeftDrawer({
                         const fk = folderKey(pi, fi);
                         const isFolderExpanded = expandedFolders.has(fk);
 
-                        // Per-folder screen list from eager cache; fall back to global for active folder if cache not yet populated
-                        const folderScreenList = perFolderScreens[fk] ?? (isActiveFolder ? screens : undefined);
-                        const fsLoading = !perFolderScreens[fk] && (folder.inputHandleId || folder.inputDir);
+                        // Per-folder screen list from eager cache; fall back to global for active folder if cache not yet populated or empty (e.g. failed eager load)
+                        const cached = perFolderScreens[fk];
+                        const folderScreenList = (cached != null && cached.length > 0) ? cached : (isActiveFolder ? screens : undefined);
+                        const fsLoading = (cached == null) && (folder.inputHandleId || folder.inputDir);
                         const existing = new Set(folderScreenList ?? []);
 
                         return (
@@ -576,32 +577,58 @@ export function LeftDrawer({
                                     Loading screens...
                                   </div>
                                 ) : folderScreenList && folderScreenList.length > 0 ? (
-                                  Object.entries(TIERS).map(([tier, info]) => {
-                                    const tierScreens = info.screens.filter((s) =>
-                                      existing.has(s),
-                                    );
-                                    if (!tierScreens.length) return null;
+                                  (() => {
+                                    const tieredAll = Object.values(TIERS).flatMap((t) => t.screens);
+                                    const orphanScreens = folderScreenList.filter((s) => !tieredAll.includes(s));
                                     return (
-                                      <div className="ld-tier-group" key={tier}>
-                                        <div className="ld-tier-label">
-                                          {tier} — {info.label}
-                                        </div>
-                                        {tierScreens.map((s) => (
-                                          <button
-                                            key={s}
-                                            className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
-                                            onClick={() => {
-                                              onSelect(s);
-                                              onToggle();
-                                            }}
-                                            title={screenName(s)}
-                                          >
-                                            {truncateName(screenName(s))}
-                                          </button>
-                                        ))}
-                                      </div>
+                                      <>
+                                        {Object.entries(TIERS).map(([tier, info]) => {
+                                          const tierScreens = info.screens.filter((s) =>
+                                            existing.has(s),
+                                          );
+                                          if (!tierScreens.length) return null;
+                                          return (
+                                            <div className="ld-tier-group" key={tier}>
+                                              <div className="ld-tier-label">
+                                                {tier} — {info.label}
+                                              </div>
+                                              {tierScreens.map((s) => (
+                                                <button
+                                                  key={s}
+                                                  className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
+                                                  onClick={() => {
+                                                    onSelect(s);
+                                                    onToggle();
+                                                  }}
+                                                  title={screenName(s)}
+                                                >
+                                                  {truncateName(screenName(s))}
+                                                </button>
+                                              ))}
+                                            </div>
+                                          );
+                                        })}
+                                        {orphanScreens.length > 0 && (
+                                          <div className="ld-tier-group" key="orphan">
+                                            <div className="ld-tier-label">Other</div>
+                                            {orphanScreens.map((s) => (
+                                              <button
+                                                key={s}
+                                                className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
+                                                onClick={() => {
+                                                  onSelect(s);
+                                                  onToggle();
+                                                }}
+                                                title={screenName(s)}
+                                              >
+                                                {truncateName(screenName(s))}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </>
                                     );
-                                  })
+                                  })()
                                 ) : (
                                   <div style={{ padding: 12, color: "var(--brand-muted)", fontSize: 12 }}>
                                     No screens found
@@ -637,30 +664,56 @@ export function LeftDrawer({
                 </button>
                 {isExpanded && (
                   <div className="ld-section-body" style={{ paddingLeft: 4 }}>
-                    {Object.entries(TIERS).map(([tier, info]) => {
-                      const tierScreens = info.screens.filter((s) => globalExisting.has(s));
-                      if (!tierScreens.length) return null;
+                    {(() => {
+                      const tieredAll = Object.values(TIERS).flatMap((t) => t.screens);
+                      const orphanScreens = [...globalExisting].filter((s) => !tieredAll.includes(s));
                       return (
-                        <div className="ld-tier-group" key={tier}>
-                          <div className="ld-tier-label">
-                            {tier} — {info.label}
-                          </div>
-                          {tierScreens.map((s) => (
-                            <button
-                              key={s}
-                              className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
-                              onClick={() => {
-                                onSelect(s);
-                                onToggle();
-                              }}
-                              title={screenName(s)}
-                            >
-                              {truncateName(screenName(s))}
-                            </button>
-                          ))}
-                        </div>
+                        <>
+                          {Object.entries(TIERS).map(([tier, info]) => {
+                            const tierScreens = info.screens.filter((s) => globalExisting.has(s));
+                            if (!tierScreens.length) return null;
+                            return (
+                              <div className="ld-tier-group" key={tier}>
+                                <div className="ld-tier-label">
+                                  {tier} — {info.label}
+                                </div>
+                                {tierScreens.map((s) => (
+                                  <button
+                                    key={s}
+                                    className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
+                                    onClick={() => {
+                                      onSelect(s);
+                                      onToggle();
+                                    }}
+                                    title={screenName(s)}
+                                  >
+                                    {truncateName(screenName(s))}
+                                  </button>
+                                ))}
+                              </div>
+                            );
+                          })}
+                          {orphanScreens.length > 0 && (
+                            <div className="ld-tier-group" key="orphan">
+                              <div className="ld-tier-label">Other</div>
+                              {orphanScreens.map((s) => (
+                                <button
+                                  key={s}
+                                  className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
+                                  onClick={() => {
+                                    onSelect(s);
+                                    onToggle();
+                                  }}
+                                  title={screenName(s)}
+                                >
+                                  {truncateName(screenName(s))}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </>
                       );
-                    })}
+                    })()}
                     {globalExisting.size === 0 && (
                       <div style={{ padding: 12, color: "var(--brand-muted)", fontSize: 12 }}>
                         No screens loaded
