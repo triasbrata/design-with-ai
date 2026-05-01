@@ -178,30 +178,95 @@ export interface GoldenDirResult {
   relativePath: string[];
   handle: FileSystemDirectoryHandle;
   screenCount: number;
+  /** Number of .html files in the directory */
+  htmlFileCount: number;
+}
+
+/** Aggregate result from scanning a root directory */
+export interface ScanResult {
+  folders: GoldenDirResult[];
+  /** Number of screen-metadata.json files that had JSON parse errors */
+  malformedCount: number;
+  /** Number of subdirectories that couldn't be read (permission denied) */
+  permissionDeniedCount: number;
+}
+
+/**
+ * Read metadata file and parse it inline to distinguish "file not found"
+ * from "invalid JSON". Throws when the file can't be read for reasons other
+ * than not-found; returns null when the file doesn't exist.
+ */
+async function readMetadataStrict(
+  handle: FileSystemDirectoryHandle,
+): Promise<{ ok: true; data: Record<string, unknown> } | { ok: false; reason: 'not_found' | 'parse_error' }> {
+  try {
+    const text = await readFile(handle, 'screen-metadata.json');
+    try {
+      return { ok: true, data: JSON.parse(text) };
+    } catch {
+      return { ok: false, reason: 'parse_error' };
+    }
+  } catch (err) {
+    // NotFoundError means no metadata file — not an error
+    if ((err as DOMException).name === 'NotFoundError') {
+      return { ok: false, reason: 'not_found' };
+    }
+    // Other errors (permission, etc.) — treat as not-found to avoid crashing
+    return { ok: false, reason: 'not_found' };
+  }
 }
 
 /**
  * Scan subdirectories of a FileSystemDirectoryHandle for screen-metadata.json.
- * Returns directories that contain golden specs, sorted by name.
+ * Returns scan results with metadata about malformed/permission-skipped dirs.
  * Skips hidden directories (starting with .) and node_modules.
  */
 export async function scanForGoldenDirectories(
   rootHandle: FileSystemDirectoryHandle,
-): Promise<GoldenDirResult[]> {
+): Promise<ScanResult> {
   await ensureReadPermission(rootHandle);
   const results: GoldenDirResult[] = [];
+  let malformedCount = 0;
+  let permissionDeniedCount = 0;
 
   async function walk(dirHandle: FileSystemDirectoryHandle, pathPrefix: string[], depth: number) {
     if (depth > 6) return;
-    const dh = toFSA(dirHandle);
-    for await (const [name, entry] of dh.entries()) {
+
+    // Collect entries first so iteration errors don't lose remaining entries
+    let entries: Array<[string, FileSystemDirectoryHandle | FileSystemFileHandle]> = [];
+    try {
+      const dh = toFSA(dirHandle);
+      for await (const [name, entry] of dh.entries()) {
+        entries.push([name, entry]);
+      }
+    } catch {
+      permissionDeniedCount++;
+      return;
+    }
+
+    for (const [name, entry] of entries) {
       if (entry.kind !== 'directory') continue;
       if (name.startsWith('.') || name === 'node_modules') continue;
 
       const subHandle = entry as FileSystemDirectoryHandle;
-      const meta = await readMetadata(subHandle);
       const entryPath = [...pathPrefix, name];
-      if (meta) {
+
+      // Read and parse metadata — distinguish malformed from not-found
+      const metaResult = await readMetadataStrict(subHandle);
+      if (metaResult.ok === false && metaResult.reason === 'parse_error') {
+        malformedCount++;
+      }
+
+      if (metaResult.ok) {
+        const meta = metaResult.data;
+        // Count HTML files in this directory
+        let htmlFileCount = 0;
+        try {
+          htmlFileCount = (await listHtmlFiles(subHandle)).length;
+        } catch {
+          // Permission error counting files — count as 0
+        }
+
         results.push({
           name,
           relativePath: entryPath,
@@ -209,30 +274,50 @@ export async function scanForGoldenDirectories(
           screenCount:
             (meta as any).meta?.totalScreens ??
             Object.keys((meta as any).screens || {}).length,
+          htmlFileCount,
         });
       }
+
       // Always walk deeper — golden spec dirs can have nested golden specs
-      await walk(subHandle, entryPath, depth + 1);
+      try {
+        await walk(subHandle, entryPath, depth + 1);
+      } catch {
+        permissionDeniedCount++;
+      }
     }
   }
 
   // Check root first
-  const rootMeta = await readMetadata(rootHandle);
-  if (rootMeta) {
+  const rootMetaResult = await readMetadataStrict(rootHandle);
+  if (rootMetaResult.ok === false && rootMetaResult.reason === 'parse_error') {
+    malformedCount++;
+  }
+  if (rootMetaResult.ok) {
+    let rootHtmlCount = 0;
+    try {
+      rootHtmlCount = (await listHtmlFiles(rootHandle)).length;
+    } catch {
+      // Permission error — count as 0
+    }
     results.push({
       name: rootHandle.name,
       relativePath: [],
       handle: rootHandle,
       screenCount:
-        (rootMeta as any).meta?.totalScreens ??
-        Object.keys((rootMeta as any).screens || {}).length,
+        (rootMetaResult.data as any).meta?.totalScreens ??
+        Object.keys((rootMetaResult.data as any).screens || {}).length,
+      htmlFileCount: rootHtmlCount,
     });
   }
 
   // Walk subdirectories recursively
-  await walk(rootHandle, [], 0);
+  try {
+    await walk(rootHandle, [], 0);
+  } catch {
+    permissionDeniedCount++;
+  }
 
-  return results;
+  return { folders: results, malformedCount, permissionDeniedCount };
 }
 
 /**
@@ -263,17 +348,6 @@ export function dataUrlToBlob(dataUrl: string): Blob {
     array[i] = raw.charCodeAt(i);
   }
   return new Blob([array], { type: mime });
-}
-
-// ── Blob / DataURL conversion ──
-
-export function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -403,19 +477,15 @@ export async function preloadOpfsCache(
 //  FileSource Abstraction
 // ═══════════════════════════════════════════════════════
 
-export type FileSourceType = 'fs-api' | 'vite-middleware' | 'upload' | 'unknown';
+export type FileSourceType = 'fs-api' | 'unknown';
 
 export const SOURCE_LABELS: Record<FileSourceType, string> = {
   'fs-api': 'FS API',
-  'vite-middleware': 'Local Server',
-  'upload': 'File Upload',
   'unknown': 'Unknown',
 };
 
 export const SOURCE_ICONS: Record<FileSourceType, string> = {
   'fs-api': 'disk',
-  'vite-middleware': 'server',
-  'upload': 'folder',
   'unknown': 'help',
 };
 
@@ -437,7 +507,7 @@ export function detectFileSource(): { type: FileSourceType; label: string } {
   if (typeof (window as any).showDirectoryPicker === 'function') {
     return { type: 'fs-api', label: SOURCE_LABELS['fs-api'] };
   }
-  return { type: 'upload', label: SOURCE_LABELS['upload'] };
+  return { type: 'unknown', label: SOURCE_LABELS['unknown'] };
 }
 
 /**
@@ -490,128 +560,24 @@ export function createFsApiSource(
   };
 }
 
-/**
- * Create a FileSource backed by the Vite dev server middleware.
- * Used when the dev server runs on the same machine (workspace mode).
- */
-export function createViteMiddlewareSource(
-  inputDir: string,
-  outputDir: string,
-): FileSource {
-  const encInput = encodeURIComponent(inputDir);
-  const encOutput = encodeURIComponent(outputDir);
-
-  return {
-    type: 'vite-middleware',
-    label: 'Local Server',
-    writable: true,
-    async readFile(fileName: string): Promise<string> {
-      const res = await fetch(`/screens/${encodeURIComponent(fileName)}?dir=${encInput}`);
-      if (!res.ok) throw new Error(`Read failed: ${fileName} (${res.status})`);
-      return res.text();
-    },
-    async writeFile(fileName: string, content: string | Blob): Promise<void> {
-      // Captures are PNG data URLs — POST to /api/capture
-      const dataUrl = typeof content === 'string' && content.startsWith('data:')
-        ? content
-        : content instanceof Blob
-          ? await blobToDataUrl(content)
-          : (() => { throw new Error('Unsupported content for middleware write'); })();
-      const res = await fetch(`/api/capture?dir=${encOutput}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: fileName, data: dataUrl }),
-      });
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
-        throw new Error((errBody as any).error || `Write failed (${res.status})`);
-      }
-    },
-    async readMetadata(): Promise<Metadata | null> {
-      try {
-        const res = await fetch(`/api/metadata?dir=${encInput}`);
-        if (!res.ok) return null;
-        return res.json() as Promise<Metadata>;
-      } catch {
-        return null;
-      }
-    },
-    async listFiles(): Promise<string[]> {
-      const meta = await this.readMetadata();
-      if (!meta) return [];
-      return Object.keys(meta.screens).map(s => `${s}_spec.html`);
-    },
-  };
-}
-
-/**
- * Create a FileSource for browser-uploaded files (webkitdirectory / drag-and-drop).
- * This source is read-only.
- */
-export function createUploadSource(
-  files: Array<{ name: string; blobUrl: string }>,
-  metadata: Metadata,
-): FileSource {
-  const fileMap = new Map(files.map(f => [f.name, f.blobUrl]));
-
-  return {
-    type: 'upload',
-    label: 'File Upload',
-    writable: false,
-    async readFile(fileName: string): Promise<string> {
-      const blobUrl = fileMap.get(fileName);
-      if (!blobUrl) throw new Error(`File not found: ${fileName}`);
-      const res = await fetch(blobUrl);
-      return res.text();
-    },
-    async writeFile(): Promise<void> {
-      throw new Error('Upload source is read-only');
-    },
-    async readMetadata(): Promise<Metadata | null> {
-      return metadata;
-    },
-    async listFiles(): Promise<string[]> {
-      return files.map(f => f.name);
-    },
-  };
-}
 
 /**
  * Smart factory: picks the best FileSource for the given configuration.
  *
- * Priority:
- *   1. FS Access API handles (when user granted directory permission)
- *   2. Client project (uploaded files via webkitdirectory)
- *   3. Vite middleware (workspace with path-based dirs)
- *
- * Returns null when no source can be determined (e.g., no active project).
+ * Only FS Access API handles are supported now. Path-based workspaces
+ * still load screens via Vite middleware URLs but use a null FileSource
+ * (captures are download-only no-ops).
  */
 export function createFileSource(
   config: {
-    projectType?: 'workspace' | 'client';
-    inputDir?: string;
-    outputDir?: string;
     inputHandle?: FileSystemDirectoryHandle | null;
     outputHandle?: FileSystemDirectoryHandle | null;
-    uploadFiles?: Array<{ name: string; blobUrl: string }>;
-    uploadMetadata?: Metadata | null;
   },
 ): FileSource | null {
-  const { projectType, inputHandle, outputHandle, inputDir, outputDir, uploadFiles, uploadMetadata } = config;
+  const { inputHandle, outputHandle } = config;
 
-  // Priority 1: FS Access API (native browser file system access)
   if (inputHandle) {
     return createFsApiSource(inputHandle, outputHandle ?? undefined);
-  }
-
-  // Priority 2: Client project with uploaded files
-  if (projectType === 'client' && uploadFiles && uploadFiles.length > 0 && uploadMetadata) {
-    return createUploadSource(uploadFiles, uploadMetadata);
-  }
-
-  // Priority 3: Vite middleware (workspace mode, server-side file access)
-  if (inputDir) {
-    return createViteMiddlewareSource(inputDir, outputDir || inputDir);
   }
 
   return null;

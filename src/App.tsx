@@ -15,7 +15,7 @@ import { HelpModal } from "./components/HelpModal";
 import { Toast } from "./components/Toast";
 import { screenName, DEVICE_PRESETS, DEVICE_CYCLE } from "./constants";
 import type { DeviceMode } from "./constants";
-import type { CaptureResult, CaptureFolder, ClientProject, MarkerRect, MarkerContext, Metadata } from "./types";
+import type { CaptureResult, MarkerRect, MarkerContext, Metadata } from "./types";
 import { extractMarkedContext } from "./acp/extractMarkerContext";
 import type { FileSource } from "./hooks/useFileSystem";
 import {
@@ -26,7 +26,6 @@ import {
   readMetadata,
   listHtmlFiles,
   readFile,
-  writeFile,
   dataUrlToBlob,
 } from "./hooks/useFileSystem";
 
@@ -47,7 +46,6 @@ export default function App() {
     activeOutputDir,
     addProject,
     addFolderToWorkspace,
-    addFoldersToWorkspace,
     removeProject,
     removeFolder,
     setActive,
@@ -63,8 +61,6 @@ export default function App() {
   const [fsMetadata, setFsMetadata] = useState<Metadata | null | undefined>(undefined);
   const [handlesLoading, setHandlesLoading] = useState(false);
   const blobUrlCacheRef = useRef<Record<string, string>>({});
-  const [fsPermissionError, setFsPermissionError] = useState<string | null>(null);
-  const [fsRetryCount, setFsRetryCount] = useState(0);
   const [fsLoading, setFsLoading] = useState(false);
 
   // Load FS handles when active folder changes
@@ -72,7 +68,6 @@ export default function App() {
     setInputHandle(null);
     setOutputHandle(null);
     setFsMetadata(undefined);
-    setFsPermissionError(null);
     setFsLoading(false);
     blobUrlCacheRef.current = {};
 
@@ -134,7 +129,6 @@ export default function App() {
       }
       blobUrlCacheRef.current = {};
       setFsMetadata(undefined);
-      setFsPermissionError(null);
       setFsLoading(false);
       return;
     }
@@ -145,7 +139,6 @@ export default function App() {
 
     (async () => {
       setFsMetadata(undefined);
-      setFsPermissionError(null);
       setFsLoading(true);
 
       try {
@@ -178,9 +171,6 @@ export default function App() {
       } catch (err) {
         // Permission denied or other read error
         if (!cancelled) {
-          if (err instanceof Error && (err.message.toLowerCase().includes('permission'))) {
-            setFsPermissionError(err.message);
-          }
           // Set metadata to null so orderedScreens stays empty shown
           setFsMetadata(null);
         }
@@ -190,23 +180,11 @@ export default function App() {
     })();
 
     return () => { cancelled = true; };
-  }, [inputHandle, fsRetryCount]);
-
-  // Pre-built file URL map for client projects
-  const projectFileMap = useMemo(() => {
-    if (activeProject?.type !== "client") return null;
-    const map: Record<string, string> = {};
-    for (const f of activeProject.files) {
-      const key = f.name.replace(/\.html$/, "");
-      map[key] = f.blobUrl;
-    }
-    return map;
-  }, [activeProject]);
+  }, [inputHandle]);
 
   // Resolve screen URLs:
   //   FS handle mode   → blob URL cache (from indexedDB handles)
   //   Workspace        → Vite middleware (/screens/...?dir=...)
-  //   Client project   → pre-loaded blob URLs from webkitdirectory picker
   const getScreenUrl = useCallback(
     (screen: string, state?: string): string => {
       // FS handle mode: use blob URL cache
@@ -216,36 +194,21 @@ export default function App() {
       }
 
       // Workspace mode: Vite middleware
-      if (activeProject?.type === "workspace") {
-        if (state) {
-          return `/screens/${screen}_${state}.html?dir=${encodeURIComponent(activeInputDir)}`;
-        }
-        return `/screens/${screen}.html?dir=${encodeURIComponent(activeInputDir)}`;
+      if (state) {
+        return `/screens/${screen}_${state}.html?dir=${encodeURIComponent(activeInputDir)}`;
       }
-
-      // Client project
-      if (!projectFileMap) return "";
-      if (state && projectFileMap[`${screen}_${state}`]) {
-        return projectFileMap[`${screen}_${state}`];
-      }
-      return projectFileMap[screen] ?? "";
+      return `/screens/${screen}.html?dir=${encodeURIComponent(activeInputDir)}`;
     },
-    [activeProject, activeInputDir, projectFileMap, activeFolder?.inputHandleId],
+    [activeInputDir, activeFolder?.inputHandleId],
   );
 
   // ── FileSource abstraction ──
   const fileSource = useMemo<FileSource | null>(() => {
-    const project = projects[activeIndex];
     return createFileSource({
-      projectType: project?.type,
-      inputDir: activeInputDir,
-      outputDir: activeOutputDir,
       inputHandle: inputHandle ?? undefined,
       outputHandle: outputHandle ?? undefined,
-      uploadFiles: project?.type === 'client' ? project.files : undefined,
-      uploadMetadata: project?.type === 'client' ? project.metadata : null,
     });
-  }, [projects, activeIndex, activeInputDir, activeOutputDir, inputHandle, outputHandle]);
+  }, [inputHandle, outputHandle]);
 
   // Preload OPFS cache when file source changes (background, non-blocking)
   useEffect(() => {
@@ -261,10 +224,7 @@ export default function App() {
         return { filename, ok: true }; // read-only source → no-op
       }
       try {
-        // FS API wants a Blob; middleware/upload API wants the data URL string
-        const content = fileSource.type === 'fs-api'
-          ? dataUrlToBlob(dataUrl)
-          : dataUrl;
+        const content = dataUrlToBlob(dataUrl);
         await fileSource.writeFile(filename, content);
         return { filename, ok: true };
       } catch (err) {
@@ -274,21 +234,10 @@ export default function App() {
     [fileSource],
   );
 
-  // Pre-loaded metadata: FS handle mode, then client project mode
+  // Pre-loaded metadata: FS handle mode.
   // When fsMetadata is undefined (no FS handle or still loading), fall through
   // When fsMetadata is null (no metadata file found), pass null to useScreens
-  const preloadedMetadata =
-    fsMetadata !== undefined
-      ? fsMetadata
-      : activeProject?.type === "client"
-        ? (activeProject as ClientProject).metadata
-        : undefined;
-
-  // Re-authorize folder when FS permission was denied
-  const handleReauthorizeFs = useCallback(() => {
-    setFsPermissionError(null);
-    setFsRetryCount((c) => c + 1);
-  }, []);
+  const preloadedMetadata = fsMetadata !== undefined ? fsMetadata : undefined;
 
   // When FS handle mode is active, force dir to "" to skip Vite middleware fetch
   const screensDir = activeFolder?.inputHandleId ? "" : activeInputDir;
@@ -599,16 +548,6 @@ export default function App() {
     renameFolder(projectIdx, folderIdx, name);
   }, [renameFolder]);
 
-  // Handler for bulk adding folders to an existing workspace
-  const handleAddFolders = useCallback(
-    (workspaceIdx: number, folders: CaptureFolder[]) => {
-      if (folders.length === 0) return;
-      addFoldersToWorkspace(workspaceIdx, folders);
-      show(`Added ${folders.length} folder(s)`, true);
-    },
-    [addFoldersToWorkspace, show],
-  );
-
   return (
     <div data-caid="app" style={{ display: "flex", width: "100%", height: "100vh", overflow: "hidden" }}>
       {capturing ? (
@@ -642,7 +581,6 @@ export default function App() {
             onRemoveFolder={removeFolder}
             onRenameWorkspace={handleRenameWorkspace}
             onRenameFolder={handleRenameFolder}
-            onAddFolders={handleAddFolders}
             fileSourceType={fileSource?.type ?? null}
             fileSourceLabel={fileSource?.label ?? ''}
           />
@@ -650,32 +588,7 @@ export default function App() {
             <div className="main-content">
               {orderedScreens.length === 0 ? (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, flexDirection: "column", gap: 12 }}>
-                  {fsPermissionError ? (
-                    <>
-                      <p style={{ color: "var(--brand-warning)", fontSize: 14, margin: 0 }}>
-                        Permission denied &mdash; screens cannot be read
-                      </p>
-                      <p style={{ color: "var(--brand-muted)", fontSize: 12, margin: 0, maxWidth: 320, textAlign: "center" }}>
-                        The browser needs your permission to access the directory.
-                        Click below to re-authorize.
-                      </p>
-                      <button
-                        onClick={handleReauthorizeFs}
-                        style={{
-                          padding: "8px 20px",
-                          background: "var(--brand-accent)",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 6,
-                          cursor: "pointer",
-                          fontSize: 13,
-                          fontWeight: 500,
-                        }}
-                      >
-                        Re-authorize
-                      </button>
-                    </>
-                  ) : handlesLoading || fsLoading ? (
+                  {handlesLoading || fsLoading ? (
                     <p style={{ color: "var(--brand-muted)", fontSize: 14 }}>
                       Loading screens...
                     </p>

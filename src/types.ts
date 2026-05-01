@@ -55,19 +55,7 @@ export interface Workspace {
   activeFolder: number;
 }
 
-export interface ClientFileEntry {
-  name: string;
-  blobUrl: string;
-}
-
-export interface ClientProject {
-  type: "client";
-  name: string;
-  files: ClientFileEntry[];
-  metadata: Metadata;
-}
-
-export type Project = Workspace | ClientProject;
+export type Project = Workspace;
 
 // ── Marker types ──
 
