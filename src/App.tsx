@@ -46,6 +46,7 @@ export default function App() {
     activeOutputDir,
     addProject,
     addFolderToWorkspace,
+    addFoldersToWorkspace,
     removeProject,
     removeFolder,
     setActive,
@@ -523,23 +524,6 @@ export default function App() {
     [addFolderToWorkspace],
   );
 
-  // Add multiple folders at once (from NativeScanModal bulk selection)
-  const handleAddBulkFolders = useCallback(
-    async (workspaceIdx: number, folders: { name: string; inputHandleId: string; outputHandleId: string; handlePath: string[] }[]) => {
-      for (const f of folders) {
-        addFolderToWorkspace(workspaceIdx, {
-          name: f.name,
-          inputDir: "",
-          outputDir: "",
-          inputHandleId: f.inputHandleId,
-          outputHandleId: f.outputHandleId,
-          handlePath: f.handlePath,
-        });
-      }
-    },
-    [addFolderToWorkspace],
-  );
-
   const handleRenameWorkspace = useCallback((index: number, name: string) => {
     renameProject(index, name);
   }, [renameProject]);
@@ -579,6 +563,7 @@ export default function App() {
             onAddFolder={handleAddFolder}
             onRemoveProject={removeProject}
             onRemoveFolder={removeFolder}
+            onAddFolders={addFoldersToWorkspace}
             onRenameWorkspace={handleRenameWorkspace}
             onRenameFolder={handleRenameFolder}
             fileSourceType={fileSource?.type ?? null}
