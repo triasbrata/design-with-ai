@@ -1931,6 +1931,17 @@ body {
   color: #2D6A4F;
 }
 
+/* ── Folder path sub-text ── */
+.ld-folder-path {
+  font-size: 9px;
+  color: var(--brand-muted);
+  opacity: 0.65;
+  padding: 1px 0 2px 24px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── Hidden ── */
 .hidden { display: none !important; }
 

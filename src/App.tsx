@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useScreens } from "./hooks/useScreens";
+import { useScreens, computeOrderedScreens } from "./hooks/useScreens";
 import { useDeviceScale } from "./hooks/useDeviceScale";
 import { useProjects } from "./hooks/useProjects";
 import { useToast } from "./hooks/useToast";
@@ -64,6 +64,62 @@ export default function App() {
   const blobUrlCacheRef = useRef<Record<string, string>>({});
   const [fsLoading, setFsLoading] = useState(false);
 
+  // ── Per-folder screen cache (key: "wsIdx-folderIdx") ──
+  const [perFolderScreens, setPerFolderScreens] = useState<Record<string, string[]>>({});
+
+  // Digest changes only when folder configuration changes (not on activeFolder toggle)
+  const foldersDigest = useMemo(() => {
+    return JSON.stringify(
+      projects.map((p) =>
+        p.type === "workspace"
+          ? p.folders.map(
+              (f) =>
+                `${f.inputHandleId ?? ""}::${f.handlePath?.join("/") ?? ""}::${f.inputDir ?? ""}`,
+            )
+          : [],
+      ),
+    );
+  }, [projects]);
+
+  // Eagerly load per-folder screen lists when folder config changes
+  useEffect(() => {
+    let cancelled = false;
+    const loadAll = async () => {
+      const result: Record<string, string[]> = {};
+      for (let wi = 0; wi < projects.length; wi++) {
+        const p = projects[wi];
+        if (p.type !== "workspace") continue;
+        for (let fi = 0; fi < p.folders.length; fi++) {
+          if (cancelled) return;
+          const key = `${wi}-${fi}`;
+          const folder = p.folders[fi];
+          try {
+            let meta: Metadata | null = null;
+            if (folder.inputHandleId) {
+              const root = await loadHandle(folder.inputHandleId);
+              const handle =
+                root && folder.handlePath && folder.handlePath.length > 0
+                  ? await resolveHandle(root, folder.handlePath).catch(() => null)
+                  : root;
+              if (handle) {
+                meta = await readMetadata(handle) as Metadata | null;
+              }
+            } else if (folder.inputDir) {
+              const resp = await fetch(`/api/metadata?dir=${encodeURIComponent(folder.inputDir)}`);
+              meta = await resp.json();
+            }
+            result[key] = computeOrderedScreens(meta);
+          } catch {
+            result[key] = [];
+          }
+        }
+      }
+      if (!cancelled) setPerFolderScreens(result);
+    };
+    loadAll();
+    return () => { cancelled = true; };
+  }, [foldersDigest]);
+
   // Load FS handles when active folder changes
   useEffect(() => {
     setInputHandle(null);
@@ -124,7 +180,6 @@ export default function App() {
   // Load metadata and pre-cache blob URLs from FS handle
   useEffect(() => {
     if (!inputHandle) {
-      // Revoke and clear blob URL cache
       for (const url of Object.values(blobUrlCacheRef.current)) {
         URL.revokeObjectURL(url);
       }
@@ -143,11 +198,9 @@ export default function App() {
       setFsLoading(true);
 
       try {
-        // Load metadata
         const meta = await readMetadata(inputHandle);
         if (cancelled) return;
 
-        // Pre-cache blob URLs for all HTML files
         const cache: Record<string, string> = {};
         try {
           const files = await listHtmlFiles(inputHandle);
@@ -158,21 +211,18 @@ export default function App() {
             cache[key] = URL.createObjectURL(new Blob([content], { type: 'text/html' }));
           }
         } catch {
-          // Blob pre-caching failure is non-fatal; metadata is still usable
+          // Blob pre-caching failure is non-fatal
         }
 
         if (!cancelled) {
-          // Revoke old URLs
           for (const url of prevUrls) {
             URL.revokeObjectURL(url);
           }
           blobUrlCacheRef.current = cache;
           setFsMetadata(meta as Metadata | null);
         }
-      } catch (err) {
-        // Permission denied or other read error
+      } catch {
         if (!cancelled) {
-          // Set metadata to null so orderedScreens stays empty shown
           setFsMetadata(null);
         }
       } finally {
@@ -183,18 +233,12 @@ export default function App() {
     return () => { cancelled = true; };
   }, [inputHandle]);
 
-  // Resolve screen URLs:
-  //   FS handle mode   → blob URL cache (from indexedDB handles)
-  //   Workspace        → Vite middleware (/screens/...?dir=...)
   const getScreenUrl = useCallback(
     (screen: string, state?: string): string => {
-      // FS handle mode: use blob URL cache
       if (activeFolder?.inputHandleId) {
         const key = state ? `${screen}_${state}` : screen;
         return blobUrlCacheRef.current[key] || blobUrlCacheRef.current[screen] || '';
       }
-
-      // Workspace mode: Vite middleware
       if (state) {
         return `/screens/${screen}_${state}.html?dir=${encodeURIComponent(activeInputDir)}`;
       }
@@ -203,7 +247,6 @@ export default function App() {
     [activeInputDir, activeFolder?.inputHandleId],
   );
 
-  // ── FileSource abstraction ──
   const fileSource = useMemo<FileSource | null>(() => {
     return createFileSource({
       inputHandle: inputHandle ?? undefined,
@@ -211,18 +254,16 @@ export default function App() {
     });
   }, [inputHandle, outputHandle]);
 
-  // Preload OPFS cache when file source changes (background, non-blocking)
   useEffect(() => {
     if (!fileSource || !activeFolder?.name) return;
     const folderKey = `folder_${activeFolder.name}`;
     preloadOpfsCache(fileSource, folderKey).catch(() => {});
   }, [fileSource, activeFolder?.name]);
 
-  // Save capture: delegates to FileSource abstraction
   const saveCapture = useCallback(
     async (filename: string, dataUrl: string): Promise<CaptureResult> => {
       if (!fileSource || !fileSource.writable) {
-        return { filename, ok: true }; // read-only source → no-op
+        return { filename, ok: true };
       }
       try {
         const content = dataUrlToBlob(dataUrl);
@@ -235,12 +276,7 @@ export default function App() {
     [fileSource],
   );
 
-  // Pre-loaded metadata: FS handle mode.
-  // When fsMetadata is undefined (no FS handle or still loading), fall through
-  // When fsMetadata is null (no metadata file found), pass null to useScreens
   const preloadedMetadata = fsMetadata !== undefined ? fsMetadata : undefined;
-
-  // When FS handle mode is active, force dir to "" to skip Vite middleware fetch
   const screensDir = activeFolder?.inputHandleId ? "" : activeInputDir;
 
   const {
@@ -288,7 +324,6 @@ export default function App() {
       ? `${activeProject.name} / ${activeFolder.name}`
       : activeProject?.name ?? "";
 
-  // Reset activeState when currentScreen changes (skip initial mount — URL state rules)
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -297,7 +332,6 @@ export default function App() {
     setActiveState("default");
   }, [currentScreen]);
 
-  // Sync activeState back to URL so direct-link / refresh preserves the state
   useEffect(() => {
     if (!currentScreen || isSummary) return;
     const params = new URLSearchParams(location.search);
@@ -309,19 +343,15 @@ export default function App() {
     history.replaceState({}, "", `?${params.toString()}`);
   }, [currentScreen, activeState, isSummary]);
 
-  // Reset marker on screen change
   useEffect(() => {
     setMarkerRect(null);
     setMarkerContext(null);
   }, [currentScreen]);
 
-
-  // Keyboard shortcuts
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-      // Device mode shortcuts: Meta/Ctrl + 1-6
       if ((e.metaKey || e.ctrlKey) && /^[1-6]$/.test(e.key)) {
         e.preventDefault();
         const idx = parseInt(e.key) - 1;
@@ -357,7 +387,6 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [goPrev, goNext, goHome, markerRect]);
 
-  // Capture the current screen with its active state
   const handleCapture = useCallback(async () => {
     const iframe = document.getElementById("phone-frame") as HTMLIFrameElement | null;
     if (!iframe?.contentDocument?.body) {
@@ -388,7 +417,6 @@ export default function App() {
       });
       const dataUrl = canvas.toDataURL("image/png");
 
-      // Trigger download via anchor click (works for all modes)
       const link = document.createElement("a");
       link.download = filename;
       link.href = dataUrl;
@@ -396,7 +424,6 @@ export default function App() {
       link.click();
       document.body.removeChild(link);
 
-      // Save via unified path (FS handle, middleware POST, or no-op for client)
       const result = await saveCapture(filename, dataUrl);
       if (result.ok) {
         show(`Saved: ${filename}`, true);
@@ -408,12 +435,10 @@ export default function App() {
     }
   }, [currentScreen, activeState, metadata, show, deviceMode, saveCapture]);
 
-  // Start batch capture of all screens
   const handleCaptureAll = useCallback(() => {
     setCapturing(true);
   }, []);
 
-  // Called when CaptureProgress finishes
   const handleCaptureAllDone = useCallback(
     (results: CaptureResult[]) => {
       setCapturing(false);
@@ -429,11 +454,9 @@ export default function App() {
     [show, navigate],
   );
 
-  // Handle dock tool button clicks
   const handleDockTool = useCallback(
     (tool: string) => {
       if (tool === dockTool) {
-        // Toggle off — clear marker if marker tool
         if (tool === "marker") {
           setMarkerRect(null);
           setMarkerContext(null);
@@ -460,16 +483,13 @@ export default function App() {
     [dockTool, handleCapture, navigate],
   );
 
-  // Update active state when Viewer requests a state change
   const handleStateChange = useCallback((_screen: string, state: string) => {
     setActiveState(state);
   }, []);
 
-  // Handle marker placement from MarkerOverlay
   const handleMark = useCallback(
     (payload: { rect: MarkerRect; screen: string; state: string }) => {
       setMarkerRect(payload.rect);
-      // Auto-extract context from iframe
       const iframe = document.getElementById('phone-frame') as HTMLIFrameElement | null;
       const ctx = extractMarkedContext(
         payload.screen,
@@ -482,13 +502,11 @@ export default function App() {
     [],
   );
 
-  // Reset marker state
   const handleResetMarker = useCallback(() => {
     setMarkerRect(null);
     setMarkerContext(null);
   }, []);
 
-  // Set device mode directly, or cycle to next if no mode provided
   const handleDeviceModeCycle = useCallback((mode?: DeviceMode) => {
     if (mode) {
       setDeviceMode(mode);
@@ -500,7 +518,6 @@ export default function App() {
     }
   }, []);
 
-  // Quick-add workspace from left drawer inline form
   const handleAddWorkspace = useCallback((name: string) => {
     addProject({
       type: "workspace",
@@ -510,7 +527,6 @@ export default function App() {
     });
   }, [addProject]);
 
-  // Add folder to workspace (from plus button or context menu)
   const handleAddFolder = useCallback(
     (workspaceIdx: number, name: string, inputDir: string, outputDir: string, inputHandleId?: string, outputHandleId?: string) => {
       addFolderToWorkspace(workspaceIdx, {
@@ -556,6 +572,7 @@ export default function App() {
               activeProject?.type === "workspace" ? activeProject.activeFolder : 0
             }
             screens={orderedScreens}
+            perFolderScreens={perFolderScreens}
             activeScreen={currentScreen}
             onSelect={navigate}
             onSetActive={setActive}

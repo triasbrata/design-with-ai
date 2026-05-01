@@ -16,6 +16,7 @@ interface LeftDrawerProps {
   activeIndex: number;
   activeFolderIdx: number;
   screens: string[];
+  perFolderScreens: Record<string, string[]>;
   activeScreen: string;
   onSelect: (screen: string) => void;
   onSetActive: (index: number, folderIdx?: number) => void;
@@ -54,6 +55,7 @@ export function LeftDrawer({
   activeIndex,
   activeFolderIdx,
   screens,
+  perFolderScreens,
   activeScreen,
   onSelect,
   onSetActive,
@@ -105,6 +107,9 @@ export function LeftDrawer({
     });
     return paths;
   }, [projects]);
+
+  // Global existing set for client projects (unchanged)
+  const globalExisting = useMemo(() => new Set(screens), [screens]);
 
   useEffect(() => {
     if (!open || pinned) return;
@@ -158,8 +163,6 @@ export function LeftDrawer({
       document.removeEventListener("keydown", handleKey);
     };
   }, [contextMenu]);
-
-  const existing = useMemo(() => new Set(screens), [screens]);
 
   function toggle(idx: number) {
     setExpanded((prev) => {
@@ -338,6 +341,9 @@ export function LeftDrawer({
     [pickState, projects, onAddFolders, onSetActive],
   );
 
+  /** Derive screen list and existing set for a specific folder */
+  function folderKey(pi: number, fi: number) { return `${pi}-${fi}`; }
+
   return (
     <div data-caid="left-drawer">
       <div className="left-drawer-trigger">
@@ -481,8 +487,14 @@ export function LeftDrawer({
                       )}
                       {project.folders.map((folder, fi) => {
                         const isActiveFolder = isActiveWs && fi === activeFolderIdx;
-                        const folderKey = `${pi}-${fi}`;
-                        const isFolderExpanded = expandedFolders.has(folderKey);
+                        const fk = folderKey(pi, fi);
+                        const isFolderExpanded = expandedFolders.has(fk);
+
+                        // Per-folder screen list from eager cache; fall back to global for active folder if cache not yet populated
+                        const folderScreenList = perFolderScreens[fk] ?? (isActiveFolder ? screens : undefined);
+                        const fsLoading = !perFolderScreens[fk] && (folder.inputHandleId || folder.inputDir);
+                        const existing = new Set(folderScreenList ?? []);
+
                         return (
                           <div key={`f-${fi}`} style={{ paddingLeft: 4 }}>
                             <div className="ld-section-header" style={{ fontSize: 13 }}>
@@ -491,8 +503,8 @@ export function LeftDrawer({
                                 onClick={() => {
                                   setExpandedFolders((prev) => {
                                     const next = new Set(prev);
-                                    if (next.has(folderKey)) next.delete(folderKey);
-                                    else next.add(folderKey);
+                                    if (next.has(fk)) next.delete(fk);
+                                    else next.add(fk);
                                     return next;
                                   });
                                 }}
@@ -550,39 +562,49 @@ export function LeftDrawer({
                                 <Trash2 size={11} />
                               </button>
                             </div>
+                            {/* Path sub-text */}
+                            <div className="ld-folder-path">
+                              {folder.handlePath && folder.handlePath.length > 0
+                                ? folder.handlePath.join(" / ")
+                                : folder.inputDir || ""}
+                            </div>
                             {(isActiveFolder || isFolderExpanded) && (
                               <div style={{ paddingLeft: 8 }}>
-                                {Object.entries(TIERS).map(([tier, info]) => {
-                                  const tierScreens = info.screens.filter((s) =>
-                                    existing.has(s),
-                                  );
-                                  if (!tierScreens.length) return null;
-                                  return (
-                                    <div className="ld-tier-group" key={tier}>
-                                      <div className="ld-tier-label">
-                                        {tier} — {info.label}
+                                {fsLoading && !folderScreenList ? (
+                                  <div style={{ padding: "8px 4px", color: "var(--brand-muted)", fontSize: 11, display: "flex", alignItems: "center", gap: 6 }}>
+                                    <Loader2 size={11} className="ld-spinner" />
+                                    Loading screens...
+                                  </div>
+                                ) : folderScreenList && folderScreenList.length > 0 ? (
+                                  Object.entries(TIERS).map(([tier, info]) => {
+                                    const tierScreens = info.screens.filter((s) =>
+                                      existing.has(s),
+                                    );
+                                    if (!tierScreens.length) return null;
+                                    return (
+                                      <div className="ld-tier-group" key={tier}>
+                                        <div className="ld-tier-label">
+                                          {tier} — {info.label}
+                                        </div>
+                                        {tierScreens.map((s) => (
+                                          <button
+                                            key={s}
+                                            className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
+                                            onClick={() => {
+                                              onSelect(s);
+                                              onToggle();
+                                            }}
+                                            title={screenName(s)}
+                                          >
+                                            {truncateName(screenName(s))}
+                                          </button>
+                                        ))}
                                       </div>
-                                      {tierScreens.map((s) => (
-                                        <button
-                                          key={s}
-                                          className={`ld-screen-item${s === activeScreen ? " active" : ""}`}
-                                          onClick={() => {
-                                            onSelect(s);
-                                            onToggle();
-                                          }}
-                                          title={screenName(s)}
-                                        >
-                                          {truncateName(screenName(s))}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  );
-                                })}
-                                {existing.size === 0 && (
-                                  <div className="ld-loading" style={{ padding: 12 }}>
-                                    <span style={{ color: "var(--brand-muted)", fontSize: 12 }}>
-                                      No screens found
-                                    </span>
+                                    );
+                                  })
+                                ) : (
+                                  <div style={{ padding: 12, color: "var(--brand-muted)", fontSize: 12 }}>
+                                    No screens found
                                   </div>
                                 )}
                               </div>
@@ -616,7 +638,7 @@ export function LeftDrawer({
                 {isExpanded && (
                   <div className="ld-section-body" style={{ paddingLeft: 4 }}>
                     {Object.entries(TIERS).map(([tier, info]) => {
-                      const tierScreens = info.screens.filter((s) => existing.has(s));
+                      const tierScreens = info.screens.filter((s) => globalExisting.has(s));
                       if (!tierScreens.length) return null;
                       return (
                         <div className="ld-tier-group" key={tier}>
@@ -639,7 +661,7 @@ export function LeftDrawer({
                         </div>
                       );
                     })}
-                    {existing.size === 0 && (
+                    {globalExisting.size === 0 && (
                       <div style={{ padding: 12, color: "var(--brand-muted)", fontSize: 12 }}>
                         No screens loaded
                       </div>
